@@ -190,8 +190,8 @@ for filenum=length(files):-1:1%1:length(files) % végigmegyünk az összes file-
                     %                 plot(time(ittlehetpsp),yfilt(ittlehetpsp),'r-')
                     
                     
-                    
-                    if  ezegypsp==1 || ezegyap==1  %& amplitude/risetime>valtozok.mindvpdt
+%                     if isempty(fieldnames(eventdata)) |  ( eventdata(end).maxh<min(maxh,apmaxh) )
+                    if  (ezegypsp==1 || ezegyap==1)  %& amplitude/risetime>valtozok.mindvpdt
                         if isempty(fieldnames(eventdata))
                             NEXT=1;
                         else
@@ -270,6 +270,7 @@ for filenum=length(files):-1:1%1:length(files) % végigmegyünk az összes file-
                             end
                         end
                     end
+%                     end
                     progressbar(sweepnum/length(bridgeddata),[],eventnum/amplnum,[]);
                     yfilt=yfilt*eventszorzo;
                     y=y*eventszorzo;

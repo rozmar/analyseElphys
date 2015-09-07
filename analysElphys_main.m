@@ -10,7 +10,7 @@ dirs.eventdir=[dirs.basedir,'Events/'];
 dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
 dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
 dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
-
+dirs.figuresdir=[dirs.basedir,'Figures/'];
 xlsdata=aE_readxls([dirs.basedir,'cb1elphys.xls']);
 
 %% export Raw data from HEKA
@@ -115,7 +115,359 @@ valtozok.diffmovingt=.0005;
 valtozok.steptime=.0005; %s
 valtozok.eventminsdval=3;
 valtozok.apthreshval=10;
-
 aE_findevents(valtozok,dirs)
 
 % return
+%% 
+
+dpi=600;
+xcm=10;
+ycm=7;
+betumeret=8;
+axesvastagsag=2;
+
+
+xinch=xcm/2.54;
+yinch=ycm/2.54;
+xsize=dpi*xinch;
+ysize=dpi*yinch;
+
+clear valtozok
+valtozok.baselinelength=0.05; %s
+
+valtozok.psplength=.3; %s
+valtozok.filterorder=3;
+valtozok.cutofffreq=1000;
+valtozok.drugwashintime=120;
+valtozok.maxy0baselinedifference=.0005;
+valtozok.discardpostsweepswithap=1;
+for prenum=1:length(xlsdata) %going throught potential presynaptic cells
+    potpostidx=strcmp(xlsdata(prenum).HEKAfname,{xlsdata.HEKAfname}); %selecting the cells that may have been recorded simultaneously
+    potpostidx(prenum)=0;
+    if sum(potpostidx)>0
+        preevents=load([dirs.eventdir,xlsdata(prenum).ID]);
+        pretraces=load([dirs.bridgeddir,xlsdata(prenum).ID]);
+        preevents.eventdata=preevents.eventdata(strcmp({preevents.eventdata.type},'AP'));
+        apdiffs=diff([preevents.eventdata.maxtime]);
+        preevents.eventdata(find(apdiffs==0)+1)=[];
+        apdiffs=diff([preevents.eventdata.maxtime]);
+        prediffs=[inf,apdiffs];
+        postdiffs=[apdiffs,inf];
+        neededapidx=find(prediffs>3 & postdiffs<.070 & postdiffs>.050); %criteria to select presynaptic APs
+        neededapmaxtimes=[preevents.eventdata(neededapidx).maxtime];
+        neededapmaxhs=[preevents.eventdata(neededapidx).maxh];
+        neededapsweepnums=[preevents.eventdata(neededapidx).sweepnum];
+        findpostidxes=find(potpostidx);
+        for potpostnum=1:length(findpostidxes) %going throught potential postsynaptic cells
+            tracedata=struct;
+            posttraces=load([dirs.bridgeddir,xlsdata(findpostidxes(potpostnum)).ID]);
+            if valtozok.discardpostsweepswithap==1
+                postevents=load([dirs.eventdir,xlsdata(findpostidxes(potpostnum)).ID]);
+                postevents.eventdata=postevents.eventdata(strcmp({postevents.eventdata.type},'AP'));
+                apdiffs=diff([postevents.eventdata.maxtime]);
+                postevents.eventdata(find(apdiffs==0)+1)=[];
+            end
+            for preapnum=1:length(neededapmaxtimes)
+                postsweepidx=find(pretraces.bridgeddata(neededapsweepnums(preapnum)).realtime==[posttraces.bridgeddata.realtime]);
+                if ~isempty(postsweepidx) & ~any([postevents.eventdata.maxtime]>neededapmaxtimes(preapnum)-valtozok.baselinelength & [postevents.eventdata.maxtime]<neededapmaxtimes(preapnum)+valtozok.psplength)% 
+                    if isempty(fieldnames(tracedata))
+                        NEXT=1;
+                    else
+                        NEXT=length(tracedata)+1;
+                    end
+                    fieldek=fieldnames(pretraces.bridgeddata);
+                    for finum=1:length(fieldek)
+                        tracedata(NEXT).(['pre_',fieldek{finum}])=pretraces.bridgeddata(neededapsweepnums(preapnum)).(fieldek{finum});
+                        tracedata(NEXT).(['post_',fieldek{finum}])=posttraces.bridgeddata(postsweepidx).(fieldek{finum});
+                        tracedata(NEXT).apmaxh=neededapmaxhs(preapnum);
+                    end
+                end
+            end
+            
+            si=unique([tracedata.post_si]);
+            
+            if length(si)>1
+                disp(['si gebasz']) % if not all sweeps are recorded with the same sampling freqency, there might be some problem
+                return
+            end
+            
+            % cutting out needed traces and filtering
+            ninq=.5/si;
+            [b,a] = butter(valtozok.filterorder,valtozok.cutofffreq/ninq,'low');
+            stepback=round(valtozok.baselinelength/si);
+            stepforward=round(valtozok.psplength/si);
+            time=-stepback*si:si:stepforward*si;
+            for sweepnum=1:length(tracedata)
+                tracedata(sweepnum).pre_y=filter(b,a,tracedata(sweepnum).pre_y)';
+                tracedata(sweepnum).post_y=filter(b,a,tracedata(sweepnum).post_y)';
+                tracedata(sweepnum).pre_y=tracedata(sweepnum).pre_y(tracedata(sweepnum).apmaxh-stepback:tracedata(sweepnum).apmaxh+stepforward);
+                tracedata(sweepnum).post_y=tracedata(sweepnum).post_y(tracedata(sweepnum).apmaxh-stepback:tracedata(sweepnum).apmaxh+stepforward);
+                tracedata(sweepnum).post_y0=nanmean(tracedata(sweepnum).post_y(1:stepback));
+                tracedata(sweepnum).pre_y0=nanmean(tracedata(sweepnum).pre_y(1:stepback));
+                tracedata(sweepnum).post_y0sd=nanstd(tracedata(sweepnum).post_y(1:stepback));
+            end
+            
+            % dividing sweeps according to drugs
+            for drugnum=1:xlsdata(prenum).drugnum
+                %%
+                ctrlidxes=find([tracedata.pre_realtime]<xlsdata(prenum).drugdata(drugnum).DrugWashinTime);
+                drugidxes=find([tracedata.pre_realtime]>xlsdata(prenum).drugdata(drugnum).DrugWashinTime+valtozok.drugwashintime);
+                y0s=[tracedata.post_y0];
+                prey0s=[tracedata.pre_y0];
+                y0stds=[tracedata.post_y0sd];
+                
+                % removing noisy sweeps
+                zeroed_post_y=bsxfun(@(x,y) x-y, [tracedata.post_y], y0s);
+                voltmar=0;
+                while voltmar==0 | any(median(ctrldiffs)+3*std(ctrldiffs)<ctrldiffs) | any(median(ctrldiffs)-3*std(ctrldiffs)>ctrldiffs)
+                    ctrldiffs=bsxfun(@(x,y) x-y, [zeroed_post_y(:,ctrlidxes)], mean(zeroed_post_y(:,ctrlidxes),2));
+                    ctrldiffs=mean(abs(ctrldiffs));
+                    if any(median(ctrldiffs)+3*std(ctrldiffs)<ctrldiffs)
+                        [~,idxtodel]=max(ctrldiffs);
+                        ctrlidxes(idxtodel)=[];
+                    end
+                    if any(median(ctrldiffs)-3*std(ctrldiffs)>ctrldiffs)
+                        [~,idxtodel]=min(ctrldiffs);
+                        ctrlidxes(idxtodel)=[];
+                    end
+                    voltmar=1;
+                end
+                voltmar=0;
+                while voltmar==0 | any(median(drugdiffs)+3*std(drugdiffs)<drugdiffs) | any(median(drugdiffs)-3*std(drugdiffs)>drugdiffs)
+                    drugdiffs=bsxfun(@(x,y) x-y, [zeroed_post_y(:,drugidxes)], mean(zeroed_post_y(:,drugidxes),2));
+                    drugdiffs=mean(abs(drugdiffs));
+                    if any(median(drugdiffs)+3*std(drugdiffs)<drugdiffs)
+                        [~,idxtodel]=max(drugdiffs);
+                        drugidxes(idxtodel)=[];
+                    end
+                    if any(median(drugdiffs)-3*std(drugdiffs)>drugdiffs)
+                        [~,idxtodel]=min(drugdiffs);
+                        drugidxes(idxtodel)=[];
+                    end
+                    voltmar=1;
+                end
+                % deleting outlying y0 values
+                while any(median(y0s(ctrlidxes))+3*std(y0s(ctrlidxes))<y0s(ctrlidxes)) | any(median(y0s(ctrlidxes))-3*std(y0s(ctrlidxes))>y0s(ctrlidxes))
+                    if any(median(y0s(ctrlidxes))+3*std(y0s(ctrlidxes))<y0s(ctrlidxes))
+                        [~,idxtodel]=max(y0s(ctrlidxes));
+                        ctrlidxes(idxtodel)=[];
+                    end
+                    if any(median(y0s(ctrlidxes))-3*std(y0s(ctrlidxes))>y0s(ctrlidxes))
+                        [~,idxtodel]=min(y0s(ctrlidxes));
+                        ctrlidxes(idxtodel)=[];
+                    end
+                end
+                
+                while any(median(y0s(drugidxes))+3*std(y0s(drugidxes))<y0s(drugidxes)) | any(median(y0s(drugidxes))-3*std(y0s(drugidxes))>y0s(drugidxes))
+                    if any(median(y0s(drugidxes))+3*std(y0s(drugidxes))<y0s(drugidxes))
+                        [~,idxtodel]=max(y0s(drugidxes));
+                        drugidxes(idxtodel)=[];
+                    end
+                    if any(median(y0s(drugidxes))-3*std(y0s(drugidxes))>y0s(drugidxes))
+                        [~,idxtodel]=min(y0s(drugidxes));
+                        drugidxes(idxtodel)=[];
+                    end
+                end
+                
+                while abs(mean(y0s(ctrlidxes))-mean(y0s(drugidxes)))>valtozok.maxy0baselinedifference
+                    if length(ctrlidxes)> length(drugidxes)
+                        if mean(y0s(ctrlidxes))>mean(y0s(drugidxes))
+                            [~,idxtodel]=max(y0s(ctrlidxes));
+                            ctrlidxes(idxtodel)=[];
+                        else
+                            [~,idxtodel]=min(y0s(ctrlidxes));
+                            ctrlidxes(idxtodel)=[];
+                        end
+                    else
+                        if mean(y0s(drugidxes))>mean(y0s(ctrlidxes))
+                            [~,idxtodel]=max(y0s(drugidxes));
+                            drugidxes(idxtodel)=[];
+                        else
+                            [~,idxtodel]=min(y0s(drugidxes));
+                            drugidxes(idxtodel)=[];
+                        end
+                    end
+%                     disp([mean(y0s(ctrlidxes)),mean(y0s(drugidxes))])
+                end
+                
+                
+                
+                figure(1)
+                clf
+                
+%                 subplot(2,1,1)
+                hold on
+%                 plot(time*1000,(bsxfun(@(x,y) x-y, [tracedata(ctrlidxes).pre_y], prey0s(ctrlidxes))')*1000,'k-','Color',[.8 .8 .8])
+%                 plot(time*1000,(bsxfun(@(x,y) x-y, [tracedata(drugidxes).pre_y], prey0s(drugidxes))')*1000,'r-','Color',[.9 .4 .4])
+%                 plot(time*1000,mean(bsxfun(@(x,y) x-y, [tracedata(ctrlidxes).pre_y], prey0s(ctrlidxes))')*1000,'k-','LineWidth',2)
+%                 plot(time*1000,mean(bsxfun(@(x,y) x-y, [tracedata(drugidxes).pre_y], prey0s(drugidxes))')*1000,'r-','LineWidth',2)
+                
+                plot(time*1000,[tracedata(ctrlidxes).pre_y]'*1000,'k-','Color',[.8 .8 .8])
+                plot(time*1000,[tracedata(drugidxes).pre_y]'*1000,'r-','Color',[.9 .4 .4])
+                plot(time*1000,mean([tracedata(ctrlidxes).pre_y]')*1000,'k-','LineWidth',2)
+                plot(time*1000,mean([tracedata(drugidxes).pre_y]')*1000,'r-','LineWidth',2)
+
+
+
+                axis tight
+                xlabel('time (ms)')
+                ylabel('pre Vm (mV)')
+%                 subplot(2,1,2)
+                
+                set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
+                set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
+                print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-pre.jpg'],'-djpeg',['-r',num2str(dpi)])
+                
+                clf
+                hold on
+                plot(time*1000,(bsxfun(@(x,y) x-y, [tracedata(ctrlidxes).post_y], y0s(ctrlidxes))')*1000,'k-','Color',[.8 .8 .8])
+                plot(time*1000,(bsxfun(@(x,y) x-y, [tracedata(drugidxes).post_y], y0s(drugidxes))')*1000,'r-','Color',[.9 .4 .4])
+                plot(time*1000,mean(bsxfun(@(x,y) x-y, [tracedata(ctrlidxes).post_y], y0s(ctrlidxes))')*1000,'k-','LineWidth',2)
+                plot(time*1000,mean(bsxfun(@(x,y) x-y, [tracedata(drugidxes).post_y], y0s(drugidxes))')*1000,'r-','LineWidth',2)
+                axis tight
+                ylimits=get(gca,'Ylim');
+                maxval=max(max(mean(bsxfun(@(x,y) x-y, [tracedata(ctrlidxes).post_y], y0s(ctrlidxes))')*1000),max(mean(bsxfun(@(x,y) x-y, [tracedata(drugidxes).post_y], y0s(drugidxes))')*1000));
+                minval=min(min(mean(bsxfun(@(x,y) x-y, [tracedata(ctrlidxes).post_y], y0s(ctrlidxes))')*1000),min(mean(bsxfun(@(x,y) x-y, [tracedata(drugidxes).post_y], y0s(drugidxes))')*1000));
+                dval=maxval-minval;
+                ylimits(1)=max(ylimits(1),-dval*3);
+                ylimits(2)=min(ylimits(2),dval*3);
+                set(gca,'Ylim',ylimits);
+                xlabel('time (ms)')
+                ylabel('post Vm (mV)')
+                
+                set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
+                set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
+                print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-post.jpg'],'-djpeg',['-r',num2str(dpi)])
+                figure(2)
+                clf
+%                 subplot(3,1,3)
+                hold on
+                [~,xout]=hist(y0s([ctrlidxes,drugidxes]));
+                [nc,xout]=hist(y0s(ctrlidxes),xout);
+                [nd,xout]=hist(y0s(drugidxes),xout);
+                hb=bar(xout*1000,[nc;nd]','grouped');
+                set(hb(1),'FaceColor',[0 0 0])
+                set(hb(2),'FaceColor',[1 0 0])
+                xlabel('post V0 (mV)')
+                ylabel('count')
+                set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm])
+                set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
+                print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-v0hist.jpg'],'-djpeg',['-r',num2str(dpi)])
+%                 pause
+            end
+            
+        end
+    end
+    
+
+end
+%% 
+%plotting IV
+dpi=600;
+xcm=20;
+ycm=14;
+betumeret=8;
+axesvastagsag=2;
+
+
+xinch=xcm/2.54;
+yinch=ycm/2.54;
+xsize=dpi*xinch;
+ysize=dpi*yinch;
+
+sweeplevonasok=[2,1,1,2];
+dothesecond=[0,0,0,0];
+
+for prenum=1:length(xlsdata)
+    fname=[xlsdata(prenum).ID,'.mat'];
+    HEKAfname=xlsdata(prenum).HEKAfname;
+    if any(strfind(HEKAfname,','))
+        comma=strfind(HEKAfname,',');
+        HEKAfname=HEKAfname(1:comma(1)-1);
+    end
+    load([locations.tgtardir,'MATLABdata/IV/',xlsdata(prenum).setup,'/',HEKAfname,'.mat']);
+    
+    gsc=xlsdata(prenum).G_S_C;
+    hyps=strfind(gsc,'_');
+    commas=strfind(gsc,',');
+    g=num2str(gsc(1:hyps(1)-1));
+    if isempty(commas)
+        s=num2str(gsc(hyps(1)+1:hyps(2)-1));
+    elseif dothesecond(prenum)==1 & length(commas)==1
+        s=num2str(gsc(commas(1)+1:hyps(2)-1));
+    elseif dothesecond(prenum)==1 & length(commas)>1
+        s=num2str(gsc(commas(1)+1:commas(2)-1));
+    else
+        s=num2str(gsc(hyps(1)+1:commas(1)-1));
+    end
+    c=num2str(gsc(hyps(2)+1:end));
+    iv=iv.(['g',g,'_s',s,'_c',c]);
+    si=mode(diff(iv.time));
+    [b,a]=butter(3,15000/(1/mode(diff(iv.time)))/2,'low');
+    [bb,aa]=butter(3,1000/(1/mode(diff(iv.time)))/2,'low');
+%     for ii=1:iv.sweepnum
+%         if ii<5
+%             iv.(['v',num2str(ii)])=filtfilt(bb,aa,iv.(['v',num2str(ii)]));
+%         else
+%             iv.(['v',num2str(ii)])=filtfilt(b,a,iv.(['v',num2str(ii)]));
+%         end
+%     end
+    figure(33)
+    clf
+    hold on
+    plot(iv.time,filtfilt(bb,aa,iv.v1),'k-','LineWidth',2)
+    plot(iv.time,filtfilt(b,a,iv.(['v',num2str(iv.sweepnum-(sweeplevonasok(prenum)))])),'k-','LineWidth',2);
+    axis tight
+    ylim([-.13 .050])
+    xlim([0 1])
+%     ylimitek(:,i)=get(gca,'Ylim');
+    set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm])
+    axis off
+    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
+    print(gcf,[dirs.figuresdir,'/IVs/IV_',xlsdata(prenum).ID,'.jpg'],'-djpeg',['-r',num2str(dpi)])
+
+%     figure(3)
+%     clf
+%     subplot(5,1,1)
+%     hold on;
+%     plot(iv.time,iv.v1,'k-','LineWidth',2)
+%     plot(iv.time,iv.(['v',num2str(iv.sweepnum-4)]),'k-','LineWidth',2);
+%     axis tight
+%     title(xlsdata(prenum).ID)
+%     subplot(5,1,2)
+%     hold on;
+%     plot(iv.time,iv.v1,'k-','LineWidth',2)
+%     plot(iv.time,iv.(['v',num2str(iv.sweepnum-3)]),'k-','LineWidth',2);
+%     axis tight
+%     title(['Ca: ',num2str(xlsdata(prenum).Ca),' mM    Mg:',num2str(xlsdata(prenum).Mg),' mM'])
+%     subplot(5,1,3)
+%     hold on;
+%     plot(iv.time,iv.v1,'k-','LineWidth',2)
+%     plot(iv.time,iv.(['v',num2str(iv.sweepnum-2)]),'k-','LineWidth',2);
+%     axis tight
+%     subplot(5,1,4)
+%     hold on;
+%     plot(iv.time,iv.v1,'k-','LineWidth',2)
+%     plot(iv.time,iv.(['v',num2str(iv.sweepnum-1)]),'k-','LineWidth',2);
+%     axis tight
+%     subplot(5,1,5)
+%     hold on;
+%     plot(iv.time,iv.v1,'k-','LineWidth',2)
+%     plot(iv.time,iv.(['v',num2str(iv.sweepnum)]),'k-','LineWidth',2);
+%     axis tight
+%     pause
+end
+
+figure(1)
+clf
+hold on
+
+plot([.5 .5],[-.050 .0],'k-','LineWidth',5)
+plot([.5 .6],[-.050 -.050],'k-','LineWidth',5)
+ylim([-.13 .050])
+    xlim([0 1])
+axis off
+
+set(gca,'Position',[0 0 1 1])
+set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
+print(gcf,[dirs.figuresdir,'/IVs/IVscalebar_100ms_50mV.jpg'],'-djpeg',['-r',num2str(dpi)])
