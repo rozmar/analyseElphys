@@ -27,7 +27,7 @@ end
 xlsdataold=xlsdata;
 
 %% generate PGF data, bridge balancing
-overwrite=0;
+overwrite=1;
 plotRSvalues=0;
 plotbridgedsweeps=0;
 RSbaselinelength=.00005; %ennyi időt átlagol össze a feszültség megmérésekor
@@ -99,7 +99,7 @@ end
 % % %     
 % % % end
 %% finding events
-valtozok.overwrite=0;
+valtozok.overwrite=1;
 valtozok.plotit=0;
 valtozok.threshholdaveragetime=30;%s
 % valtozok.mindvpdt=1;
@@ -133,15 +133,18 @@ xsize=dpi*xinch;
 ysize=dpi*yinch;
 
 clear valtozok
+valtozok.gj_baselinelength=.01;
+valtozok.gj_minlinelength=.1;
+valtozok.gj_mincurrampl=-50*10^-12;
 valtozok.baselinelength=0.05; %s
-
 valtozok.psplength=.3; %s
 valtozok.filterorder=3;
 valtozok.cutofffreq=1000;
 valtozok.drugwashintime=120;
 valtozok.maxy0baselinedifference=.0005;
 valtozok.discardpostsweepswithap=1;
-for prenum=1:length(xlsdata) %going throught potential presynaptic cells
+
+for prenum=2:length(xlsdata) %going throught potential presynaptic cells
     potpostidx=strcmp(xlsdata(prenum).HEKAfname,{xlsdata.HEKAfname}); %selecting the cells that may have been recorded simultaneously
     potpostidx(prenum)=0;
     if sum(potpostidx)>0
@@ -158,15 +161,126 @@ for prenum=1:length(xlsdata) %going throught potential presynaptic cells
         neededapmaxhs=[preevents.eventdata(neededapidx).maxh];
         neededapsweepnums=[preevents.eventdata(neededapidx).sweepnum];
         findpostidxes=find(potpostidx);
+        %% finding hyperpolarizing steps for GJ testing
+        prehypsweeps=struct;
+        for sweepnum=1:length(pretraces.stimdata)
+            currdiffs=[0,diff(pretraces.stimdata(sweepnum).y(pretraces.stimdata(sweepnum).segmenths))];
+            currdiffs(end)=[];
+            tdiffs=diff(pretraces.stimdata(sweepnum).segmenths)*pretraces.bridgeddata(sweepnum).si;
+            if length(currdiffs)>2
+                potentialIDXes=find(currdiffs(1:end-1)<valtozok.gj_mincurrampl&tdiffs(1:end-1)>valtozok.gj_minlinelength);
+            else
+                potentialIDXes=[];
+            end
+            for potidxi=1:length(potentialIDXes)
+                if currdiffs(potentialIDXes(potidxi))==-currdiffs(potentialIDXes(potidxi)+1);
+                    
+                    if isempty(fieldnames(prehypsweeps));
+                        NEXT=1;
+                    else
+                        NEXT=length(prehypsweeps)+1;
+                    end
+                    prehypsweeps(NEXT).sweepnum=sweepnum;
+                    prehypsweeps(NEXT).si=pretraces.bridgeddata(sweepnum).si;
+                    prehypsweeps(NEXT).current=currdiffs(potentialIDXes(potidxi));
+                    prehypsweeps(NEXT).length=tdiffs(potentialIDXes(potidxi));
+                    prehypsweeps(NEXT).starth=pretraces.stimdata(sweepnum).segmenths(potentialIDXes(potidxi));
+                    prehypsweeps(NEXT).endh=pretraces.stimdata(sweepnum).segmenths(potentialIDXes(potidxi)+1);
+                    prehypsweeps(NEXT).realtime=pretraces.bridgeddata(sweepnum).realtime;
+                end
+            end
+            
+        end
+        
+        %%
         for potpostnum=1:length(findpostidxes) %going throught potential postsynaptic cells
             tracedata=struct;
+            tracedataGJ=struct;
             posttraces=load([dirs.bridgeddir,xlsdata(findpostidxes(potpostnum)).ID]);
             if valtozok.discardpostsweepswithap==1
                 postevents=load([dirs.eventdir,xlsdata(findpostidxes(potpostnum)).ID]);
                 postevents.eventdata=postevents.eventdata(strcmp({postevents.eventdata.type},'AP'));
                 apdiffs=diff([postevents.eventdata.maxtime]);
                 postevents.eventdata(find(apdiffs==0)+1)=[];
+            else
+                postevents=preevents;
+                postevents.events=postevents.events(end);
             end
+            
+            
+            
+            for prehypsweepnum=1:length(prehypsweeps)
+                postsweepnum=find(prehypsweeps(prehypsweepnum).realtime==[posttraces.bridgeddata.realtime]);
+                
+                if ~isempty(postsweepnum)  & ~any([postevents.eventdata.maxtime]>prehypsweeps(prehypsweepnum).realtime+prehypsweeps(prehypsweepnum).starth*prehypsweeps(prehypsweepnum).si-valtozok.gj_baselinelength & [postevents.eventdata.maxtime]<prehypsweeps(prehypsweepnum).realtime+prehypsweeps(prehypsweepnum).endh*prehypsweeps(prehypsweepnum).si+valtozok.gj_baselinelength)% 
+                    % csak akkor érdekel minket, hogyha nincs beinjektált
+                    % áram a másik sejtben
+                    poststim=posttraces.stimdata(postsweepnum).y;
+                    if poststim(prehypsweeps(prehypsweepnum).starth-3) == poststim(prehypsweeps(prehypsweepnum).starth+3)
+                        if isempty(fieldnames(tracedataGJ))
+                            NEXT=1;
+                        else
+                            NEXT=length(tracedataGJ)+1;
+                        end
+                        fieldek=fieldnames(pretraces.bridgeddata);
+                        for finum=1:length(fieldek)
+                            tracedataGJ(NEXT).(['pre_',fieldek{finum}])=pretraces.bridgeddata(prehypsweeps(prehypsweepnum).sweepnum).(fieldek{finum});
+                            tracedataGJ(NEXT).(['post_',fieldek{finum}])=posttraces.bridgeddata(postsweepnum).(fieldek{finum});
+                            tracedataGJ(NEXT).endh=prehypsweeps(prehypsweepnum).endh;
+                            tracedataGJ(NEXT).starth=prehypsweeps(prehypsweepnum).starth;
+                        end
+                        figure(1234)
+                        clf
+                        subplot(4,1,1)
+                        plot(tracedataGJ(NEXT).pre_y)
+                        subplot(4,1,2)
+                        plot(pretraces.stimdata(prehypsweeps(prehypsweepnum).sweepnum).y)
+                        
+                        subplot(4,1,3)
+                        plot(tracedataGJ(NEXT).post_y)
+                        subplot(4,1,4)
+                        plot(poststim)
+                        title(num2str(tracedataGJ(NEXT).post_realtime))
+%                         return
+                        pause
+                    end
+                end
+            end
+            si=unique([tracedataGJ.post_si]);
+            
+            if length(si)>1
+                disp(['si gebasz']) % if not all sweeps are recorded with the same sampling freqency, there might be some problem
+                return
+            end
+            
+            % cutting out needed traces and filtering
+            ninq=.5/si;
+            [b,a] = butter(valtozok.filterorder,valtozok.cutofffreq/ninq,'low');
+            
+            for sweepnum=1:length(tracedataGJ)
+                stepback=round(valtozok.gj_baselinelength/si);
+                stepforward=round(valtozok.gj_baselinelength/si);
+                time=-stepback*si:si:(stepforward+tracedataGJ(sweepnum).endh-tracedataGJ(sweepnum).starth)*si;
+                
+                tracedataGJ(sweepnum).time=time;
+                tracedataGJ(sweepnum).pre_y=filter(b,a,tracedataGJ(sweepnum).pre_y)';
+                tracedataGJ(sweepnum).post_y=filter(b,a,tracedataGJ(sweepnum).post_y)';
+                tracedataGJ(sweepnum).pre_y=tracedataGJ(sweepnum).pre_y(tracedataGJ(sweepnum).starth-stepback:tracedataGJ(sweepnum).endh+stepforward);
+                tracedataGJ(sweepnum).post_y=tracedataGJ(sweepnum).post_y(tracedataGJ(sweepnum).starth-stepback:tracedataGJ(sweepnum).endh+stepforward);
+                tracedataGJ(sweepnum).post_y0=nanmean(tracedataGJ(sweepnum).post_y(1:stepback));
+                tracedataGJ(sweepnum).pre_y0=nanmean(tracedataGJ(sweepnum).pre_y(1:stepback));
+                tracedataGJ(sweepnum).post_y0sd=nanstd(tracedataGJ(sweepnum).post_y(1:stepback));
+                figure(333)
+                clf
+                subplot(2,1,1)
+                plot(tracedataGJ(sweepnum).time,tracedataGJ(sweepnum).pre_y);
+                subplot(2,1,2)
+                plot(tracedataGJ(sweepnum).time,tracedataGJ(sweepnum).post_y);
+                pause
+            end
+            
+            
+            return
             for preapnum=1:length(neededapmaxtimes)
                 postsweepidx=find(pretraces.bridgeddata(neededapsweepnums(preapnum)).realtime==[posttraces.bridgeddata.realtime]);
                 if ~isempty(postsweepidx) & ~any([postevents.eventdata.maxtime]>neededapmaxtimes(preapnum)-valtozok.baselinelength & [postevents.eventdata.maxtime]<neededapmaxtimes(preapnum)+valtozok.psplength)% 
@@ -210,6 +324,7 @@ for prenum=1:length(xlsdata) %going throught potential presynaptic cells
             % dividing sweeps according to drugs
             for drugnum=1:xlsdata(prenum).drugnum
                 %%
+                drugname=xlsdata(prenum).drugdata(drugnum).DrugName;
                 ctrlidxes=find([tracedata.pre_realtime]<xlsdata(prenum).drugdata(drugnum).DrugWashinTime);
                 drugidxes=find([tracedata.pre_realtime]>xlsdata(prenum).drugdata(drugnum).DrugWashinTime+valtozok.drugwashintime);
                 y0s=[tracedata.post_y0];
@@ -221,7 +336,7 @@ for prenum=1:length(xlsdata) %going throught potential presynaptic cells
                 voltmar=0;
                 while voltmar==0 | any(median(ctrldiffs)+3*std(ctrldiffs)<ctrldiffs) | any(median(ctrldiffs)-3*std(ctrldiffs)>ctrldiffs)
                     ctrldiffs=bsxfun(@(x,y) x-y, [zeroed_post_y(:,ctrlidxes)], mean(zeroed_post_y(:,ctrlidxes),2));
-                    ctrldiffs=mean(abs(ctrldiffs));
+                    ctrldiffs=max(abs(ctrldiffs));
                     if any(median(ctrldiffs)+3*std(ctrldiffs)<ctrldiffs)
                         [~,idxtodel]=max(ctrldiffs);
                         ctrlidxes(idxtodel)=[];
@@ -235,7 +350,7 @@ for prenum=1:length(xlsdata) %going throught potential presynaptic cells
                 voltmar=0;
                 while voltmar==0 | any(median(drugdiffs)+3*std(drugdiffs)<drugdiffs) | any(median(drugdiffs)-3*std(drugdiffs)>drugdiffs)
                     drugdiffs=bsxfun(@(x,y) x-y, [zeroed_post_y(:,drugidxes)], mean(zeroed_post_y(:,drugidxes),2));
-                    drugdiffs=mean(abs(drugdiffs));
+                    drugdiffs=max(abs(drugdiffs));
                     if any(median(drugdiffs)+3*std(drugdiffs)<drugdiffs)
                         [~,idxtodel]=max(drugdiffs);
                         drugidxes(idxtodel)=[];
@@ -316,7 +431,7 @@ for prenum=1:length(xlsdata) %going throught potential presynaptic cells
                 
                 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
                 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
-                print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-pre.jpg'],'-djpeg',['-r',num2str(dpi)])
+                print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-',drugname,'-pre.jpg'],'-djpeg',['-r',num2str(dpi)])
                 
                 clf
                 hold on
@@ -337,7 +452,7 @@ for prenum=1:length(xlsdata) %going throught potential presynaptic cells
                 
                 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
                 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
-                print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-post.jpg'],'-djpeg',['-r',num2str(dpi)])
+                print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-',drugname,'-post.jpg'],'-djpeg',['-r',num2str(dpi)])
                 figure(2)
                 clf
 %                 subplot(3,1,3)
@@ -352,7 +467,7 @@ for prenum=1:length(xlsdata) %going throught potential presynaptic cells
                 ylabel('count')
                 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm])
                 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
-                print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-v0hist.jpg'],'-djpeg',['-r',num2str(dpi)])
+                print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-',drugname,'-v0hist.jpg'],'-djpeg',['-r',num2str(dpi)])
 %                 pause
             end
             
