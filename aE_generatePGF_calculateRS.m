@@ -62,28 +62,31 @@ for sweepnum=1:length(rawdata)
             Rall(i)=(mean(rawdata(sweepnum).y(Rallhs(i+1):Rallhs(i+2)))-mean(rawdata(sweepnum).y(Rallhs(i):Rallhs(i+1))))/RSstimdiffs(i);
             RStime(i)=rawdata(sweepnum).realtime+time(RShs(i));
         end
+        
         if any(Rall<10*10^6); %Hogyha RS+Rin kisebb, mint 10 MOhm, akkor valszeg ott nincs is stimulus..
-            figure(112)
-            clf
-            subplot(2,1,1)
-            plot(rawdata(sweepnum).y);
-            hold on;
-            plot(RSbaseh1,rawdata(sweepnum).y(RSbaseh1),'ro');
-            plot(RSbaseh2,rawdata(sweepnum).y(RSbaseh2),'go');
-            subplot(2,1,2)
-            plot(stimdata(sweepnum).y);
-            hold on;
-            plot(RSbaseh1,stimdata(sweepnum).y(RSbaseh1),'ro');
-            plot(RSbaseh2,stimdata(sweepnum).y(RSbaseh2),'go');
-            
-            
-            pause;
+%             figure(112)
+%             clf
+%             subplot(2,1,1)
+%             plot(rawdata(sweepnum).y);
+%             hold on;
+%             plot(RSbaseh1,rawdata(sweepnum).y(RSbaseh1),'ro');
+%             plot(RSbaseh2,rawdata(sweepnum).y(RSbaseh2),'go');
+%             subplot(2,1,2)
+%             plot(stimdata(sweepnum).y);
+%             hold on;
+%             plot(RSbaseh1,stimdata(sweepnum).y(RSbaseh1),'ro');
+%             plot(RSbaseh2,stimdata(sweepnum).y(RSbaseh2),'go');
+%             
+%             
+%             pause;
             stimdata(sweepnum).y=stimdata(sweepnum).y*0+rawdata(sweepnum).Amplifierholding(preamplnum);
             stimdata(sweepnum).yforbridge=stimdata(sweepnum).y;
         else
-            RSs=[RSs,RS];
-            RStimes=[RStimes,RStime];
-            Ralls=[Ralls,Rall];
+            %500pA-nél nagyobb áramokkal nem foglalkozunk
+            rstokeep=find(abs(stimd)<500*10^-12);
+            RSs=[RSs,RS(rstokeep)];
+            RStimes=[RStimes,RStime(rstokeep)];
+            Ralls=[Ralls,Rall(rstokeep)];
         end
         if plotRSvalues==2
             
