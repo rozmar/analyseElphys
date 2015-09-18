@@ -4,13 +4,9 @@ stimdata=struct;
 RSs=[];
 RStimes=[];
 Ralls=[];
-if max([rawdata.segmentamplitudes])-min([rawdata.segmentamplitudes])>.02
-   dividecurrent=1;
-else
-    dividecurrent=0;
-end
 for sweepnum=1:length(rawdata)
-    if dividecurrent==1
+    %some sweeps are exported in nAmps and some in Amps..
+    if max(abs(rawdata(sweepnum).segmentamplitudes))>10^-8
         rawdata(sweepnum).segmentamplitudes=rawdata(sweepnum).segmentamplitudes/1000000000;
     end
     RS=NaN;
@@ -83,7 +79,7 @@ for sweepnum=1:length(rawdata)
             stimdata(sweepnum).yforbridge=stimdata(sweepnum).y;
         else
             %500pA-nél nagyobb áramokkal nem foglalkozunk
-            rstokeep=find(abs(stimd)<500*10^-12);
+            rstokeep=find(abs(RSstimdiffs)<500*10^-12);
             RSs=[RSs,RS(rstokeep)];
             RStimes=[RStimes,RStime(rstokeep)];
             Ralls=[Ralls,Rall(rstokeep)];
