@@ -1,18 +1,18 @@
-% %% alapadatok
-% close all
-% clear all
-% overwrite=0;
-% locations=marcicucca_locations;
-% dirs.basedir=[locations.tgtardir,'ANALYSISdata/marci/Human_rosehip/CB1elphys/'];
-% dirs.rawexporteddir=[dirs.basedir,'Exported_raw/'];
-% dirs.bridgeddir=[dirs.basedir,'Bridged_stim/'];
-% dirs.eventdir=[dirs.basedir,'Events/'];
-% dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
-% dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
-% dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
-% dirs.figuresdir=[dirs.basedir,'Figures/'];
-% xlsdata=aE_readxls([dirs.basedir,'cb1elphys.xls']);
-% 
+%% alapadatok
+close all
+clear all
+overwrite=0;
+locations=marcicucca_locations;
+dirs.basedir=[locations.tgtardir,'ANALYSISdata/marci/Human_rosehip/CB1elphys/'];
+dirs.rawexporteddir=[dirs.basedir,'Exported_raw/'];
+dirs.bridgeddir=[dirs.basedir,'Bridged_stim/'];
+dirs.eventdir=[dirs.basedir,'Events/'];
+dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
+dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
+dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
+dirs.figuresdir=[dirs.basedir,'Figures/'];
+xlsdata=aE_readxls([dirs.basedir,'cb1elphys.xls']);
+
 % %% export Raw data from HEKA
 % for xlsidx=1:length(xlsdata)
 %     a=dir([dirs.rawexporteddir,xlsdata(xlsidx).ID,'.mat']);
@@ -343,33 +343,34 @@ for prenum=2:length(xlsdata) %going throught potential presynaptic cells
 %                     pause
                 end
                 neededtraces=find([tracedataGJ.length]==mode([tracedataGJ.length])&[tracedataGJ.current]==mode([tracedataGJ.current]));
-                time=tracedataGJ(neededtraces(1)).time;
-                %plot GJ coupling
-                figure(1233)
-                clf
-                hold on
-                zeroed_pre_y=bsxfun(@(x,y) x-y, [tracedataGJ(neededtraces).pre_y], [tracedataGJ(neededtraces).pre_y0]);
-                zeroed_post_y=bsxfun(@(x,y) x-y, [tracedataGJ(neededtraces).post_y], [tracedataGJ(neededtraces).post_y0]);
-                plot(time*1000,zeroed_pre_y'*1000,'k-','Color',[.8 .8 .8])
-                plot(time*1000,nanmean(zeroed_pre_y')*1000,'k-','LineWidth',2)
-                axis tight
-                xlabel('time (ms)')
-                ylabel('pre Vm (mV)')
-                set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
-                set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
-                print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-GJ-pre.jpg'],'-djpeg',['-r',num2str(dpi)])
-                figure(1233)
-                clf
-                hold on
-                plot(time*1000,zeroed_post_y'*1000,'k-','Color',[.8 .8 .8])
-                plot(time*1000,nanmean(zeroed_post_y')*1000,'k-','LineWidth',2)
-                axis tight
-                xlabel('time (ms)')
-                ylabel('pre Vm (mV)')
-                set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
-                set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
-                print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-GJ-post.jpg'],'-djpeg',['-r',num2str(dpi)])
-                
+                if length(neededtraces)>1
+                    time=tracedataGJ(neededtraces(1)).time;
+                    %plot GJ coupling
+                    figure(1233)
+                    clf
+                    hold on
+                    zeroed_pre_y=bsxfun(@(x,y) x-y, [tracedataGJ(neededtraces).pre_y], [tracedataGJ(neededtraces).pre_y0]);
+                    zeroed_post_y=bsxfun(@(x,y) x-y, [tracedataGJ(neededtraces).post_y], [tracedataGJ(neededtraces).post_y0]);
+                    plot(time*1000,zeroed_pre_y'*1000,'k-','Color',[.8 .8 .8])
+                    plot(time*1000,nanmean(zeroed_pre_y')*1000,'k-','LineWidth',2)
+                    axis tight
+                    xlabel('time (ms)')
+                    ylabel('pre Vm (mV)')
+                    set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
+                    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
+                    print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-GJ-pre.jpg'],'-djpeg',['-r',num2str(dpi)])
+                    figure(1233)
+                    clf
+                    hold on
+                    plot(time*1000,zeroed_post_y'*1000,'k-','Color',[.8 .8 .8])
+                    plot(time*1000,nanmean(zeroed_post_y')*1000,'k-','LineWidth',2)
+                    axis tight
+                    xlabel('time (ms)')
+                    ylabel('pre Vm (mV)')
+                    set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
+                    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
+                    print(gcf,[dirs.figuresdir,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-GJ-post.jpg'],'-djpeg',['-r',num2str(dpi)])
+                end
                 
                 
                 
