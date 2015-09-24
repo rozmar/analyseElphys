@@ -245,7 +245,7 @@ for filenum=length(files):-1:1%1:length(files) % végigmegyünk az összes file-
                         eventdata(NEXT).injectedcurrentatonset=(stimdata(sweepnum).y(onseth));
                         eventdata(NEXT).injectedrelativecurrentatonset=(stimdata(sweepnum).y(onseth)-stimdata(sweepnum).y(1));
                         
-                        eventdata(NEXT).stimulated=(eventdata(NEXT).injectedrelativecurrentatpeak+eventdata(NEXT).injectedrelativecurrentatonset)>0;
+                        eventdata(NEXT).stimulated=any([eventdata(NEXT).injectedrelativecurrentatpeak+eventdata(NEXT).injectedrelativecurrentatonset]>0);
                         
                         tttttempdiffs=stimdata(sweepnum).segmenths-apmaxh;
                         [~,tidx]=min(abs(tttttempdiffs));
