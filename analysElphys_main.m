@@ -1,3 +1,4 @@
+%%
 % alapadatok
 close all
 clear all
