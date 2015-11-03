@@ -145,7 +145,10 @@ valtozok.drugwashintime=120;
 valtozok.maxy0baselinedifference=.0005;
 valtozok.discardpostsweepswithap=0;
 
-for prenum=2:length(xlsdata) %going throught potential presynaptic cells
+[Selection,ok] = listdlg('ListString',{xlsdata.ID},'ListSize',[300 600]); % az XLS file alapján kiválasztjuk, hogy melyik file összes mérésén szeretnénk végigmenni
+
+for xlsnum=1:length(Selection) %going throught potential presynaptic cells
+    prenum=Selection(xlsnum);
     potpostidx=strcmp(xlsdata(prenum).HEKAfname,{xlsdata.HEKAfname}); %selecting the cells that may have been recorded simultaneously
     potpostidx(prenum)=0;
     if sum(potpostidx)>0
@@ -323,7 +326,7 @@ for prenum=2:length(xlsdata) %going throught potential presynaptic cells
                     end
                     if stepback>=tracedataGJ(sweepnum).starth
                         kezdeth=1;
-                        nanelejen=stepback-starth;
+                        nanelejen=stepback-tracedataGJ(sweepnum).starth;
                     else
                         kezdeth=tracedataGJ(sweepnum).starth-stepback;
                         nanelejen=0;
@@ -421,19 +424,41 @@ for prenum=2:length(xlsdata) %going throught potential presynaptic cells
             time=-stepback*si:si:stepforward*si;
             sweeptodel=[];
             for sweepnum=1:length(tracedata)
-                if tracedata(sweepnum).apmaxh>stepback
-                    tracedata(sweepnum).pre_y=filter(b,a,tracedata(sweepnum).pre_y)';
-                    tracedata(sweepnum).post_y=filter(b,a,tracedata(sweepnum).post_y)';
-                    tracedata(sweepnum).pre_y=tracedata(sweepnum).pre_y(tracedata(sweepnum).apmaxh-stepback:tracedata(sweepnum).apmaxh+stepforward);
-                    tracedata(sweepnum).post_y=tracedata(sweepnum).post_y(tracedata(sweepnum).apmaxh-stepback:tracedata(sweepnum).apmaxh+stepforward);
+                
+                    if length(tracedata(sweepnum).pre_y)-stepforward<tracedata(sweepnum).apmaxh
+                        vegh=length(tracedata(sweepnum).pre_y);
+                        nanvegen=stepforward-(length(tracedata(sweepnum).pre_y)-tracedata(sweepnum).apmaxh);
+                    else
+                        vegh=tracedata(sweepnum).apmaxh+stepforward;
+                        nanvegen=0;
+                    end
+                    if stepback>=tracedata(sweepnum).apmaxh
+                        kezdeth=1;
+                        nanelejen=stepback-tracedata(sweepnum).apmaxh+1;
+                    else
+                        kezdeth=tracedata(sweepnum).apmaxh-stepback;
+                        nanelejen=0;
+                    end
+                    tempy=[ones(1,500)*tracedata(sweepnum).pre_y(1),tracedata(sweepnum).pre_y,ones(1,500)*tracedata(sweepnum).pre_y(end)];
+                    tempy=filter(b,a,tempy)';
+                    tracedata(sweepnum).pre_y=tempy(501:length(tracedata(sweepnum).pre_y)+500);
+                    tempy=[ones(1,500)*tracedata(sweepnum).post_y(1),tracedata(sweepnum).post_y,ones(1,500)*tracedata(sweepnum).post_y(end)];
+                    tempy=filter(b,a,tempy)';
+                    tracedata(sweepnum).post_y=tempy(501:length(tracedata(sweepnum).post_y)+500);
+                    
+                    
+                    tracedata(sweepnum).pre_y=[nan(nanelejen,1);tracedata(sweepnum).pre_y(kezdeth:vegh);nan(nanvegen,1)];
+                    tracedata(sweepnum).post_y=[nan(nanelejen,1);tracedata(sweepnum).post_y(kezdeth:vegh);nan(nanvegen,1)];
+                    tracedata(sweepnum).apmaxh=tracedata(sweepnum).apmaxh+nanelejen;
+                    
+%                     tracedata(sweepnum).pre_y=tracedata(sweepnum).pre_y(tracedata(sweepnum).apmaxh-stepback:tracedata(sweepnum).apmaxh+stepforward);
+%                     tracedata(sweepnum).post_y=tracedata(sweepnum).post_y(tracedata(sweepnum).apmaxh-stepback:tracedata(sweepnum).apmaxh+stepforward);
                     tracedata(sweepnum).post_y0=nanmean(tracedata(sweepnum).post_y(1:stepback));
                     tracedata(sweepnum).pre_y0=nanmean(tracedata(sweepnum).pre_y(1:stepback));
                     tracedata(sweepnum).post_y0sd=nanstd(tracedata(sweepnum).post_y(1:stepback));
-                else
-                    sweeptodel=[sweeptodel,sweepnum];
-                end
+                
             end
-            tracedata(sweeptodel)=[];
+%             tracedata(sweeptodel)=[];
             % plotting paired pulses
             if xlsdata(prenum).drugnum>0
                 ctrlidxes=find([tracedata.pre_realtime]<min([xlsdata(prenum).drugdata.DrugWashinTime]));
@@ -684,6 +709,8 @@ for prenum=2:length(xlsdata) %going throught potential presynaptic cells
     
 
 end
+return
+
 %% 
 %plotting IV
 dpi=600;
