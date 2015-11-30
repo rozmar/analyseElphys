@@ -29,7 +29,11 @@ for i=1:size(xlsdataraw,2)
 end
 varname='ID';
 for j=2:size(xlsdataraw,1)
-    xlsdata(j-1).(varname)=[xlsdata(j-1).HEKAfname,'_',xlsdata(j-1).G_S_C];
+    if isfield(xlsdata,'HEKAFfname')
+        xlsdata(j-1).(varname)=[xlsdata(j-1).HEKAfname,'_',xlsdata(j-1).G_S_C];
+    else
+        xlsdata(j-1).(varname)=[xlsdata(j-1).AXONfname,'_',xlsdata(j-1).Cellname];
+    end
     xlsdata(j-1).drugnum=0;
     for i=1:length(drugnameidx)
         if ~any(strfind(cell2mat(xlsdataraw(j,drugnameidx(i))),'NaN'))

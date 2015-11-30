@@ -1,4 +1,4 @@
-function sdvalue=aE_calculatebaselineSD(time,y,valtozok)
+function sdvalue=aE_calculatebaselineSD(time,y,valtozok,sdval)
 si=mode(diff(time));
 step=round(valtozok.steptime/si);
 stepback=ceil(step/2);
@@ -12,7 +12,7 @@ dyf=imfilter(dy,fspecial('average', [1,diffmovingstep]));
 tdyf=dyf;
 temptime=time(1:end-1);
 sdv=std(tdyf);
-while max(abs(tdyf))>3*sdv | max(abs(tdyf))>10 % törölgetjük a valószínűsíthető eseményeket, amíg van az adat deriváltjában egy adott érték feletti érték, vagy 3SD-n kívül van bármely derivált érték
+while max(abs(tdyf))>sdval*sdv | max(abs(tdyf))>10 % törölgetjük a valószínűsíthető eseményeket, amíg van az adat deriváltjában egy adott érték feletti érték, vagy 3SD-n kívül van bármely derivált érték
     [~,loc]=max(abs(tdyf));
     if tdyf(loc)<0
         loc1=loc-1;

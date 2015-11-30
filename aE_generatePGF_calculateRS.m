@@ -1,4 +1,6 @@
 function [stimdata]=aE_generatePGF_calculateRS(rawdata,plotRSvalues,RSbaselinelength,RSrisetime,poolRStime)
+
+
 %creating PGF data, calculating RS
 stimdata=struct;
 RSs=[];

@@ -1,4 +1,5 @@
 function aE_findevents(valtozok,dirs)
+sdval=5;
 files=dir(dirs.bridgeddir);
 files([files.isdir])=[];
 for filenum=length(files):-1:1%1:length(files) % végigmegyünk az összes file-n
@@ -8,8 +9,8 @@ for filenum=length(files):-1:1%1:length(files) % végigmegyünk az összes file-
         eventdata=struct;
         threshdys=NaN(size(bridgeddata));
         for sweepnum=1:length(bridgeddata) % threshold kalkulálása
-            if strcmp(bridgeddata(sweepnum).channellabel(1:end-2),'Vmon') && strcmp(stimdata(sweepnum).Amplifiermode,'C-Clamp')
-                sdvalue=aE_calculatebaselineSD(0:bridgeddata(sweepnum).si:(length(bridgeddata(sweepnum).y)-1)*bridgeddata(sweepnum).si,bridgeddata(sweepnum).y,valtozok);
+            if (strcmp(bridgeddata(sweepnum).channellabel(1:end-2),'Vmon') | strcmp(bridgeddata(sweepnum).channellabel(1:end-2),'IN')) && strcmp(stimdata(sweepnum).Amplifiermode,'C-Clamp')
+                sdvalue=aE_calculatebaselineSD(0:bridgeddata(sweepnum).si:(length(bridgeddata(sweepnum).y)-1)*bridgeddata(sweepnum).si,bridgeddata(sweepnum).y,valtozok,sdval);
                 threshdys(sweepnum)=sdvalue;
             end
             progressbar(sweepnum/length(bridgeddata),[],[],[]);
@@ -23,8 +24,9 @@ for filenum=length(files):-1:1%1:length(files) % végigmegyünk az összes file-
         
         %
         % itt kezdődik az események keresése
+        %%
         for sweepnum=1:length(bridgeddata)
-            if strcmp(bridgeddata(sweepnum).channellabel(1:4),'Vmon') && strcmp(stimdata(sweepnum).Amplifiermode,'C-Clamp')
+            if (strcmp(bridgeddata(sweepnum).channellabel(1:4),'Vmon') | strcmp(bridgeddata(sweepnum).channellabel(1:end-2),'IN')) && strcmp(stimdata(sweepnum).Amplifiermode,'C-Clamp')
                 %serkentő események keresése
                 
                 
@@ -245,7 +247,7 @@ for filenum=length(files):-1:1%1:length(files) % végigmegyünk az összes file-
                         eventdata(NEXT).injectedcurrentatonset=(stimdata(sweepnum).y(onseth));
                         eventdata(NEXT).injectedrelativecurrentatonset=(stimdata(sweepnum).y(onseth)-stimdata(sweepnum).y(1));
                         
-                        eventdata(NEXT).stimulated=(eventdata(NEXT).injectedrelativecurrentatpeak+eventdata(NEXT).injectedrelativecurrentatonset)>0;
+                        eventdata(NEXT).stimulated=any([eventdata(NEXT).injectedrelativecurrentatpeak+eventdata(NEXT).injectedrelativecurrentatonset]>0);
                         
                         tttttempdiffs=stimdata(sweepnum).segmenths-apmaxh;
                         [~,tidx]=min(abs(tttttempdiffs));
