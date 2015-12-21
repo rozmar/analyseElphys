@@ -1,5 +1,5 @@
 function aE_generatePGF_bridge_HEKA(dirs,xlsdata,overwrite)
-
+xlsdataold=xlsdata;
 plotRSvalues=0;
 plotbridgedsweeps=0;
 RSbaselinelength=.00005; %ennyi időt átlagol össze a feszültség megmérésekor
@@ -37,6 +37,9 @@ for fnum=length(files):-1:1%1:length(files)
             bridgeddata(sweepnum).realtime=rawdata(sweepnum).realtime;
             bridgeddata(sweepnum).timertime=rawdata(sweepnum).timertime;
             bridgeddata(sweepnum).channellabel=rawdata(sweepnum).channellabel;
+            if isfield(rawdata, 'stimulation')
+                bridgeddata(sweepnum).stimulation=rawdata(sweepnum).stimulation;
+            end
             if plotbridgedsweeps==1 & max(diff(stimdata(sweepnum).y))>100*10^-12
                 figure(12211)
                 clf

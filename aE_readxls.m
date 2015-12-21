@@ -29,7 +29,7 @@ for i=1:size(xlsdataraw,2)
 end
 varname='ID';
 for j=2:size(xlsdataraw,1)
-    if isfield(xlsdata,'HEKAFfname')
+    if isfield(xlsdata,'HEKAfname')
         xlsdata(j-1).(varname)=[xlsdata(j-1).HEKAfname,'_',xlsdata(j-1).G_S_C];
     else
         xlsdata(j-1).(varname)=[xlsdata(j-1).AXONfname,'_',xlsdata(j-1).Cellname];
@@ -54,10 +54,10 @@ for j=2:size(xlsdataraw,1)
             end
             % a drugdata-ban az időket korrigáljuk, hogyha az éjféli
             % váltásnál elrontja a HEKA
-            if xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashinTime<xlsdata(j-1).startT
+            if xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashinTime<xlsdata(j-1).startT & xlsdata(j-1).startT>22*3600 & xlsdata(j-1).endT<2*3600 
                 xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashinTime=xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashinTime+24*3600;
             end
-            if xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashoutTime<xlsdata(j-1).startT
+            if xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashoutTime<xlsdata(j-1).startT & xlsdata(j-1).startT>22*3600 & xlsdata(j-1).endT<2*3600 
                 xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashoutTime=xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashoutTime+24*3600;
             end
         end
