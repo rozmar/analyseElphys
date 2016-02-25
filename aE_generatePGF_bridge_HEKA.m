@@ -7,17 +7,19 @@ RSrisetime=.00005; %ennyi időt hagy ki az áram injekcióját követően
 poolRStime=30; %ebben az idoablakban atlagolja ossze az RS-t a sweep-ek kozott
 files=dir(dirs.rawexporteddir);
 files([files.isdir])=[];
-for fnum=length(files):-1:1%1:length(files)
+progressbar('generating PGF and bridge balancing')
+for fnum=1:length(files)
     fname=files(fnum).name(1:end-4);
 %     load([dirs.rawexporteddir,files(fnum).name],'xlsidx');
-    xlsidx=find(strcmp({xlsdata.ID},fname));
+    xlsidx=find(strcmp({xlsdataold.ID},fname));
     if isempty(xlsidx)
         disp(['xls file és filenevek közti összetűzés'])
         pause
     end
-    a=dir([dirs.bridgeddir,xlsdata(xlsidx).ID,'.mat']);
+    a=dir([dirs.bridgeddir,xlsdataold(xlsidx).ID,'.mat']);
     if isempty(a) | overwrite==1
-        load([dirs.rawexporteddir,files(fnum).name]);
+        temp=load([dirs.rawexporteddir,files(fnum).name]);
+        rawdata=temp.rawdata;
         xlsdata=xlsdataold;
         % realtime past midnight error
         idxtocorrect=find([rawdata.realtime]<rawdata(1).realtime);
@@ -30,6 +32,7 @@ for fnum=length(files):-1:1%1:length(files)
         stimdata=aE_generatePGF_calculateRS(rawdata,plotRSvalues,RSbaselinelength,RSrisetime,poolRStime);  % generating PGF data, calculating RS
         %bridge balancing
         bridgeddata=struct;
+        lightdata=struct;
         for sweepnum=1:length(rawdata)
             time=[0:rawdata(sweepnum).si:rawdata(sweepnum).si*(length(stimdata(sweepnum).y)-1)];
             bridgeddata(sweepnum).y=rawdata(sweepnum).y-stimdata(sweepnum).yforbridge*stimdata(sweepnum).RS;
@@ -57,13 +60,24 @@ for fnum=length(files):-1:1%1:length(files)
                 title('bridged data')
                 pause
             end
+            lightdata(sweepnum).si=rawdata(sweepnum).si;
+            lightdata(sweepnum).realtime=rawdata(sweepnum).realtime;
+            lightdata(sweepnum).timertime=rawdata(sweepnum).timertime;
+            lightdata(sweepnum).channellabel=rawdata(sweepnum).channellabel;
+            lightdata(sweepnum).preamplnum=stimdata(sweepnum).preamplnum;
+            lightdata(sweepnum).Amplifiermode=stimdata(sweepnum).Amplifiermode;
+            lightdata(sweepnum).segmenths=stimdata(sweepnum).segmenths;
+            lightdata(sweepnum).RS=stimdata(sweepnum).RS;
+            lightdata(sweepnum).ID=xlsdataold(xlsidx).ID;
         end
         %bridge balancing
-        save([dirs.bridgeddir,xlsdata(xlsidx).ID],'stimdata','bridgeddata','RSbaselinelength','RSrisetime','poolRStime','xlsdata','xlsidx','-v7.3')
-        disp([xlsdata(xlsidx).ID,' done (bridge_stim)'])
+        xlsdata=xlsdataold;
+        save([dirs.bridgeddir,xlsdataold(xlsidx).ID],'lightdata','stimdata','bridgeddata','RSbaselinelength','RSrisetime','poolRStime','xlsdata','xlsidx','-v7.3')
+        disp([xlsdataold(xlsidx).ID,' done (bridge_stim)'])
     else
-        disp([xlsdata(xlsidx).ID,' already done .. skipped (bridge_stim)'])
+        disp([xlsdataold(xlsidx).ID,' already done .. skipped (bridge_stim)'])
     end
+    progressbar(fnum/length(files))
 end
 % return
 % % % %% search for NAN data ezek jottek ki eddig: 1410293rm_4_1_3.mat 1211291rm_4_3_4.mat
