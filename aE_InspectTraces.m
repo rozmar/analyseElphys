@@ -1,5 +1,10 @@
 function varargout = aE_InspectTraces(varargin)
 % AE_INSPECTTRACES MATLAB code for aE_InspectTraces.fig
+
+%USAGE: aE_InspectTraces(dirs,xlsdata) - after starting
+%analyseElphys_main.m
+
+
 %      AE_INSPECTTRACES, by itself, creates a new AE_INSPECTTRACES or raises the existing
 %      singleton*.
 %

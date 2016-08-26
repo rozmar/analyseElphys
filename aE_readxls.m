@@ -45,7 +45,16 @@ for j=2:size(xlsdataraw,1)
             xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashinTime=cell2mat(xlsdataraw(j,drugtimeidx(xlsdata(j-1).drugnum)));
             xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashoutTime=cell2mat(xlsdataraw(j,drugwashtimeidx(xlsdata(j-1).drugnum)));
             xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration=cell2mat(xlsdataraw(j,drugconcidx(xlsdata(j-1).drugnum)));
-            
+            if any(strfind(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration,'mM'))
+                szam=str2num(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration(1:length(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration)-2));
+            elseif any(strfind(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration,'microM'))
+                szam=str2num(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration(1:length(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration)-6))/1000;
+            elseif any(strfind(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration,'NaN'))
+                szam=nan;
+            else
+                disp(['error - Unknown unit in ', xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration])
+                pause
+            end
             if ischar(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashinTime)
                 xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashinTime=str2num(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugWashinTime);
             end

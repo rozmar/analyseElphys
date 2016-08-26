@@ -29,6 +29,7 @@ for sweepnum=1:length(pretraces.stimdata)
             prehypsweeps(NEXT).endh=pretraces.stimdata(sweepnum).segmenths(potentialIDXes(potidxi)+1);
             prehypsweeps(NEXT).realtime=pretraces.bridgeddata(sweepnum).realtime;
             prehypsweeps(NEXT).timertime=pretraces.bridgeddata(sweepnum).timertime;
+            
         end
     end
 end
@@ -39,25 +40,31 @@ end
 
 if ~isempty(fieldnames(prehypsweeps))
     for prehypsweepnum=1:length(prehypsweeps)
-        postsweepnum=find(prehypsweeps(prehypsweepnum).realtime==[posttraces.bridgeddata.realtime] | prehypsweeps(prehypsweepnum).timertime==[posttraces.bridgeddata.timertime]) ;
-        if ~isempty(postsweepnum)  & ~any([postevents.eventdata.maxtime]>prehypsweeps(prehypsweepnum).realtime+prehypsweeps(prehypsweepnum).starth*prehypsweeps(prehypsweepnum).si-valtozok.gj_baselinelength & [postevents.eventdata.maxtime]<prehypsweeps(prehypsweepnum).realtime+prehypsweeps(prehypsweepnum).endh*prehypsweeps(prehypsweepnum).si+valtozok.gj_baselinelength)%
-            % csak akkor érdekel minket, hogyha nincs beinjektált
-            % áram a másik sejtben
-            poststim=posttraces.stimdata(postsweepnum).y;
-            if poststim(prehypsweeps(prehypsweepnum).starth-3) == poststim(prehypsweeps(prehypsweepnum).starth+3)
-                if isempty(fieldnames(tracedataGJ))
-                    NEXT=1;
-                else
-                    NEXT=length(tracedataGJ)+1;
-                end
-                fieldek=fieldnames(pretraces.bridgeddata);
-                for finum=1:length(fieldek)
-                    tracedataGJ(NEXT).(['pre_',fieldek{finum}])=pretraces.bridgeddata(prehypsweeps(prehypsweepnum).sweepnum).(fieldek{finum});
-                    tracedataGJ(NEXT).(['post_',fieldek{finum}])=posttraces.bridgeddata(postsweepnum).(fieldek{finum});
-                    tracedataGJ(NEXT).endh=prehypsweeps(prehypsweepnum).endh;
-                    tracedataGJ(NEXT).starth=prehypsweeps(prehypsweepnum).starth;
-                    tracedataGJ(NEXT).length=prehypsweeps(prehypsweepnum).length;
-                    tracedataGJ(NEXT).current=round(prehypsweeps(prehypsweepnum).current*10^12);
+        postsweepnums=find(prehypsweeps(prehypsweepnum).realtime==[posttraces.bridgeddata.realtime] | prehypsweeps(prehypsweepnum).timertime==[posttraces.bridgeddata.timertime]) ;
+        for postsweepnumi=1:length(postsweepnums) % if more channels are recorded at the same time, multiple channels will be present
+            postsweepnum=postsweepnums(postsweepnumi);
+            if ~any([postevents.eventdata.maxtime]>prehypsweeps(prehypsweepnum).realtime+prehypsweeps(prehypsweepnum).starth*prehypsweeps(prehypsweepnum).si-valtozok.gj_baselinelength & [postevents.eventdata.maxtime]<prehypsweeps(prehypsweepnum).realtime+prehypsweeps(prehypsweepnum).endh*prehypsweeps(prehypsweepnum).si+valtozok.gj_baselinelength)%
+                % csak akkor érdekel minket, hogyha nincs beinjektált
+                % áram a másik sejtben
+                presweepnum=prehypsweeps(prehypsweepnum).sweepnum;
+                if strcmp(pretraces.stimdata(presweepnum).Amplifiermode,'C-Clamp') & strcmp(posttraces.stimdata(postsweepnum).Amplifiermode,'C-Clamp') & any(strfind(pretraces.bridgeddata(presweepnum).channellabel,'Vmon')) & any(strfind(posttraces.bridgeddata(postsweepnum).channellabel,'Vmon')) %both cells must be in c-clamp mode, only Vmons anre considered
+                    poststim=posttraces.stimdata(postsweepnum).y;
+                    if poststim(prehypsweeps(prehypsweepnum).starth-3) == poststim(prehypsweeps(prehypsweepnum).starth+3)
+                        if isempty(fieldnames(tracedataGJ))
+                            NEXT=1;
+                        else
+                            NEXT=length(tracedataGJ)+1;
+                        end
+                        fieldek=fieldnames(pretraces.bridgeddata);
+                        for finum=1:length(fieldek)
+                            tracedataGJ(NEXT).(['pre_',fieldek{finum}])=pretraces.bridgeddata(prehypsweeps(prehypsweepnum).sweepnum).(fieldek{finum});
+                            tracedataGJ(NEXT).(['post_',fieldek{finum}])=posttraces.bridgeddata(postsweepnum).(fieldek{finum});
+                            tracedataGJ(NEXT).endh=prehypsweeps(prehypsweepnum).endh;
+                            tracedataGJ(NEXT).starth=prehypsweeps(prehypsweepnum).starth;
+                            tracedataGJ(NEXT).length=prehypsweeps(prehypsweepnum).length;
+                            tracedataGJ(NEXT).current=round(prehypsweeps(prehypsweepnum).current*10^12);
+                        end
+                    end
                 end
             end
         end

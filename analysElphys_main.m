@@ -1,6 +1,6 @@
 %%
 close all
-% clear all
+clear all
 projectnames={'CB1elphys','InVivo','Persistent-ChRstim','persistent firing'};
 % projectnum=3;
 
@@ -23,6 +23,7 @@ if projectnum==1;
     dirs.rawexporteddir=[dirs.basedir,'Exported_raw/'];
     dirs.bridgeddir=[dirs.basedir,'Bridged_stim/'];
     dirs.eventdir=[dirs.basedir,'Events/'];
+    dirs.eventparaleldir=[dirs.basedir,'Events/paralel/'];
     dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
     dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
     dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
@@ -36,6 +37,7 @@ elseif projectnum==2;
     dirs.rawdir=[locations.tgtardir,'AXONdata/'];
     dirs.bridgeddir=[dirs.basedir,'Bridged_stim/'];
     dirs.eventdir=[dirs.basedir,'Events/'];
+    dirs.eventparaleldir=[dirs.basedir,'Events/paralel/'];
     % dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
     % dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
     % dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
@@ -49,6 +51,7 @@ elseif projectnum==3;
     dirs.rawexporteddir=[dirs.basedir,'Exported_raw/'];
     dirs.bridgeddir=[dirs.basedir,'Bridged_stim/'];
     dirs.eventdir=[dirs.basedir,'Events/'];
+    dirs.eventparaleldir=[dirs.basedir,'Events/paralel/'];
     %     dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
     %     dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
     %     dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
@@ -69,6 +72,7 @@ elseif projectnum==4
     dirs.figuresdir=[dirs.basedir,'figures/'];
     amplifier='HEKA';
     xlsdata=aE_readxls([dirs.basedir,'persistentdata_windows.xls']);
+    dirs.v0distdir=[dirs.basedir,'v0_dist/'];
 end
 %%
 if strcmp(amplifier,'AXON')
@@ -99,7 +103,7 @@ valtozok.steptime=.0005; %s
 valtozok.eventminsdval=3;
 valtozok.apthreshval=10;
 parallelcount=4;
-aE_findevents(valtozok,dirs,parallelcount)
+aE_findevents(valtozok,dirs,parallelcount,xlsdata)
 
 if projectnum==4
     %% defining stimepochs and spike clusters
@@ -114,6 +118,29 @@ if projectnum==4
     valtozok_stimepochs.plotpersistentgroups=0;
     persistent_definestimepoch(dirs,valtozok_stimepochs)
     
+    %% determining TAU and V0
+valtozok_tau.timeconstanthossz=.100; %s
+valtozok_tau.stepstocheck=20;%*2
+
+valtozok_states.overwrite=0;
+valtozok_states.ordfiltorder=.2;
+valtozok_states.ordfiltlength=.02; %s
+
+
+
+files=dir(dirs.bridgeddir);
+files([files.isdir])=[];
+for fnum=1:length(files)
+    progressbar(fnum/length(files),[],[])
+    fname=files(fnum).name;
+    a=dir([dirs.v0distdir,fname]);
+    if isempty(a) | valtozok_states.overwrite==1
+        taudata=persistent_gettau(valtozok_tau,dirs,fname);
+        persistent_getv0dist(dirs,valtozok_states,valtozok_tau,taudata,fname);
+    end
+    
+
+end
 end
 return
 %% uj cucc
@@ -136,14 +163,16 @@ end
 %% puffnlightstim
 aE_persistent_puffnlightstim %this script plots puffing and light stim experiments.. ap waveforms and onsets are analysed - base values are needed from this main script
 %% check electrotonic and chemical connectivity
-valtozok.plot.dpi=600;
+valtozok.plot.dpi=150;
 valtozok.plot.xcm=20;
 valtozok.plot.ycm=14;
-valtozok.plot.betumeret=8;
+valtozok.plot.betumeret=14;
+valtozok.plot.betutipus='Arial';
 valtozok.plot.axesvastagsag=2;
-
-valtozok.plot.xsize=valtozok.plot.dpi*xinch;
-valtozok.plot.ysize=valtozok.plot.dpi*yinch;
+valtozok.plot.xinch=valtozok.plot.xcm/2.54;
+valtozok.plot.yinch=valtozok.plot.ycm/2.54;
+valtozok.plot.xsize=valtozok.plot.dpi*valtozok.plot.xinch;
+valtozok.plot.ysize=valtozok.plot.dpi*valtozok.plot.yinch;
 
 
 valtozok.gj_baselinelength=.010;
@@ -163,9 +192,11 @@ valtozok.cutofffreq=1500;
 valtozok.drugwashintime=120;
 valtozok.maxy0baselinedifference=.0005;
 valtozok.discardpostsweepswithap=1;
-
+valtozok.postrecordingmode='C-Clamp';%'C-Clamp' or 'V-Clamp' or 'any'
+valtozok.prerecordingmode='C-Clamp';%'C-Clamp' or 'V-Clamp' or 'any'
 
 aE_checkGJandChemicalSynapse(valtozok,xlsdata,dirs)
+return
 %% plotting IV
 
 valtozok.plot.betumeret=8;
@@ -180,7 +211,7 @@ valtozok.plot.ysize=valtozok.plot.dpi*yinch;
 
 dothesecond=zeros(size(xlsdata));
 
-for prenum=47:length(xlsdata)
+for prenum=1:length(xlsdata)
     %     pause
     fname=[xlsdata(prenum).ID,'.mat'];
     HEKAfname=xlsdata(prenum).HEKAfname;

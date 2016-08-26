@@ -42,7 +42,13 @@ for sweepnum=1:length(rawdata)
     if strcmp(stimdata(sweepnum).Amplifiermode,'C-Clamp') & strcmp(rawdata(sweepnum).channellabel(1:end-2),'Vmon')
         stimstep=ceil(RSrisestep/2);
         stimdata(sweepnum).yforbridge=[stimdata(sweepnum).y(1:stimstep),stimdata(sweepnum).y(1:end-stimstep)];
-        stimdata(sweepnum).yforbridge=moving(stimdata(sweepnum).yforbridge,RSrisestep);
+        if RSrisestep==1
+            stimdata(sweepnum).yforbridge=stimdata(sweepnum).yforbridge';
+        else
+            stimdata(sweepnum).yforbridge=moving(stimdata(sweepnum).yforbridge,RSrisestep);
+        end
+        eltolas=ceil(RSrisestep/2);
+        stimdata(sweepnum).yforbridge=[ones(eltolas,1)*stimdata(sweepnum).yforbridge(1);stimdata(sweepnum).yforbridge(1:end-eltolas)];
         if size(stimdata(sweepnum).yforbridge,1)>size(stimdata(sweepnum).yforbridge,2)
             stimdata(sweepnum).yforbridge=stimdata(sweepnum).yforbridge';
         end
@@ -146,6 +152,11 @@ for sweepnum=1:length(rawdata)
         end
         stimdata(sweepnum).RS=nanmean(trs);
     end 
+end
+for sweepnum=1:length(rawdata) % if there is no RS measurement, RS is 0
+    if isnan(stimdata(sweepnum).RS)
+        stimdata(sweepnum).RS=0;
+    end
 end
 if plotRSvalues==1
     subplot(2,1,1)    

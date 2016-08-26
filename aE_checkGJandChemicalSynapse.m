@@ -1,7 +1,5 @@
 function aE_checkGJandChemicalSynapse(valtozok,xlsdata,dirs)
 % clear valtozok
-xinch=valtozok.plot.xcm/2.54;
-yinch=valtozok.plot.ycm/2.54;
 
 [Selection,ok] = listdlg('ListString',{xlsdata.ID},'ListSize',[300 600]); % az XLS file alapján kiválasztjuk, hogy melyik file összes mérésén szeretnénk végigmenni
 
@@ -55,7 +53,7 @@ for xlsnum=1:length(Selection) %going throught potential presynaptic cells
                 %                     return
                 xlabel('time (ms)')
                 ylabel('pre Vm (mV)')
-                set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])%,'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000
+                set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Fontname',valtozok.plot.betutipus,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])%,'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000
                 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
                 print(gcf,[dirs.figuresdirnow,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-GJ-pre.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
                 figure(1233)
@@ -74,13 +72,38 @@ for xlsnum=1:length(Selection) %going throught potential presynaptic cells
                 %                     return
                 xlabel('time (ms)')
                 ylabel('pre Vm (mV)')
-                set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])%,'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000
+                set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Fontname',valtozok.plot.betutipus,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])%,'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000
                 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
                 print(gcf,[dirs.figuresdirnow,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-GJ-post.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
             end
             
             [tracedata,time]=aE_testforChemicalSynapse(valtozok,dirs,pretraces,posttraces,preevents,postevents); %extracting spike triggered data
+            todel=false(size(tracedata));
             
+            if strcmp(valtozok.prerecordingmode,'C-Clamp')
+                todel=todel|~strcmp({tracedata.pre_Amplifiermode},valtozok.prerecordingmode);
+                for tempi=1:length(tracedata)
+                    todel(tempi)=todel(tempi)|any(strfind(tracedata(tempi).pre_channellabel,'Imon'));
+                end
+            elseif strcmp(valtozok.prerecordingmode,'V-Clamp')
+                todel=todel|~strcmp({tracedata.pre_Amplifiermode},valtozok.prerecordingmode);
+                for tempi=1:length(tracedata)
+                    todel(tempi)=todel(tempi)|any(strfind(tracedata(tempi).pre_channellabel,'Vmon'));
+                end
+            end
+            
+            if strcmp(valtozok.postrecordingmode,'C-Clamp')
+                todel=todel|~strcmp({tracedata.post_Amplifiermode},valtozok.postrecordingmode);
+                for tempi=1:length(tracedata)
+                    todel(tempi)=todel(tempi)|any(strfind(tracedata(tempi).post_channellabel,'Imon'));
+                end
+            elseif strcmp(valtozok.postrecordingmode,'V-Clamp')
+                todel=todel|~strcmp({tracedata.post_Amplifiermode},valtozok.postrecordingmode);
+                for tempi=1:length(tracedata)
+                    todel(tempi)=todel(tempi)|any(strfind(tracedata(tempi).post_channellabel,'Vmon'));
+                end
+            end
+            tracedata(todel)=[];
             if length(tracedata)>1
                 
                 if xlsdata(prenum).drugnum>0
@@ -129,9 +152,12 @@ for xlsnum=1:length(Selection) %going throught potential presynaptic cells
                 axis tight
                 xlabel('time (ms)')
                 ylabel('pre Vm (mV)')
-                set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
+                
+                set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Fontname',valtozok.plot.betutipus,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
                 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
                 print(gcf,[dirs.figuresdirnow,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-ctrl-pre.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
+
+
                 clf
                 hold on
                 plot(time*1000,(bsxfun(@(x,y) x-y, [tracedata(ctrlidxes).post_y], y0s(ctrlidxes))')*1000,'k-','Color',[.8 .8 .8])
@@ -147,7 +173,7 @@ for xlsnum=1:length(Selection) %going throught potential presynaptic cells
                 xlabel('time (ms)')
                 ylabel('post Vm (mV)')
                 
-                set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
+                set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Fontname',valtozok.plot.betutipus,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
                 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
                 print(gcf,[dirs.figuresdirnow,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-ctrl-post.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
                 figure(2)
@@ -158,7 +184,7 @@ for xlsnum=1:length(Selection) %going throught potential presynaptic cells
                 hb=bar(xout*1000,[nc]','grouped');
                 xlabel('post V0 (mV)')
                 ylabel('count')
-                set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])
+                set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Fontname',valtozok.plot.betutipus,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])
                 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
                 print(gcf,[dirs.figuresdirnow,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-ctrl-v0hist.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
                 % dividing sweeps according to drugs
@@ -284,7 +310,7 @@ for xlsnum=1:length(Selection) %going throught potential presynaptic cells
                         axis tight
                         xlabel('time (ms)')
                         ylabel('pre Vm (mV)')
-                        set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
+                        set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Fontname',valtozok.plot.betutipus,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
                         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
                         print(gcf,[dirs.figuresdirnow,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-',drugname,'-pre.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
                         
@@ -304,7 +330,7 @@ for xlsnum=1:length(Selection) %going throught potential presynaptic cells
                         set(gca,'Ylim',ylimits);
                         xlabel('time (ms)')
                         ylabel('post Vm (mV)')
-                        set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
+                        set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Fontname',valtozok.plot.betutipus,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm],'Xtick',[-valtozok.baselinelength:valtozok.baselinelength:valtozok.psplength]*1000)
                         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
                         print(gcf,[dirs.figuresdirnow,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-',drugname,'-post.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
                         figure(2)
@@ -318,7 +344,7 @@ for xlsnum=1:length(Selection) %going throught potential presynaptic cells
                         set(hb(2),'FaceColor',[1 0 0])
                         xlabel('post V0 (mV)')
                         ylabel('count')
-                        set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])
+                        set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Fontname',valtozok.plot.betutipus,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])
                         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
                         print(gcf,[dirs.figuresdirnow,xlsdata(prenum).ID,'-to-',xlsdata(findpostidxes(potpostnum)).ID,'-',drugname,'-v0hist.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
                         end

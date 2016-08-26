@@ -25,13 +25,18 @@ for preapnum=1:length(neededapmaxtimes)
         else
             NEXT=length(tracedata)+1;
         end
-        fieldek=fieldnames(pretraces.bridgeddata);
-        for finum=1:length(fieldek)
-            tracedata(NEXT).(['pre_',fieldek{finum}])=pretraces.bridgeddata(neededapsweepnums(preapnum)).(fieldek{finum});
-            tracedata(NEXT).(['post_',fieldek{finum}])=posttraces.bridgeddata(postsweepidx).(fieldek{finum});
+        fieldek_bridgeddata=fieldnames(pretraces.bridgeddata);
+        fieldek_stimdata={'Amplifiermode','preamplnum'};
+        for finum=1:length(fieldek_bridgeddata)
+            tracedata(NEXT).(['pre_',fieldek_bridgeddata{finum}])=pretraces.bridgeddata(neededapsweepnums(preapnum)).(fieldek_bridgeddata{finum});
+            tracedata(NEXT).(['post_',fieldek_bridgeddata{finum}])=posttraces.bridgeddata(postsweepidx).(fieldek_bridgeddata{finum});
             tracedata(NEXT).apmaxh=neededapmaxhs(preapnum);
-            
         end
+        for finum=1:length(fieldek_stimdata)
+            tracedata(NEXT).(['pre_',fieldek_stimdata{finum}])=pretraces.stimdata(neededapsweepnums(preapnum)).(fieldek_stimdata{finum});
+            tracedata(NEXT).(['post_',fieldek_stimdata{finum}])=posttraces.stimdata(postsweepidx).(fieldek_stimdata{finum});
+        end
+        tracedata(NEXT).(['pre_Amplifiermode'])=pretraces.stimdata(neededapsweepnums(preapnum)).Amplifiermode;
     end
 end
 if ~isempty(fieldnames(tracedata))
