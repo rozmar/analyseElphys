@@ -30,6 +30,7 @@ for fnum=1:length(files)
         %     xlsdata=temp.xlsdata;
         %     xlsidx=temp.xlsidx;
         stimdata=aE_generatePGF_calculateRS(rawdata,plotRSvalues,RSbaselinelength,RSrisetime,poolRStime);  % generating PGF data, calculating RS
+        
         %bridge balancing
         bridgeddata=struct;
         lightdata=struct;
