@@ -79,28 +79,29 @@ for xlsnum=1:length(Selection) %going throught potential presynaptic cells
             
             [tracedata,time]=aE_testforChemicalSynapse(valtozok,dirs,pretraces,posttraces,preevents,postevents); %extracting spike triggered data
             todel=false(size(tracedata));
-            
-            if strcmp(valtozok.prerecordingmode,'C-Clamp')
-                todel=todel|~strcmp({tracedata.pre_Amplifiermode},valtozok.prerecordingmode);
-                for tempi=1:length(tracedata)
-                    todel(tempi)=todel(tempi)|any(strfind(tracedata(tempi).pre_channellabel,'Imon'));
+            if length(tracedata)>1
+                if strcmp(valtozok.prerecordingmode,'C-Clamp')
+                    todel=todel|~strcmp({tracedata.pre_Amplifiermode},valtozok.prerecordingmode);
+                    for tempi=1:length(tracedata)
+                        todel(tempi)=todel(tempi)|any(strfind(tracedata(tempi).pre_channellabel,'Imon'));
+                    end
+                elseif strcmp(valtozok.prerecordingmode,'V-Clamp')
+                    todel=todel|~strcmp({tracedata.pre_Amplifiermode},valtozok.prerecordingmode);
+                    for tempi=1:length(tracedata)
+                        todel(tempi)=todel(tempi)|any(strfind(tracedata(tempi).pre_channellabel,'Vmon'));
+                    end
                 end
-            elseif strcmp(valtozok.prerecordingmode,'V-Clamp')
-                todel=todel|~strcmp({tracedata.pre_Amplifiermode},valtozok.prerecordingmode);
-                for tempi=1:length(tracedata)
-                    todel(tempi)=todel(tempi)|any(strfind(tracedata(tempi).pre_channellabel,'Vmon'));
-                end
-            end
-            
-            if strcmp(valtozok.postrecordingmode,'C-Clamp')
-                todel=todel|~strcmp({tracedata.post_Amplifiermode},valtozok.postrecordingmode);
-                for tempi=1:length(tracedata)
-                    todel(tempi)=todel(tempi)|any(strfind(tracedata(tempi).post_channellabel,'Imon'));
-                end
-            elseif strcmp(valtozok.postrecordingmode,'V-Clamp')
-                todel=todel|~strcmp({tracedata.post_Amplifiermode},valtozok.postrecordingmode);
-                for tempi=1:length(tracedata)
-                    todel(tempi)=todel(tempi)|any(strfind(tracedata(tempi).post_channellabel,'Vmon'));
+                
+                if strcmp(valtozok.postrecordingmode,'C-Clamp')
+                    todel=todel|~strcmp({tracedata.post_Amplifiermode},valtozok.postrecordingmode);
+                    for tempi=1:length(tracedata)
+                        todel(tempi)=todel(tempi)|any(strfind(tracedata(tempi).post_channellabel,'Imon'));
+                    end
+                elseif strcmp(valtozok.postrecordingmode,'V-Clamp')
+                    todel=todel|~strcmp({tracedata.post_Amplifiermode},valtozok.postrecordingmode);
+                    for tempi=1:length(tracedata)
+                        todel(tempi)=todel(tempi)|any(strfind(tracedata(tempi).post_channellabel,'Vmon'));
+                    end
                 end
             end
             tracedata(todel)=[];
