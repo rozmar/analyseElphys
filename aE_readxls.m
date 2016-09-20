@@ -49,6 +49,8 @@ for j=2:size(xlsdataraw,1)
                 szam=str2num(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration(1:length(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration)-2));
             elseif any(strfind(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration,'microM'))
                 szam=str2num(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration(1:length(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration)-6))/1000;
+            elseif any(strfind(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration,'nanoM'))
+                szam=str2num(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration(1:length(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration)-6))/1000000;
             elseif any(strfind(xlsdata(j-1).drugdata(xlsdata(j-1).drugnum).DrugConcentration,'NaN'))
                 szam=nan;
             else
