@@ -8,6 +8,11 @@ prediffs=[inf,apdiffs];
 postdiffs=[apdiffs,inf];
 postpostdiffs=[apdiffs(2:end),inf,inf]; %time after the second spike in the paired pulse protocol should be more than this value
 if valtozok.pairedpulseneeded==1
+    if isnan(valtozok.pairedpulsedelay)
+        [nelements,xcenters]=hist(apdiffs,[0:valtozok.pairedpulsejitter:round(1000/valtozok.pairedpulsejitter)*valtozok.pairedpulsejitter]);
+        [~,midx]=max(nelements);
+        valtozok.pairedpulsedelay=xcenters(midx);
+    end
     neededapidx=find(prediffs>valtozok.noAPbeforetheevent & postdiffs<valtozok.pairedpulsedelay+valtozok.pairedpulsejitter/2 & postdiffs>valtozok.pairedpulsedelay-valtozok.pairedpulsejitter/2 & postpostdiffs>valtozok.noAPaftertheevent); %criteria to select presynaptic APs
 else
     neededapidx=find(prediffs>valtozok.noAPbeforetheevent & postdiffs>valtozok.noAPaftertheevent); %criteria to select presynaptic APs
@@ -24,6 +29,16 @@ for preapnum=1:length(neededapmaxtimes)
             NEXT=1;
         else
             NEXT=length(tracedata)+1;
+        end
+        if length(postsweepidx)>1 % if current and voltage is recorded at the same time, only the relevant will be stored
+            preamplnum=num2str(posttraces.stimdata(postsweepidx(1)).preamplnum);
+            if strcmp(posttraces.stimdata(postsweepidx(1)).Amplifiermode,'C-Clamp')
+                neededidx=find(strcmp({posttraces.bridgeddata(postsweepidx).channellabel},['Vmon-',preamplnum]),1,'first');
+                postsweepidx=postsweepidx(neededidx);
+            else
+                neededidx=find(strcmp({posttraces.bridgeddata(postsweepidx).channellabel},['Imon-',preamplnum]),1,'first');
+                postsweepidx=postsweepidx(neededidx);
+            end
         end
         fieldek_bridgeddata=fieldnames(pretraces.bridgeddata);
         fieldek_stimdata={'Amplifiermode','preamplnum'};
@@ -97,7 +112,7 @@ if ~isempty(fieldnames(tracedata))
         tracedata(sweepnum).pre_y0=nanmean(tracedata(sweepnum).pre_y(1:stepback));
         tracedata(sweepnum).post_y0sd=nanstd(tracedata(sweepnum).post_y(1:stepback));
     end
-    
+
     
     
 end

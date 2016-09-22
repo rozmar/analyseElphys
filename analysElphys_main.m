@@ -142,26 +142,26 @@ for fnum=1:length(files)
 
 end
 end
-return
-%% uj cucc
-
-files=dir(dirs.bridgeddir);
-files([files.isdir])=[];
-sweepdata=struct;
-progressbar('preloading files')
-for fi=1:length(files)
-    load([dirs.bridgeddir,files(fi).name],'lightdata');
-    if isempty(fieldnames(sweepdata))
-        sweepdata=lightdata;
-    else
-        sweepdata=[sweepdata,lightdata];
-    end
-    progressbar(fi/length(files))
-end
-
-
-%% puffnlightstim
-aE_persistent_puffnlightstim %this script plots puffing and light stim experiments.. ap waveforms and onsets are analysed - base values are needed from this main script
+% return
+% %% uj cucc
+% 
+% files=dir(dirs.bridgeddir);
+% files([files.isdir])=[];
+% sweepdata=struct;
+% progressbar('preloading files')
+% for fi=1:length(files)
+%     load([dirs.bridgeddir,files(fi).name],'lightdata');
+%     if isempty(fieldnames(sweepdata))
+%         sweepdata=lightdata;
+%     else
+%         sweepdata=[sweepdata,lightdata];
+%     end
+%     progressbar(fi/length(files))
+% end
+% 
+% 
+% %% puffnlightstim
+% aE_persistent_puffnlightstim %this script plots puffing and light stim experiments.. ap waveforms and onsets are analysed - base values are needed from this main script
 %% check electrotonic and chemical connectivity
 valtozok.plot.dpi=150;
 valtozok.plot.xcm=20;
@@ -182,13 +182,13 @@ valtozok.gj_mincurrampl=-10*10^-12;
 
 valtozok.noAPbeforetheevent=1; %s
 valtozok.noAPaftertheevent=.05; %s
-valtozok.pairedpulseneeded=0; %boolean
-valtozok.pairedpulsedelay=.06; %s
+valtozok.pairedpulseneeded=1; %boolean
+valtozok.pairedpulsedelay=NaN;%.06; %s
 valtozok.pairedpulsejitter=.01; %s
 valtozok.baselinelength=0.025; %s
 valtozok.psplength=.15; %s
 valtozok.filterorder=3;
-valtozok.cutofffreq=1500;
+valtozok.cutofffreq=1000;
 valtozok.drugwashintime=120;
 valtozok.maxy0baselinedifference=.0005;
 valtozok.discardpostsweepswithap=1;
@@ -196,7 +196,6 @@ valtozok.postrecordingmode='C-Clamp';%'C-Clamp' or 'V-Clamp' or 'any'
 valtozok.prerecordingmode='C-Clamp';%'C-Clamp' or 'V-Clamp' or 'any'
 
 aE_checkGJandChemicalSynapse(valtozok,xlsdata,dirs)
-return
 %% plotting IV
 
 valtozok.plot.betumeret=8;
@@ -300,6 +299,8 @@ for prenum=1:length(xlsdata)
     axis off
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
     print(gcf,[dirs.figuresdir,'/IVs/IV_',xlsdata(prenum).ID,'.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
+    saveas(gcf,[dirs.figuresdir,'/IVs/IV_',xlsdata(prenum).ID,'.fig'])
+    
 end
 figure(1)
 clf
@@ -314,3 +315,4 @@ axis off
 set(gca,'Position',[0 0 1 1])
 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
 print(gcf,[dirs.figuresdir,'/IVs/IVscalebar_100ms_20mV.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
+saveas(gcf,[dirs.figuresdir,'/IVs/IVscalebar_100ms_20mV.fig'])
