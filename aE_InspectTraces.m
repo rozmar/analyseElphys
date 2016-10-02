@@ -27,7 +27,7 @@ function varargout = aE_InspectTraces(varargin)
 
 % Edit the above text to modify the response to help aE_InspectTraces
 
-% Last Modified by GUIDE v2.5 18-Feb-2016 16:45:35
+% Last Modified by GUIDE v2.5 29-Sep-2016 15:29:26
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -135,6 +135,10 @@ handles.data.samples(selectedsamplenum).selectedID=get(hObject,'Value');
 if handles.data.samples(selectedsamplenum).selectedID>1
     load([handles.data.dirs.bridgeddir,handles.data.IDs{handles.data.samples(selectedsamplenum).selectedID}],'lightdata');
     handles.data.samples(selectedsamplenum).lightdata=lightdata;
+    eventdataorig=eventdata;
+    load([handles.data.dirs.eventdir,handles.data.IDs{handles.data.samples(selectedsamplenum).selectedID}],'eventdata');
+    handles.data.samples(selectedsamplenum).eventdata=eventdata;
+    eventdata=eventdataorig;
 else
     handles.data.samples(selectedsamplenum).lightdata=struct;
 end
@@ -143,6 +147,9 @@ handles=loadthedata(handles);
 handles=updatedatatoplot(handles);
 guidata(hObject,handles);
 set(handles.listbox1,'Value',1)
+stimapnum=length(find(strcmp({handles.data.samples(selectedsamplenum).eventdata.type},'AP') & [handles.data.samples(selectedsamplenum).eventdata.stimulated]));
+persapnum=length(find(strcmp({handles.data.samples(selectedsamplenum).eventdata.type},'AP') & ~[handles.data.samples(selectedsamplenum).eventdata.stimulated]));
+set(handles.text5,'String',['stimulated AP: ', num2str(stimapnum),'  persistent AP: ', num2str(persapnum)]);
 plotandupdate(handles);
 % updategui(handles)
 
@@ -334,6 +341,7 @@ for i=1:length(markers)
         data.samples(i).changes=[];
         data.samples(i).bridgeddata=struct;
         data.samples(i).stimdata=struct;
+        data.samples(i).eventdata=struct;
         data.samples(i).selectedID=1;
         data.samples(i).loadedID=1;
         data.samples(i).lightdata=[];
