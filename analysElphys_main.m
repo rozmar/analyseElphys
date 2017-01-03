@@ -105,8 +105,19 @@ valtozok.apthreshval=10;
 parallelcount=4;
 aE_findevents(valtozok,dirs,parallelcount,xlsdata)
 
+paralleldata.count=NaN;
+while isnan(paralleldata.count) | ~isempty(paralleldata.files)
+    paralleldata.files=dir(dirs.eventparaleldir);
+    paralleldata.files([paralleldata.files.isdir])=[];
+    pause(3)
+    paralleldata.prevcount=paralleldata.count;
+    paralleldata.count=length(paralleldata.files);
+    if paralleldata.prevcount~=paralleldata.count
+        disp(['waiting for ',num2str(paralleldata.count),' eventfinding scripts to finish'])
+    end
+end
+%% defining stimepochs and spike clusters
 if projectnum==4
-    %% defining stimepochs and spike clusters
     valtozok_stimepochs.overwrite=projectdata.owstimepoch;
     valtozok_stimepochs.histbins=[0:.001:.5];
     valtozok_stimepochs.sdtimesval_persistentgroup=4;
@@ -182,9 +193,9 @@ valtozok.gj_mincurrampl=-10*10^-12;
 
 valtozok.noAPbeforetheevent=1; %s
 valtozok.noAPaftertheevent=.05; %s
-valtozok.pairedpulseneeded=1; %boolean
+valtozok.pairedpulseneeded=0; %boolean
 valtozok.pairedpulsedelay=NaN;%.06; %s
-valtozok.pairedpulsejitter=.01; %s
+valtozok.pairedpulsejitter=.05; %s
 valtozok.baselinelength=0.025; %s
 valtozok.psplength=.15; %s
 valtozok.filterorder=3;

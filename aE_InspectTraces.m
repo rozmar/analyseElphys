@@ -27,7 +27,7 @@ function varargout = aE_InspectTraces(varargin)
 
 % Edit the above text to modify the response to help aE_InspectTraces
 
-% Last Modified by GUIDE v2.5 29-Sep-2016 15:29:26
+% Last Modified by GUIDE v2.5 03-Jan-2017 16:18:40
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -51,7 +51,7 @@ end
 
 % --- Executes just before aE_InspectTraces is made visible.
 function aE_InspectTraces_OpeningFcn(hObject, eventdata, handles, varargin)
-% This function has no output args, see OutputFcn.
+% This function has no output args, see OutputFcn.0
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -64,7 +64,8 @@ handles.data.xlsdata=varargin{2};
 
 % Update handles structure
 guidata(hObject, handles);
-pushbutton4_Callback(hObject, eventdata, handles)
+resetdata(hObject,handles,'all')
+% pushbutton4_Callback(hObject, eventdata, handles)
 % UIWAIT makes aE_InspectTraces wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
@@ -139,6 +140,8 @@ if handles.data.samples(selectedsamplenum).selectedID>1
     load([handles.data.dirs.eventdir,handles.data.IDs{handles.data.samples(selectedsamplenum).selectedID}],'eventdata');
     handles.data.samples(selectedsamplenum).eventdata=eventdata;
     eventdata=eventdataorig;
+    handles.data.samples(selectedsamplenum).starttime=handles.data.samples(selectedsamplenum).lightdata(1).realtime;
+    handles.data.samples(selectedsamplenum).endtime=handles.data.samples(selectedsamplenum).lightdata(end).realtime;
 else
     handles.data.samples(selectedsamplenum).lightdata=struct;
 end
@@ -149,9 +152,20 @@ guidata(hObject,handles);
 set(handles.listbox1,'Value',1)
 stimapnum=length(find(strcmp({handles.data.samples(selectedsamplenum).eventdata.type},'AP') & [handles.data.samples(selectedsamplenum).eventdata.stimulated]));
 persapnum=length(find(strcmp({handles.data.samples(selectedsamplenum).eventdata.type},'AP') & ~[handles.data.samples(selectedsamplenum).eventdata.stimulated]));
-set(handles.text5,'String',['stimulated AP: ', num2str(stimapnum),'  persistent AP: ', num2str(persapnum)]);
+
+if ~isempty(handles.data.xlsdata(handles.data.samples(selectedsamplenum).selectedID-1).drugdata)
+    drugnames={handles.data.xlsdata(handles.data.samples(selectedsamplenum).selectedID-1).drugdata.DrugName};
+    drugwashintimes=[handles.data.xlsdata(handles.data.samples(selectedsamplenum).selectedID-1).drugdata.DrugWashinTime];
+    drugstring=' ';
+    for i=1:length(drugnames)
+        drugstring=[drugstring,drugnames{i},'-',num2str(drugwashintimes(i)),';  '];
+    end
+else
+    drugstring='   no drugs';
+end
+set(handles.text5,'String',['stimulated AP: ', num2str(stimapnum),'  persistent AP: ', num2str(persapnum),'       ',drugstring]);
 plotandupdate(handles);
-% updategui(handles)
+updategui(handles)
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu2_CreateFcn(hObject, eventdata, handles)
@@ -254,10 +268,12 @@ for i=1:length(valuesnow)
             szovegmost=['-',selectedvariablename,': ',num2str(reducednames(valuesnow(1))),' ... ',num2str(reducednames(valuesnow(end)))];
         end
     end
-    
 end
 handles.data.samples(selectedsamplenum).neededwaves=sort(unique(needed));
 handles.data.samples(selectedsamplenum).neededwavespervariable{selectedvariable}=handles.data.samples(selectedsamplenum).neededwaves;
+timesofneededwaves=[handles.data.samples(selectedsamplenum).lightdata(handles.data.samples(selectedsamplenum).neededwaves).realtime];
+reallyneededwaves=timesofneededwaves>=str2num(get(handles.edit4,'String')) & timesofneededwaves<=str2num(get(handles.edit5,'String'));
+handles.data.samples(selectedsamplenum).neededwaves=handles.data.samples(selectedsamplenum).neededwaves(reallyneededwaves);
 handles.data.samples(selectedsamplenum).changes=szovegmost;
 handles=loadthedata(handles);
 handles=updatedatatoplot(handles);
@@ -305,6 +321,11 @@ common=ismember(handles.data.samples(selectedsamplenum).neededwaves,needed);
 handles.data.samples(selectedsamplenum).neededwaves=handles.data.samples(selectedsamplenum).neededwaves(common);
 handles.data.samples(selectedsamplenum).neededwavespervariable{selectedvariable}=handles.data.samples(selectedsamplenum).neededwaves;
 handles.data.samples(selectedsamplenum).changes=[handles.data.samples(selectedsamplenum).changes,' AND ',szovegmost];
+
+timesofneededwaves=[handles.data.samples(selectedsamplenum).lightdata(handles.data.samples(selectedsamplenum).neededwaves).realtime];
+reallyneededwaves=timesofneededwaves>=str2num(get(handles.edit4,'String')) & timesofneededwaves<=str2num(get(handles.edit5,'String'));
+handles.data.samples(selectedsamplenum).neededwaves=handles.data.samples(selectedsamplenum).neededwaves(reallyneededwaves);
+
 handles=loadthedata(handles);
 handles=updatedatatoplot(handles);
 guidata(hObject,handles)
@@ -360,13 +381,20 @@ if ischar(melyiket)
     axes(handles.axes1)
     cla reset
     handles.axes1=gca;
-    
     set(handles.checkbox1,'Value',0);
     set(handles.popupmenu1,'String',{handles.data.samples.marker});
     set(handles.popupmenu1,'Value',1);
     set(handles.popupmenu2,'String',handles.data.IDs);
     set(handles.popupmenu2,'Value',1);
+    %%
     set(handles.popupmenu3,'String',handles.data.fieldnevek);
+    set(handles.slider1,'Min',0);
+    set(handles.slider1,'Max',1);
+    set(handles.slider2,'Min',0);
+    set(handles.slider2,'Max',1);
+    set(handles.slider1,'Value',0);
+    set(handles.slider2,'Value',1);
+    %%
     % set(handles.popupmenu3,'Value',1);
 end
 handles=loadthedata(handles);
@@ -386,6 +414,7 @@ for samplei=1:length(handles.data.samples)
 end
 
 function plotandupdate(handles)
+ handles=updatedatatoplot(handles);
 selectedsamplenum=get(handles.popupmenu1,'Value');
 set(handles.checkbox1,'Value',handles.data.samples(selectedsamplenum).switch);
 selectedID=handles.data.samples(selectedsamplenum).selectedID;
@@ -425,10 +454,22 @@ for samplenum=1:length(handles.data.samples)
         neededwaves=handles.data.samples(samplenum).neededwaves;
         marker=handles.data.samples(samplenum).marker;
         axes(handles.axes1)
+        
+        
         for sweepi=1:length(neededwaves)
             plot(handles.data.samples(samplenum).datatoplot(sweepi).x,handles.data.samples(samplenum).datatoplot(sweepi).yvoltage,marker(1),'LineWidth',2)
-            
         end
+        markevents=get(handles.checkbox3,'Value');
+        if markevents==1
+            neededevents=strcmp({handles.data.samples(samplenum).eventdata.type},'AP') & ~[handles.data.samples(samplenum).eventdata.stimulated];
+            eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
+            neededevents=false(size(eventsnow));
+              for sweepi=1:length(neededwaves)
+                 sweepnum=neededwaves(sweepi);
+                 neededevents([eventsnow.sweepnum]==sweepnum)=1;
+              end
+             plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'ro','MarkerSize',8)
+       end
 %         plot([handles.data.samples(samplenum).datatoplot.x],[handles.data.samples(samplenum).datatoplot.yvoltage],marker(1),'LineWidth',2)
         y0=max([y0,max([handles.data.samples(samplenum).datatoplot.yvoltage])]);
         if length(neededwaves)>0
@@ -476,7 +517,7 @@ ylabel('Injected Current (pA)')
 axis tight
 handles.axes2=gca;
 linkaxes([handles.axes1,handles.axes2],'x');
-
+java.lang.System.gc()
 
 function updategui(handles)
 selectedsamplenum=get(handles.popupmenu1,'Value');
@@ -487,6 +528,11 @@ set(handles.popupmenu2,'Value',selectedID);
 set(handles.popupmenu3,'Value',selectedvariable);
 set(handles.edit1,'String',num2str(handles.data.samples(selectedsamplenum).cutoffreq));
 set(handles.edit2,'String',num2str(handles.data.samples(selectedsamplenum).filterdeg));
+startval=get(handles.slider1,'Value');
+endval=get(handles.slider2,'Value');
+timedifi=handles.data.samples(selectedsamplenum).endtime-handles.data.samples(selectedsamplenum).starttime;
+set(handles.edit4,'String',handles.data.samples(selectedsamplenum).starttime+timedifi*startval);
+set(handles.edit5,'String',handles.data.samples(selectedsamplenum).starttime+timedifi*endval);
 selectedvariablename=handles.data.fieldnevek{selectedvariable};
 if length(handles.data.samples(selectedsamplenum).lightdata)>1
     if ischar(handles.data.samples(selectedsamplenum).lightdata(1).(selectedvariablename))
@@ -505,6 +551,7 @@ set(handles.text1,'String',handles.data.samples(selectedsamplenum).changes)
 
 
 
+
 function handles=updatedatatoplot(handles)
 selectedsamplenum=get(handles.popupmenu1,'Value');
 if handles.data.samples(selectedsamplenum).switch>0
@@ -512,13 +559,16 @@ if handles.data.samples(selectedsamplenum).switch>0
     neededsamplenum=str2num(get(handles.edit3,'String'));
     cutoffreq=handles.data.samples(selectedsamplenum).cutoffreq;
     filterdeg=handles.data.samples(selectedsamplenum).filterdeg;
+    shoulddownsample=get(handles.checkbox2,'Value');
     plotdetails=handles.data.samples(selectedsamplenum).plotdetails;
-    if isempty(fieldnames(plotdetails)) | ~(length(neededwaves)==length(plotdetails.neededwaves)) |~(neededwaves==plotdetails.neededwaves) | ~(neededsamplenum==plotdetails.neededsamplenum) | ~(cutoffreq==plotdetails.cutoffreq) | ~(filterdeg==plotdetails.filterdeg)
+    
+    if isempty(fieldnames(plotdetails)) | ~(length(neededwaves)==length(plotdetails.neededwaves)) |~(neededwaves==plotdetails.neededwaves) | ~(neededsamplenum==plotdetails.neededsamplenum) | ~(cutoffreq==plotdetails.cutoffreq) | ~(filterdeg==plotdetails.filterdeg) | ~(shoulddownsample==plotdetails.shoulddownsample)
         datatoplot=struct;
         plotdetails.neededwaves=neededwaves;
         plotdetails.neededsamplenum=neededsamplenum;
         plotdetails.cutoffreq=cutoffreq;
         plotdetails.filterdeg=filterdeg;
+        plotdetails.shoulddownsample=shoulddownsample;
         for sweepi=1:length(neededwaves)
             sweepnum=neededwaves(sweepi);
             datatoplot(sweepi).ycurrent=handles.data.samples(selectedsamplenum).stimdata(sweepnum).y;
@@ -536,19 +586,22 @@ if handles.data.samples(selectedsamplenum).switch>0
         end
         if ~isempty(fieldnames(datatoplot))
             samplenumnow=length([datatoplot.yvoltage]);
-            if neededsamplenum<samplenumnow & neededsamplenum>0
+            if neededsamplenum<samplenumnow & neededsamplenum>0 & shoulddownsample==1
+%                 disp('downsampling started')
                 ratio=round(samplenumnow/neededsamplenum);
                 for sweepi=1:length(neededwaves)
                     datatoplot(sweepi).yvoltage=downsample(datatoplot(sweepi).yvoltage,ratio);
                     datatoplot(sweepi).ycurrent=downsample(datatoplot(sweepi).ycurrent,ratio);
                     datatoplot(sweepi).x=downsample(datatoplot(sweepi).x,ratio);
                 end
+%                 disp('downsampling finished')
             end
         end
         handles.data.samples(selectedsamplenum).datatoplot=datatoplot;
         handles.data.samples(selectedsamplenum).plotdetails=plotdetails;
     end
 end
+
 
 
 
@@ -638,3 +691,153 @@ function pushbutton5_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 plotandupdate(handles)
+
+
+% --- Executes on slider movement.
+function slider1_Callback(hObject, eventdata, handles)
+% hObject    handle to slider1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+if get(hObject,'Value')>get(handles.slider2,'Value')
+    set(hObject,'Value',get(handles.slider2,'Value'))
+end
+updategui(handles)
+guidata(hObject, handles)
+
+% --- Executes during object creation, after setting all properties.
+function slider1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to slider1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+% --- Executes on slider movement.
+function slider2_Callback(hObject, eventdata, handles)
+% hObject    handle to slider2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+if get(hObject,'Value')<get(handles.slider1,'Value')
+    set(hObject,'Value',get(handles.slider1,'Value'))
+end
+updategui(handles)
+guidata(hObject, handles)
+
+% --- Executes during object creation, after setting all properties.
+function slider2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to slider2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+
+function edit4_Callback(hObject, eventdata, handles)
+% hObject    handle to edit4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+startval=get(handles.slider1,'Value');
+endval=get(handles.slider2,'Value');
+selectedsamplenum=get(handles.popupmenu1,'Value');
+timedifi=handles.data.samples(selectedsamplenum).endtime-handles.data.samples(selectedsamplenum).starttime;
+timeentered=str2num(get(hObject,'String'));
+startvalneeded=(timeentered-handles.data.samples(selectedsamplenum).starttime)/timedifi;
+if startvalneeded<get(handles.slider1,'Min')
+    startvalset=get(handles.slider1,'Min');
+elseif startvalneeded>endval
+    startvalset=endval;
+elseif startvalneeded>get(handles.slider1,'Max')
+    startvalset=get(handles.slider1,'Max');
+else
+    startvalset=startvalneeded;
+end
+set(handles.slider1,'Value',startvalset);
+updategui(handles)
+guidata(hObject, handles)
+% Hints: get(hObject,'String') returns contents of edit4 as text
+%        str2double(get(hObject,'String')) returns contents of edit4 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit4_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit5_Callback(hObject, eventdata, handles)
+% hObject    handle to edit5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit5 as text
+%        str2double(get(hObject,'String')) returns contents of edit5 as a double
+startval=get(handles.slider1,'Value');
+endval=get(handles.slider2,'Value');
+selectedsamplenum=get(handles.popupmenu1,'Value');
+timedifi=handles.data.samples(selectedsamplenum).endtime-handles.data.samples(selectedsamplenum).starttime;
+timeentered=str2num(get(hObject,'String'));
+endvalneeded=(timeentered-handles.data.samples(selectedsamplenum).starttime)/timedifi;
+if endvalneeded>get(handles.slider2,'Max')
+    endvalset=get(handles.slider2,'Max');
+elseif endvalneeded<startval
+    endvalset=startval;
+elseif endvalneeded<get(handles.slider2,'Min')
+    endvalset=get(handles.slider2,'Min');
+else
+    endvalset=endvalneeded;
+end
+set(handles.slider2,'Value',endvalset);
+updategui(handles)
+guidata(hObject, handles)
+
+% --- Executes during object creation, after setting all properties.
+function edit5_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in checkbox2.
+function checkbox2_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox2
+
+
+% --- Executes on button press in checkbox3.
+function checkbox3_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox3

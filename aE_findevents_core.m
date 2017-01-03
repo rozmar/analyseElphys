@@ -39,7 +39,7 @@ for sweepnum=1:length(bridgeddata)
         dyraw=diff(y)/mode(diff(time));
         yfilt=imfilter(y,fspecial('average', [1,filtmovingstep]),'symmetric');
         dy=diff(yfilt)/mode(diff(time));
-        dyf=imfilter(dy,fspecial('average', [1,diffmovingstep]));
+        dyf=imfilter(dy,fspecial('average', [1,diffmovingstep]),'symmetric');
         for tidx=1:length(dyf)-1
             if dyf(tidx)*dyf(tidx+1)<0
                 dyf(tidx)=0;
@@ -247,8 +247,8 @@ for sweepnum=1:length(bridgeddata)
                 eventdata(NEXT).injectedcurrentatonset=(stimdata(sweepnum).y(onseth));
                 eventdata(NEXT).injectedrelativecurrentatonset=(stimdata(sweepnum).y(onseth)-stimdata(sweepnum).y(1));
                 
-                eventdata(NEXT).stimulated=any([eventdata(NEXT).injectedrelativecurrentatpeak+eventdata(NEXT).injectedrelativecurrentatonset]>0);
-                
+%                 eventdata(NEXT).stimulated=any([eventdata(NEXT).injectedrelativecurrentatpeak,eventdata(NEXT).injectedrelativecurrentatonset]>0);
+                eventdata(NEXT).stimulated=any([stimdata(sweepnum).y(onseth:maxh)]>stimdata(sweepnum).y(1));
                 tttttempdiffs=stimdata(sweepnum).segmenths-apmaxh;
                 [~,tidx]=min(abs(tttttempdiffs));
                 eventdata(NEXT).maxtimetosquarepulse=tttttempdiffs(tidx)*bridgeddata(sweepnum).si;
