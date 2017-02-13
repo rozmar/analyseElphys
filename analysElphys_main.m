@@ -1,7 +1,7 @@
 %%
 close all
-clear all
-projectnames={'CB1elphys','InVivo','Persistent-ChRstim','persistent firing'};
+% clear all
+projectnames={'CB1elphys','InVivo','Persistent-ChRstim','persistent firing','bleb recording'};
 % projectnum=3;
 
 % [projectnum,ok] = listdlg('ListString',projectnames,'ListSize',[300 600]); % az XLS file alapján kiválasztjuk, hogy melyik file összes mérésén szeretnénk végigmenni
@@ -73,6 +73,20 @@ elseif projectnum==4
     amplifier='HEKA';
     xlsdata=aE_readxls([dirs.basedir,'persistentdata_windows.xls']);
     dirs.v0distdir=[dirs.basedir,'v0_dist/'];
+elseif projectnum==5
+        overwrite=0;
+    locations=marcicucca_locations;
+    dirs.basedir=[locations.tgtardir,'ANALYSISdata/marci/_persistent/_BlebRecording/'];
+    dirs.rawexporteddir=[dirs.basedir,'Exported_raw/'];
+    dirs.bridgeddir=[dirs.basedir,'Bridged_stim/'];
+    dirs.eventdir=[dirs.basedir,'Events/'];
+    dirs.eventparaleldir=[dirs.basedir,'Events/paralel/'];
+    %     dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
+    %     dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
+    %     dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
+    dirs.figuresdir=[dirs.basedir,'Figures/'];
+    amplifier='HEKA';
+    xlsdata=aE_readxls([dirs.basedir,'blebdata_windows.xls']);
 end
 %%
 if strcmp(amplifier,'AXON')
