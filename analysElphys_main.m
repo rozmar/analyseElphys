@@ -118,7 +118,6 @@ valtozok.eventminsdval=3;
 valtozok.apthreshval=10;
 parallelcount=4;
 aE_findevents(valtozok,dirs,parallelcount,xlsdata)
-
 paralleldata.count=NaN;
 while isnan(paralleldata.count) | ~isempty(paralleldata.files)
     paralleldata.files=dir(dirs.eventparaleldir);
@@ -130,8 +129,9 @@ while isnan(paralleldata.count) | ~isempty(paralleldata.files)
         disp(['waiting for ',num2str(paralleldata.count),' eventfinding scripts to finish'])
     end
 end
-%% defining stimepochs and spike clusters
+
 if projectnum==4
+    %% defining stimepochs and spike clusters
     valtozok_stimepochs.overwrite=projectdata.owstimepoch;
     valtozok_stimepochs.histbins=[0:.001:.5];
     valtozok_stimepochs.sdtimesval_persistentgroup=4;
@@ -144,28 +144,217 @@ if projectnum==4
     persistent_definestimepoch(dirs,valtozok_stimepochs)
     
     %% determining TAU and V0
-valtozok_tau.timeconstanthossz=.100; %s
-valtozok_tau.stepstocheck=20;%*2
-
-valtozok_states.overwrite=0;
-valtozok_states.ordfiltorder=.2;
-valtozok_states.ordfiltlength=.02; %s
-
-
-
-files=dir(dirs.bridgeddir);
-files([files.isdir])=[];
-for fnum=1:length(files)
-    progressbar(fnum/length(files),[],[])
-    fname=files(fnum).name;
-    a=dir([dirs.v0distdir,fname]);
-    if isempty(a) | valtozok_states.overwrite==1
-        taudata=persistent_gettau(valtozok_tau,dirs,fname);
-        persistent_getv0dist(dirs,valtozok_states,valtozok_tau,taudata,fname);
+    valtozok_tau.timeconstanthossz=.100; %s
+    valtozok_tau.stepstocheck=20;%*2
+    valtozok_states.overwrite=0;
+    valtozok_states.ordfiltorder=.2;
+    valtozok_states.ordfiltlength=.02; %s
+    files=dir(dirs.bridgeddir);
+    files([files.isdir])=[];
+    for fnum=1:length(files)
+        progressbar(fnum/length(files),[],[])
+        fname=files(fnum).name;
+        a=dir([dirs.v0distdir,fname]);
+        if isempty(a) | valtozok_states.overwrite==1
+            taudata=persistent_gettau(valtozok_tau,dirs,fname);
+            persistent_getv0dist(dirs,valtozok_states,valtozok_tau,taudata,fname);
+        end
+    end
+end
+if  projectnum==5
+    %% checking somatically triggered axonal events
+    timebefore=.003;
+    timeafter=.003;
+    cutofffreq=2500;
+    filterorder=3;
+    for i=1:length(xlsdata)
+        if xlsdata(i).startT>xlsdata(i).endT
+            xlsdata(i).endTmodified=xlsdata(i).endT+86400;
+        else
+            xlsdata(i).endTmodified=xlsdata(i).endT;
+        end
+    end
+    blebidxes=find([xlsdata.axonal]);
+    fieldidxes=find([xlsdata.field]);
+    icdxes=find(~[xlsdata.field]&~[xlsdata.axonal]);
+    [icSelection,ok] = listdlg('ListString',{xlsdata(icdxes).ID},'ListSize',[300 600]); % az XLS file alapján kiválasztjuk, hogy melyik file összes mérésén szeretnénk végigmenni
+    for ici=1:length(icSelection)
+        icxlsidx=icdxes(icSelection(ici));
+        blebSelection=zeros(size(blebidxes));
+        for blebi=1:length(blebidxes)
+            blebidx=blebidxes(blebi);
+            if strcmp(xlsdata(icxlsidx).HEKAfname,xlsdata(blebidx).HEKAfname) & xlsdata(blebidx).startT<xlsdata(icxlsidx).endTmodified & xlsdata(icxlsidx).startT<xlsdata(blebidx).endTmodified 
+                blebSelection(blebi)=1;
+            end
+        end
+        blebSelection=blebidxes(find(blebSelection));
+        for blebi=1:length(blebSelection)
+            blebxlsidx=blebSelection(blebi);
+            disp(xlsdata(blebxlsidx).ID)
+            ic=struct;
+            bleb=struct;
+            ic=load([dirs.bridgeddir,xlsdata(icxlsidx).ID]);
+            load([dirs.eventdir,xlsdata(icxlsidx).ID],'eventdata');
+            ic.eventdata=eventdata;
+            bleb=load([dirs.bridgeddir,xlsdata(blebxlsidx).ID]);
+            for blebsweepnum=1:length(bleb.bridgeddata) %filtering
+                if strcmp(xlsdata(blebxlsidx).ID,'1702083rm_2_20_1')
+                  bleb.bridgeddata(blebsweepnum).realtime=bleb.bridgeddata(blebsweepnum).realtime+24*3600;
+                end
+                si=bleb.bridgeddata(blebsweepnum).si;
+                ninq=.5/si;
+                 [b,a] = butter(filterorder,cutofffreq/ninq,'low');
+                 bleb.bridgeddata(blebsweepnum).y_filt=filter(b,a,bleb.bridgeddata(blebsweepnum).y);
+            end
+            apidxes=find(strcmp({ic.eventdata.type},'AP'));
+            APdata=struct;
+            NEXT=0;
+            for api=1:length(apidxes)
+                eventidx=apidxes(api);
+                si=round(ic.eventdata(eventidx).si*10^6)/10^6;
+                icsweepnum=ic.eventdata(eventidx).sweepnum;
+                maxh=ic.eventdata(eventidx).maxh;
+                maxtime=ic.eventdata(eventidx).maxtime;
+                stimulated=ic.eventdata(eventidx).stimulated;
+                baselineval=ic.eventdata(eventidx).baselineval;
+                amplitude=ic.eventdata(eventidx).amplitude;
+                halfwidth=ic.eventdata(eventidx).halfwidth;
+                blebsweepnum=find([bleb.bridgeddata.realtime]==ic.bridgeddata(icsweepnum).realtime);
+                stepback=round(timebefore/si);
+                stepforward=round(timeafter/si);
+                
+                if ~isempty(blebsweepnum) && maxh>stepback && stepforward+maxh<length(ic.bridgeddata(icsweepnum).y)
+                    NEXT=NEXT+1;
+                    APdata(NEXT).maxtime=maxtime;
+                    APdata(NEXT).si=si;
+                    APdata(NEXT).time=[-stepback:stepforward]'*si*1000;
+                    APdata(NEXT).ic_y=ic.bridgeddata(icsweepnum).y(maxh-stepback:maxh+stepforward)';
+                    APdata(NEXT).bleb_y=bleb.bridgeddata(blebsweepnum).y(maxh-stepback:maxh+stepforward)';
+                    APdata(NEXT).bleb_y_filt=bleb.bridgeddata(blebsweepnum).y_filt(maxh-stepback:maxh+stepforward)';
+                    APdata(NEXT).bleb_y_baseline=mean(APdata(NEXT).bleb_y(1:stepback));
+                    APdata(NEXT).bleb_channellabel=bleb.lightdata(blebsweepnum).channellabel;
+                    APdata(NEXT).bleb_preamplnum=bleb.lightdata(blebsweepnum).preamplnum;
+                    APdata(NEXT).bleb_Amplifiermode=bleb.lightdata(blebsweepnum).Amplifiermode;
+                    APdata(NEXT).stimulated=stimulated;
+                    APdata(NEXT).baselineval=median(APdata(NEXT).ic_y(1:stepback));
+                    APdata(NEXT).amplitude=amplitude;
+                    APdata(NEXT).halfwidth=halfwidth;
+                end
+            end
+            si=max([APdata.si]);
+            for NEXT=1:length(APdata) %resampling
+                if APdata(NEXT).si<si
+                    APdata(NEXT).time=resample(APdata(NEXT).time,APdata(NEXT).si*10^6,si*10^6);
+                    APdata(NEXT).ic_y=resample(APdata(NEXT).ic_y,APdata(NEXT).si*10^6,si*10^6);                    
+                    APdata(NEXT).bleb_y=resample(APdata(NEXT).bleb_y,APdata(NEXT).si*10^6,si*10^6);
+                    APdata(NEXT).bleb_y_filt=resample(APdata(NEXT).bleb_y_filt,APdata(NEXT).si*10^6,si*10^6);
+                    APdata(NEXT).si=si;
+                end
+            end
+        end
     end
     
-
-end
+    %% visualize bleb data
+    recordingmode='V-Clamp';
+    close all
+     figure(1)
+        clf
+        hold on
+        figure(2)
+        clf
+        hold on
+    for i =0:3
+        figure(1)
+        needed=(strcmp({APdata.bleb_Amplifiermode},recordingmode));
+        if i==0 % persistent spikelet
+            cim='axonal spikelet';
+            needed=find(needed&[APdata.stimulated]==0 & [APdata.amplitude]<.06 & [APdata.halfwidth]>300*10^-6); %
+        elseif i==1 % persistent spike
+            cim='axonal spike';
+            needed=find(needed&[APdata.stimulated]==0 & [APdata.amplitude]>.07 &  [APdata.baselineval]<-.00); %& [APdata.halfwidth]>300*10^-6
+        elseif i==2 % somatic spike
+            cim='somatic spike - hyperpolarized v0';
+            needed=find(needed&[APdata.stimulated]==1 & [APdata.amplitude]>.07&  [APdata.baselineval]<-.07);
+            elseif i==3 % somatic spike
+            cim='somatic spike - depolarized v0';
+            needed=find(needed&[APdata.stimulated]==1 & [APdata.amplitude]>.07&  [APdata.baselineval]>-.05);
+        end
+        figure(1)
+        hsom(i+1)=subplot(4,4,i*4+1);
+        hold on
+        plot([APdata(needed).time],[APdata(needed).ic_y])
+        plot(mean([APdata(needed).time],2),mean([APdata(needed).ic_y],2),'k-','LineWidth',3)
+        title(cim)
+        hax(i+1)=subplot(4,4,i*4+2);
+        hold on
+        plot([APdata(needed).time],bsxfun(@(a,b)a-b,[APdata(needed).bleb_y_filt],[APdata(needed).bleb_y_baseline]))
+        plot(mean([APdata(needed).time],2),mean(bsxfun(@(a,b)a-b,[APdata(needed).bleb_y_filt],[APdata(needed).bleb_y_baseline]),2),'k-','LineWidth',3)
+        if isfield(APdata,'bleb_amplitude')
+            subplot(4,4,i*4+3);
+            hist([APdata(needed).bleb_amplitude],100)
+            xlabel('peak amplitude')
+            subplot(4,4,i*4+4);
+            hist([APdata(needed).bleb_amplitude_t],100)
+            xlabel('peak latency')
+        end
+        linkaxes(hsom,'xy')
+        linkaxes(hax,'xy')
+        subplot(4,4,i*4+2);
+        axis tight
+       subplot(4,4,i*4+1);
+        axis tight
+        if isfield(APdata,'bleb_amplitude')
+            figure(2)
+            if i<2
+                colorka='rx';
+            else
+                colorka='ko';
+            end
+            subplot(3,1,1)
+            hold on
+            plot([APdata(needed).maxtime],[APdata(needed).bleb_amplitude],colorka)
+            ylabel('peak amplitude')
+            subplot(3,1,2)
+            hold on
+            plot([APdata(needed).maxtime],[APdata(needed).bleb_amplitude_t],colorka)
+            ylabel('peak latency')
+            xlabel('time')
+            subplot(3,1,3)
+            hold on
+            plot([APdata(needed).bleb_amplitude_t],[APdata(needed).bleb_amplitude],colorka)
+            xlabel('peak latency')
+            ylabel('peak amplitude')
+        end
+    end
+    %% detect amplitudes
+     figure(1)
+    subplot(4,4,i*4+2);
+    [x,~]=ginput(2);
+    for api=1:length(APdata)
+        bleb_y_baseline=APdata(api).bleb_y_baseline;
+        time=APdata(api).time;
+        bleb_y=APdata(api).bleb_y;
+        bleb_y_filt=APdata(api).bleb_y_filt;
+        ic_y=APdata(api).ic_y;
+        idxes=find(time>min(x)&time<max(x));
+        if strcmp(recordingmode,'V-Clamp')
+            [peakv,peakh]=min(bleb_y_filt(idxes));
+            peakv=-(peakv-bleb_y_baseline);
+        elseif strcmp(recordingmode,'C-Clamp')
+            [peakv,peakh]=max(bleb_y_filt(idxes));
+            peakv=peakv-bleb_y_baseline;
+        end
+        peakh=peakh+idxes(1);
+        APdata(api).bleb_amplitude=peakv;
+        APdata(api).bleb_amplitude_t=time(peakh);
+%         figure(2)
+%         clf
+%         plot(time,bleb_y-bleb_y_baseline,'k-')
+%         hold on
+%         plot(time,bleb_y_filt-bleb_y_baseline,'k-','LineWIdth',2)
+%         plot(time(peakh),peakv,'ro')
+%         pause
+    end
 end
 % return
 % %% uj cucc
