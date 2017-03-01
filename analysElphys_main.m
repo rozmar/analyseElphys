@@ -116,7 +116,7 @@ valtozok.diffmovingt=.0005;
 valtozok.steptime=.0005; %s
 valtozok.eventminsdval=3;
 valtozok.apthreshval=10;
-parallelcount=4;
+parallelcount=2;
 aE_findevents(valtozok,dirs,parallelcount,xlsdata)
 paralleldata.count=NaN;
 while isnan(paralleldata.count) | ~isempty(paralleldata.files)
@@ -160,6 +160,11 @@ if projectnum==4
             persistent_getv0dist(dirs,valtozok_states,valtozok_tau,taudata,fname);
         end
     end
+    
+    %% taking a look at EPSP kinetics
+    [icSelection,ok] = listdlg('ListString',{xlsdata(icdxes).ID},'ListSize',[300 600]); % az XLS file alapján kiválasztjuk, hogy melyik file összes mérésén szeretnénk végigmenni
+    
+    
 end
 if  projectnum==5
     %% checking somatically triggered axonal events
@@ -245,7 +250,7 @@ if  projectnum==5
             for NEXT=1:length(APdata) %resampling
                 if APdata(NEXT).si<si
                     APdata(NEXT).time=resample(APdata(NEXT).time,APdata(NEXT).si*10^6,si*10^6);
-                    APdata(NEXT).ic_y=resample(APdata(NEXT).ic_y,APdata(NEXT).si*10^6,si*10^6);                    
+                    APdata(NEXT).ic_y=resample(APdata(NEXT).ic_y,APdata(NEXT).si*10^6,si*10^6);
                     APdata(NEXT).bleb_y=resample(APdata(NEXT).bleb_y,APdata(NEXT).si*10^6,si*10^6);
                     APdata(NEXT).bleb_y_filt=resample(APdata(NEXT).bleb_y_filt,APdata(NEXT).si*10^6,si*10^6);
                     APdata(NEXT).si=si;
@@ -253,16 +258,68 @@ if  projectnum==5
             end
         end
     end
-    
+    APdataOriginal=APdata;
     %% visualize bleb data
+    APdata=APdataOriginal;
     recordingmode='V-Clamp';
+    baselinepercentilerange=[.01 .99];
+    baselinestdmin=3;
+    % detect amplitudes
+    %      figure(1)
+    %     subplot(4,4,i*4+2);
+    %     [x,~]=ginput(2);
+    x=[-2,2];
+    baselinex=[-2, 0];
+    for api=1:length(APdata)
+        bleb_y_baseline=APdata(api).bleb_y_baseline;
+        time=APdata(api).time;
+        bleb_y=APdata(api).bleb_y;
+        bleb_y_filt=APdata(api).bleb_y_filt;
+        ic_y=APdata(api).ic_y;
+        idxes=find(time>min(x)&time<max(x));
+        baselineidxes=find(time>min(baselinex)&time<max(baselinex));
+        if strcmp(recordingmode,'V-Clamp')
+            [peakv,peakh]=min(bleb_y_filt(idxes));
+            peakv=-(peakv-bleb_y_baseline);
+            peakh=peakh+idxes(1);
+           [baselinepeakv,~]=min(bleb_y_filt(baselineidxes));
+            baselinepeakv=-(baselinepeakv-bleb_y_baseline);
+        elseif strcmp(recordingmode,'C-Clamp')
+            [peakv,peakh]=max(bleb_y_filt(idxes));
+            peakv=peakv-bleb_y_baseline;
+            peakh=peakh+idxes(1);
+            [baselinepeakv,~]=max(bleb_y_filt(baselineidxes));
+            baselinepeakv=(baselinepeakv-bleb_y_baseline);
+        end
+        APdata(api).bleb_amplitude=peakv;
+        APdata(api).bleb_amplitude_t=time(peakh);
+        APdata(api).bleb_baselineamplitude=baselinepeakv;
+    end
+    
+    baselineamplitudes=sort([APdata(strcmp({APdata.bleb_Amplifiermode},recordingmode)).bleb_baselineamplitude]);
+    
+    [nbase,xbincenters]=hist(baselineamplitudes,100);
+    baselineamplitudes=baselineamplitudes(round(baselinepercentilerange(1)*length(baselineamplitudes)):round(baselinepercentilerange(2)*length(baselineamplitudes)));
+    [nbase2,~]=hist(baselineamplitudes,xbincenters);
+    minamplitude=mean(baselineamplitudes)+std(baselineamplitudes)*baselinestdmin;
+    
+    todel=find([APdata.bleb_amplitude]<minamplitude&strcmp({APdata.bleb_Amplifiermode},recordingmode) );
+    
+ APdata(todel)=[];
+    
     close all
-     figure(1)
-        clf
-        hold on
-        figure(2)
-        clf
-        hold on
+    figure(33)
+    clf
+    bar(xbincenters,nbase,'r')
+    hold on
+    bar(xbincenters,nbase2,'b')
+    plot([minamplitude,minamplitude],[0, max(nbase)],'r-','LineWidth',3)
+    figure(1)
+    clf
+    hold on
+    figure(2)
+    clf
+    hold on
     for i =0:3
         figure(1)
         needed=(strcmp({APdata.bleb_Amplifiermode},recordingmode));
@@ -275,7 +332,7 @@ if  projectnum==5
         elseif i==2 % somatic spike
             cim='somatic spike - hyperpolarized v0';
             needed=find(needed&[APdata.stimulated]==1 & [APdata.amplitude]>.07&  [APdata.baselineval]<-.07);
-            elseif i==3 % somatic spike
+        elseif i==3 % somatic spike
             cim='somatic spike - depolarized v0';
             needed=find(needed&[APdata.stimulated]==1 & [APdata.amplitude]>.07&  [APdata.baselineval]>-.05);
         end
@@ -290,18 +347,20 @@ if  projectnum==5
         plot([APdata(needed).time],bsxfun(@(a,b)a-b,[APdata(needed).bleb_y_filt],[APdata(needed).bleb_y_baseline]))
         plot(mean([APdata(needed).time],2),mean(bsxfun(@(a,b)a-b,[APdata(needed).bleb_y_filt],[APdata(needed).bleb_y_baseline]),2),'k-','LineWidth',3)
         if isfield(APdata,'bleb_amplitude')
+            [~,amplbins]=hist([APdata(strcmp({APdata.bleb_Amplifiermode},recordingmode)).bleb_amplitude],100);
+            [~,ampltbins]=hist([APdata(strcmp({APdata.bleb_Amplifiermode},recordingmode)).bleb_amplitude_t],100);
             subplot(4,4,i*4+3);
-            hist([APdata(needed).bleb_amplitude],100)
+            hist([APdata(needed).bleb_amplitude],amplbins)
             xlabel('peak amplitude')
             subplot(4,4,i*4+4);
-            hist([APdata(needed).bleb_amplitude_t],100)
+            hist([APdata(needed).bleb_amplitude_t],ampltbins)
             xlabel('peak latency')
         end
         linkaxes(hsom,'xy')
         linkaxes(hax,'xy')
         subplot(4,4,i*4+2);
         axis tight
-       subplot(4,4,i*4+1);
+        subplot(4,4,i*4+1);
         axis tight
         if isfield(APdata,'bleb_amplitude')
             figure(2)
@@ -326,35 +385,7 @@ if  projectnum==5
             ylabel('peak amplitude')
         end
     end
-    %% detect amplitudes
-     figure(1)
-    subplot(4,4,i*4+2);
-    [x,~]=ginput(2);
-    for api=1:length(APdata)
-        bleb_y_baseline=APdata(api).bleb_y_baseline;
-        time=APdata(api).time;
-        bleb_y=APdata(api).bleb_y;
-        bleb_y_filt=APdata(api).bleb_y_filt;
-        ic_y=APdata(api).ic_y;
-        idxes=find(time>min(x)&time<max(x));
-        if strcmp(recordingmode,'V-Clamp')
-            [peakv,peakh]=min(bleb_y_filt(idxes));
-            peakv=-(peakv-bleb_y_baseline);
-        elseif strcmp(recordingmode,'C-Clamp')
-            [peakv,peakh]=max(bleb_y_filt(idxes));
-            peakv=peakv-bleb_y_baseline;
-        end
-        peakh=peakh+idxes(1);
-        APdata(api).bleb_amplitude=peakv;
-        APdata(api).bleb_amplitude_t=time(peakh);
-%         figure(2)
-%         clf
-%         plot(time,bleb_y-bleb_y_baseline,'k-')
-%         hold on
-%         plot(time,bleb_y_filt-bleb_y_baseline,'k-','LineWIdth',2)
-%         plot(time(peakh),peakv,'ro')
-%         pause
-    end
+
 end
 % return
 % %% uj cucc

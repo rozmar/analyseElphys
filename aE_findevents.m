@@ -5,8 +5,12 @@ files([files.isdir])=[];
 delete([dirs.eventparaleldir,'*.mat']);
 for filenum=length(files):-1:1%1:length(files) % végigmegyünk az összes file-n
     a=dir([dirs.eventdir,files(filenum).name]);
-    xlsnum=find(strcmp(files(filenum).name(1:end-4),{xlsdata.ID}));
-    if (isempty(a) || valtozok.overwrite==1) & (~isfield(xlsdata,'juxta ') | xlsdata(xlsnum).juxta==0) & (~isfield(xlsdata,'field') | xlsdata(xlsnum).field==0) & (~isfield(xlsdata,'axonal ') | xlsdata(xlsnum).axonal==0)
+    if isfield(xlsdata,'ID')
+        xlsnum=find(strcmp(files(filenum).name(1:end-4),{xlsdata.ID}));
+    else
+        xlsnum=NaN;
+    end
+    if (isempty(a) || valtozok.overwrite==1) & (isnan(xlsnum)| ((~isfield(xlsdata,'juxta ') | xlsdata(xlsnum).juxta==0) & (~isfield(xlsdata,'field') | xlsdata(xlsnum).field==0) & (~isfield(xlsdata,'axonal ') | xlsdata(xlsnum).axonal==0)))
         workingmatlabnum=parallelcount+5;
         while workingmatlabnum>parallelcount-1
             filesunderprogress=dir(dirs.eventparaleldir);

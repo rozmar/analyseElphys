@@ -1,8 +1,6 @@
 function varargout = aE_InspectTraces(varargin)
-% AE_INSPECTTRACES MATLAB code for aE_InspectTraces.fig
-
-%USAGE: aE_InspectTraces(dirs,xlsdata) - after starting
-%analyseElphys_main.m
+% With this script one can observe bridge balanced traces exported with the  script :analyseElphys_main.m
+% USAGE: aE_InspectTraces(dirs,xlsdata) - after starting analyseElphys_main.m
 
 
 %      AE_INSPECTTRACES, by itself, creates a new AE_INSPECTTRACES or raises the existing
