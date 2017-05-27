@@ -148,7 +148,6 @@ if handles.data.samples(selectedsamplenum).selectedID>1
     handles.data.samples(selectedsamplenum).endtime=handles.data.samples(selectedsamplenum).lightdata(end).realtime;
     
     handles.data.samples(selectedsamplenum).neededwaves=[];
-    handles.data.samples(selectedsamplenum).maybeneededwaves=[];
     handles=loadthedata(handles);
     handles=updatedatatoplot(handles);
     guidata(hObject,handles);
@@ -280,14 +279,14 @@ for i=1:length(valuesnow)
         end
     end
 end
-handles.data.samples(selectedsamplenum).maybeneededwaves=sort(unique(needed));
-handles.data.samples(selectedsamplenum).maybeneededwavespervariable{selectedvariable}=handles.data.samples(selectedsamplenum).neededwaves;
-% timesofneededwaves=[handles.data.samples(selectedsamplenum).lightdata(handles.data.samples(selectedsamplenum).neededwaves).realtime];
-% reallyneededwaves=timesofneededwaves>=str2num(get(handles.edit4,'String')) & timesofneededwaves<=str2num(get(handles.edit5,'String'));
-% if reallyneededwaves(1)==0
-%     reallyneededwaves(find(timesofneededwaves<=str2num(get(handles.edit4,'String')),1,'last'))=true;
-% end
-% handles.data.samples(selectedsamplenum).neededwaves=handles.data.samples(selectedsamplenum).neededwaves(reallyneededwaves);
+handles.data.samples(selectedsamplenum).neededwaves=sort(unique(needed));
+handles.data.samples(selectedsamplenum).neededwavespervariable{selectedvariable}=handles.data.samples(selectedsamplenum).neededwaves;
+timesofneededwaves=[handles.data.samples(selectedsamplenum).lightdata(handles.data.samples(selectedsamplenum).neededwaves).realtime];
+reallyneededwaves=timesofneededwaves>=str2num(get(handles.edit4,'String')) & timesofneededwaves<=str2num(get(handles.edit5,'String'));
+if reallyneededwaves(1)==0
+    reallyneededwaves(find(timesofneededwaves<=str2num(get(handles.edit4,'String')),1,'last'))=true;
+end
+handles.data.samples(selectedsamplenum).neededwaves=handles.data.samples(selectedsamplenum).neededwaves(reallyneededwaves);
 handles.data.samples(selectedsamplenum).changes=szovegmost;
 handles=loadthedata(handles);
 handles=updatedatatoplot(handles);
@@ -336,9 +335,9 @@ handles.data.samples(selectedsamplenum).neededwaves=handles.data.samples(selecte
 handles.data.samples(selectedsamplenum).neededwavespervariable{selectedvariable}=handles.data.samples(selectedsamplenum).neededwaves;
 handles.data.samples(selectedsamplenum).changes=[handles.data.samples(selectedsamplenum).changes,' AND ',szovegmost];
 
-% timesofneededwaves=[handles.data.samples(selectedsamplenum).lightdata(handles.data.samples(selectedsamplenum).neededwaves).realtime];
-% reallyneededwaves=timesofneededwaves>=str2num(get(handles.edit4,'String')) & timesofneededwaves<=str2num(get(handles.edit5,'String'));
-% handles.data.samples(selectedsamplenum).neededwaves=handles.data.samples(selectedsamplenum).neededwaves(reallyneededwaves);
+timesofneededwaves=[handles.data.samples(selectedsamplenum).lightdata(handles.data.samples(selectedsamplenum).neededwaves).realtime];
+reallyneededwaves=timesofneededwaves>=str2num(get(handles.edit4,'String')) & timesofneededwaves<=str2num(get(handles.edit5,'String'));
+handles.data.samples(selectedsamplenum).neededwaves=handles.data.samples(selectedsamplenum).neededwaves(reallyneededwaves);
 
 handles=loadthedata(handles);
 handles=updatedatatoplot(handles);
@@ -604,13 +603,11 @@ midval=mean([startval,endval]);
 set(handles.slider3,'Value',midval);
 
 % timedifi=handles.data.samples(selectedsamplenum).endtime-handles.data.samples(selectedsamplenum).starttime;
-starttime=min([handles.data.samples.starttime]);
-endtime=max([handles.data.samples.endtime]);
-timedifi=endtime-starttime;
-set(handles.edit4,'String',starttime+timedifi*startval);
-set(handles.edit5,'String',starttime+timedifi*endval);
-set(handles.edit7,'String',starttime+timedifi*midval);
-set(handles.edit8,'String',timedifi*(endval-startval));
+timedifi=max([handles.data.samples.endtime])-min([handles.data.samples.starttime]);
+set(handles.edit4,'String',handles.data.samples(selectedsamplenum).starttime+timedifi*startval);
+set(handles.edit5,'String',handles.data.samples(selectedsamplenum).starttime+timedifi*endval);
+set(handles.edit6,'String',handles.data.samples(selectedsamplenum).starttime+timedifi*midval);
+set(handles.edit7,'String',timedifi*(endval*startval));
 selectedvariablename=handles.data.fieldnevek{selectedvariable};
 if length(handles.data.samples(selectedsamplenum).lightdata)>1
     if ischar(handles.data.samples(selectedsamplenum).lightdata(1).(selectedvariablename))
@@ -631,21 +628,9 @@ set(handles.text1,'String',handles.data.samples(selectedsamplenum).changes)
 
 
 function handles=updatedatatoplot(handles)
-% selectedsamplenum=get(handles.popupmenu1,'Value');
-for selectedsamplenum=1:5
+selectedsamplenum=get(handles.popupmenu1,'Value');
 if handles.data.samples(selectedsamplenum).switch>0
-    neededwaves=handles.data.samples(selectedsamplenum).maybeneededwaves;
-    %
-    if ~isempty(neededwaves)
-        timesofneededwaves=[handles.data.samples(selectedsamplenum).lightdata(handles.data.samples(selectedsamplenum).maybeneededwaves).realtime];
-        reallyneededwaves=timesofneededwaves>=str2num(get(handles.edit4,'String')) & timesofneededwaves<=str2num(get(handles.edit5,'String'));
-        if reallyneededwaves(1)==0
-            reallyneededwaves(find(timesofneededwaves<=str2num(get(handles.edit4,'String')),1,'last'))=true;
-        end
-        neededwaves=neededwaves(reallyneededwaves);
-        handles.data.samples(selectedsamplenum).neededwaves=neededwaves;
-    end
-    %
+    neededwaves=handles.data.samples(selectedsamplenum).neededwaves;
     neededsamplenum=str2num(get(handles.edit3,'String'));
     cutoffreq=handles.data.samples(selectedsamplenum).cutoffreq;
     filterdeg=handles.data.samples(selectedsamplenum).filterdeg;
@@ -694,7 +679,6 @@ if handles.data.samples(selectedsamplenum).switch>0
         handles.data.samples(selectedsamplenum).datatoplot=datatoplot;
         handles.data.samples(selectedsamplenum).plotdetails=plotdetails;
     end
-end
 end
 
 
@@ -865,7 +849,6 @@ maxval=min([1,maxval+difi]);
 set(handles.slider1,'Value',minval)
 set(handles.slider2,'Value',maxval)
 updategui(handles)
-plotandupdate(handles)
 guidata(hObject, handles)
 
 % --- Executes during object creation, after setting all properties.
@@ -974,14 +957,15 @@ timedifi=max([handles.data.samples.endtime])-min([handles.data.samples.starttime
 timeentered=str2num(get(hObject,'String'));
 valneeded=(timeentered-min([handles.data.samples.starttime]))/timedifi;
 if valneeded>get(handles.slider3,'Max')
-    valset=get(handles.slider3,'Max');
-elseif valneeded<startval
-    valset=startval;
+    endvalset=get(handles.slider3,'Max');
+elseif endvalneeded<startval
+    endvalset=startval;
+elseif endvalneeded<get(handles.slider2,'Min')
+    endvalset=get(handles.slider2,'Min');
 else
-    valset=valneeded;
+    endvalset=endvalneeded;
 end
-set(handles.slider3,'Value',valset);
-slider3_Callback(hObject,eventdata,handles);
+set(handles.slider2,'Value',endvalset);
 updategui(handles)
 guidata(hObject, handles)
 

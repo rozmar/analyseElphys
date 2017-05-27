@@ -1,6 +1,6 @@
 %%
 close all
-% clear all
+clear all
 projectnames={'CB1elphys','InVivo','Persistent-ChRstim','persistent firing','bleb recording'};
 % projectnum=3;
 
@@ -34,16 +34,18 @@ elseif projectnum==2;
     overwrite=0;
     locations=marcicucca_locations;
     dirs.basedir=[locations.tgtardir,'ANALYSISdata/marci/_persistent/_InVivo/'];
-    dirs.rawdir=[locations.tgtardir,'AXONdata/'];
+%     dirs.rawdir=[locations.tgtardir,'AXONdata/'];
     dirs.bridgeddir=[dirs.basedir,'Bridged_stim/'];
+    dirs.rawexporteddir=[dirs.basedir,'Exported_raw/'];
     dirs.eventdir=[dirs.basedir,'Events/'];
     dirs.eventparaleldir=[dirs.basedir,'Events/paralel/'];
+    dirs.statedir=[dirs.basedir,'State/'];
     % dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
     % dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
     % dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
     % dirs.figuresdir=[dirs.basedir,'Figures/'];
     xlsdata=aE_readxls([dirs.basedir,'invivodata.xls']);
-    amplifier='AXON';
+    amplifier='HEKA';
 elseif projectnum==3;
     overwrite=0;
     locations=marcicucca_locations;
@@ -116,10 +118,10 @@ valtozok.diffmovingt=.0005;
 valtozok.steptime=.0005; %s
 valtozok.eventminsdval=3;
 valtozok.apthreshval=10;
-parallelcount=2;
+parallelcount=4;
 aE_findevents(valtozok,dirs,parallelcount,xlsdata)
 paralleldata.count=NaN;
-while isnan(paralleldata.count) | ~isempty(paralleldata.files)
+while isnan(paralleldata.count) | ~isZucca S, D’Urso G, Pasquale V, Vecchia D, Pica G, Bovetti S, Moretti C, Varani S, Molano-Mazón M, Chiappalone M, Panzeri S, Fellin T (2017) An inhibitory gate for state transition in cortex. Elife 6 Available at: http://elifesciences.org/lookup/doi/10.7554/eLife.26177.empty(paralleldata.files)
     paralleldata.files=dir(dirs.eventparaleldir);
     paralleldata.files([paralleldata.files.isdir])=[];
     pause(3)
@@ -129,7 +131,295 @@ while isnan(paralleldata.count) | ~isempty(paralleldata.files)
         disp(['waiting for ',num2str(paralleldata.count),' eventfinding scripts to finish'])
     end
 end
+%% recording statistics
+baselineSDbinsize=5;
+baselineSDbinnum=round(30*60/baselineSDbinsize);
+recstats=struct;
+files={xlsdata.ID};
+for filei=1:length(files)
+    if xlsdata(filei).field==0
+        if isempty(fieldnames(recstats))
+            NEXT=1;
+        else
+            NEXT=length(recstats)+1;
+        end
+        ID=files{filei};
+        load([dirs.bridgeddir,ID],'bridgeddata','lightdata','stimdata');
+        recstats(NEXT).ID=ID;
+        recstats(NEXT).RS=nanmedian([lightdata.RS]);
+        recstats(NEXT).anaesth=xlsdata(filei).anaesthesia;
+        if lightdata(end).realtime>lightdata(1).realtime;
+            recstats(NEXT).recordinglength=lightdata(end).realtime-lightdata(1).realtime;
+        else
+            recstats(NEXT).recordinglength=lightdata(end).realtime-lightdata(1).realtime+24*3600;
+        end
+        recstats(NEXT).recordinglength= recstats(NEXT).recordinglength+bridgeddata(end).si*length(bridgeddata(end).y);
+        %baselineSD statistics
+        baselineSD=NaN(baselineSDbinnum,1);
+        if recstats(NEXT).recordinglength>=20*60
+            for bini=1:baselineSDbinnum
+                startt=(bini-1)*baselineSDbinsize+lightdata(1).realtime;
+                endt=(bini)*baselineSDbinsize+lightdata(1).realtime;
+                neededsweepnum=find([lightdata.realtime]>=startt & [lightdata.realtime]<=endt);
+                sweepSD=NaN;
+                if ~isempty(neededsweepnum)
+                    if neededsweepnum(1)>1
+                        neededsweepnum=[neededsweepnum(1)-1,neededsweepnum];
+                    end
+                    sweepSD=nan(size(neededsweepnum));
+                    for sweepi=1:length(neededsweepnum)
+                        sweepnum=neededsweepnum(sweepi);
+                        if strcmp(stimdata(sweepnum).Amplifiermode,'C-Clamp') &  any(strfind(bridgeddata(sweepnum).channellabel,'Vmon')) & std(stimdata(sweepnum).y)==0
+                            [b,a]=butter(1,500/(1/bridgeddata(sweepnum).si)/2,'low');
+                            y=bridgeddata(sweepnum).y;
+                            y=filtfilt(b,a,y);
+                            x=[1:length(bridgeddata(sweepnum).y)]*bridgeddata(sweepnum).si+bridgeddata(sweepnum).realtime-bridgeddata(sweepnum).si;
+                            neededidx=find(x>=startt & x<=endt);
+                            sweepSD(sweepi)=nanstd(y(neededidx));
+                        end
+                    end
+                end
+                baselineSD(bini)=nanmedian(sweepSD);
+            end
+%             figure(2)
+%             clf
+%             plot([1:baselineSDbinnum]*baselineSDbinsize/60,baselineSD,'ko-')
+%             pause
+        end
+        recstats(NEXT).baselineSD=baselineSD;
+    end
+end
 
+baselineSDtimevector=[1:baselineSDbinnum]*baselineSDbinsize/60;
+newbaselineSDtimevector=[1:1:30];
+newbaselineSDtimevectorcenters=newbaselineSDtimevector-mode(diff(newbaselineSDtimevector));
+newbaselineSDtimevectorsteps=mode(diff(newbaselineSDtimevector));
+for i=1:length(recstats)
+    recstats(i).newbaselineSD=[];
+    for stepi=1:length(newbaselineSDtimevectorcenters)
+        idx=find(baselineSDtimevector>=newbaselineSDtimevectorcenters(stepi)-newbaselineSDtimevectorsteps/2 & baselineSDtimevector<=newbaselineSDtimevectorcenters(stepi)+newbaselineSDtimevectorsteps/2);
+        recstats(i).newbaselineSD(stepi)=nanmean(recstats(i).baselineSD(idx));
+    end
+    recstats(i).newbaselineSD=(recstats(i).newbaselineSD/nanmedian(recstats(i).newbaselineSD(find(newbaselineSDtimevector>15))))';
+end
+figure(1)
+clf
+subplot(3,1,1)
+[nall,xbin]=hist([recstats.recordinglength]/60,[2.5:5:62.5]);
+[nketamine,~]=hist([recstats(strcmp({recstats.anaesth},'ketamine xylazine')).recordinglength]/60,[2.5:5:62.5]);
+[nchloral,~]=hist([recstats(strcmp({recstats.anaesth},'chloral hydrate')).recordinglength]/60,[2.5:5:62.5]);
+  [hAxes,hBar,hLine] = plotyy(xbin,[nketamine;nchloral]',xbin,cumsum([nketamine;nchloral]'),'bar','plot');
+  set(hBar,'BarLayout','stacked')
+  colororder=get(hAxes,'colororder');
+  set(hBar(2),'FaceColor',colororder{1}(2,:));
+ set(hLine,'LineWidth',2) 
+legend({'ketamine xylazine','chloral hydrate'})
+set(gca,'Xtick',[0:5:60])
+xlabel('min')
+ylabel('# of cells')
+title('recording length')
+subplot(3,1,2)
+[nall,xbin]=hist([recstats.RS]/10^6,[5:10:95]);
+[nketamine,~]=hist([recstats(strcmp({recstats.anaesth},'ketamine xylazine')).RS]/10^6,[5:10:95]);
+[nchloral,~]=hist([recstats(strcmp({recstats.anaesth},'chloral hydrate')).RS]/10^6,[5:10:95]);
+  [hAxes,hBar,hLine] = plotyy(xbin,[nketamine;nchloral]',xbin,cumsum([nketamine;nchloral]'),'bar','plot');
+  set(hBar,'BarLayout','stacked')
+  colororder=get(hAxes,'colororder');
+  set(hBar(2),'FaceColor',colororder{1}(2,:));
+ set(hLine,'LineWidth',2)
+legend({'ketamine xylazine','chloral hydrate'})
+set(gca,'Xtick',[0:10:90])
+xlabel('MOhm')
+ylabel('# of cells')
+title('median RS')
+subplot(3,1,3)
+hold on
+for i=1:length(recstats)
+    needed=find(~isnan(recstats(i).newbaselineSD));
+    if strcmp(recstats(i).anaesth,'ketamine xylazine')
+        colorka=colororder{1}(1,:);
+    elseif strcmp(recstats(i).anaesth,'chloral hydrate')
+        colorka=colororder{1}(2,:);
+    end
+    if ~isempty(needed)
+        plot(newbaselineSDtimevector(needed),recstats(i).newbaselineSD(needed),'Color',colorka,'LineWidth',2);
+    end
+end
+ylim([0 1.2])
+xlabel('time (min)')
+ylabel('relative baseline SD')
+%% UP-DOWN transitions
+if projectnum==2
+    valtozok=struct;
+    valtozok.overwrite=1;
+    valtozok.segmentlength=5;
+    aE_UP_DOWN_detect(valtozok,dirs,xlsdata);
+end
+
+%% plot state transitions
+timeborders=[69070, 69510];
+timeborders=[0, 76500];
+timeborders=[0, inf];
+minimumstateduration=0;
+[Selection,ok] = listdlg('ListString',{xlsdata.ID},'ListSize',[300 600]);
+ID=xlsdata(Selection).ID;
+load([dirs.eventdir,ID],'eventdata');
+load([dirs.bridgeddir,ID],'bridgeddata','stimdata');
+load([dirs.statedir,ID],'statedata');
+statedata.UP=statedata.UP([statedata.UP.onsett]>timeborders(1)&[statedata.UP.onsett]<timeborders(2));
+statedata.DOWN=statedata.DOWN([statedata.DOWN.onsett]>timeborders(1)&[statedata.DOWN.onsett]<timeborders(2));
+% get transition data
+timebefore=1;
+timeafter=1;
+apdata=eventdata(strcmp({eventdata.type},'AP'));
+prevsweepnum=0;
+for api=1:length(apdata)
+    sweepnum=apdata(api).sweepnum;
+    if sweepnum~=prevsweepnum
+        y=bridgeddata(sweepnum).y;
+        si=bridgeddata(sweepnum).si;
+         yfiltered=moving(y,5);
+        dyfiltered=diff(yfiltered)/si;
+        prevsweepnum=sweepnum;
+        stepback=round(.0002/si);
+    end
+    onseth=apdata(api).onseth;
+    maxh=apdata(api).maxh;
+    threshh=maxh-stepback;
+    while dyfiltered(threshh)>5 & threshh>2
+        threshh=threshh-1;
+    end
+    threshv=yfiltered(threshh);
+    apdata(api).threshv=threshv;
+    apdata(api).APamplitude=apdata(api).maxval-apdata(api).threshv;
+%     if threshv>-.04% & threshv<-.04
+%         figure(1)
+%         clf
+%         hold on
+%         plot(yfiltered,'r-')
+%         plot(y,'k-')
+%         
+%         plot(maxh,yfiltered(maxh),'ro')
+%         plot(threshh,yfiltered(threshh),'ko')
+%         plot(onseth,yfiltered(onseth),'kx')
+%         pause
+%     end
+end
+figure(1)
+clf
+% hist([apdata.threshv],100)
+plot([apdata.threshv],[apdata.APamplitude],'ko')
+[x,~]=ginput(1);
+aapdata=apdata([apdata.threshv]<x);
+sapdata=apdata([apdata.threshv]>x);
+epdata=eventdata(strcmp({eventdata.type},'ep'));
+ipdata=eventdata(strcmp({eventdata.type},'ip'));
+statestocheck={'UP','DOWN'};
+%
+for statei=1:length(statestocheck)
+    statedatanow=statedata.(statestocheck{statei});
+    statedatanow=statedatanow([statedatanow.duration]>minimumstateduration);
+    transitiondata=struct;
+    for i=1:length(statedatanow)
+        sweepnum=statedatanow(i).sweepnum;
+        transitiont=statedatanow(i).onsett;
+        transitionh=statedatanow(i).onseth;
+        si=bridgeddata(sweepnum).si;
+        stepback=round(timebefore/si);
+        stepforward=round(timeafter/si);
+        y=bridgeddata(sweepnum).y;
+        if transitionh>stepback & length(y)>transitionh+stepforward
+            if isempty(fieldnames(transitiondata))
+                NEXT=1;
+            else
+                NEXT=length(transitiondata)+1;
+            end
+            neededAPs=find([apdata.maxtime]>transitiont-timebefore &[apdata.maxtime]<transitiont+timeafter);
+            neededaAPs=find([aapdata.maxtime]>transitiont-timebefore &[aapdata.maxtime]<transitiont+timeafter);
+            neededsAPs=find([sapdata.maxtime]>transitiont-timebefore &[sapdata.maxtime]<transitiont+timeafter);
+            neededeps=find([epdata.maxtime]>transitiont-timebefore &[epdata.maxtime]<transitiont+timeafter);
+            neededips=find([ipdata.maxtime]>transitiont-timebefore &[ipdata.maxtime]<transitiont+timeafter);
+            transitiondata(NEXT).transitiont=transitiont;
+            transitiondata(NEXT).time=[-stepback:stepforward]'*si;
+            transitiondata(NEXT).y=y(transitionh-stepback:transitionh+stepforward)';
+            
+            if ~isempty(neededAPs)
+                transitiondata(NEXT).APtimes=[apdata(neededAPs).maxtime]-transitiont;
+                transitiondata(NEXT).APnum=length(transitiondata(NEXT).APtimes);
+            else
+                transitiondata(NEXT).APtimes=[];
+                transitiondata(NEXT).APnum=0;
+            end
+            if ~isempty(neededaAPs)
+                transitiondata(NEXT).aAPtimes=[aapdata(neededaAPs).maxtime]-transitiont;
+                transitiondata(NEXT).aAPnum=length(transitiondata(NEXT).aAPtimes);
+            else
+                transitiondata(NEXT).aAPtimes=[];
+                transitiondata(NEXT).aAPnum=0;
+            end
+            if ~isempty(neededsAPs)
+                transitiondata(NEXT).sAPtimes=[sapdata(neededsAPs).maxtime]-transitiont;
+                transitiondata(NEXT).sAPnum=length(transitiondata(NEXT).sAPtimes);
+            else
+                transitiondata(NEXT).sAPtimes=[];
+                transitiondata(NEXT).sAPnum=0;
+            end
+            if ~isempty(neededeps)
+                transitiondata(NEXT).eptimes=[epdata(neededeps).maxtime]-transitiont;
+                transitiondata(NEXT).epnum=length(transitiondata(NEXT).eptimes);
+            else
+                transitiondata(NEXT).eptimes=[];
+                transitiondata(NEXT).epnum=0;
+            end
+            if ~isempty(neededips)
+                transitiondata(NEXT).iptimes=[ipdata(neededips).maxtime]-transitiont;
+                transitiondata(NEXT).ipnum=length(transitiondata(NEXT).iptimes);
+            else
+                transitiondata(NEXT).iptimes=[];
+                transitiondata(NEXT).ipnum=0;
+            end
+        end
+    end
+    Transitiondata.(statestocheck{statei})=transitiondata;
+end
+% plot
+figure(1)
+clf
+subplot(4,2,1)
+needed=find([Transitiondata.UP.aAPnum]>0);
+plot([Transitiondata.UP(needed).time],[Transitiondata.UP(needed).y]);
+xlim([-timebefore,timeafter])
+title('DOWN to UP transition')
+subplot(4,2,2)
+needed=find([Transitiondata.DOWN.aAPnum]>0);
+plot([Transitiondata.DOWN(needed).time],[Transitiondata.DOWN(needed).y]);
+xlim([-timebefore,timeafter])
+title('UP to DOWN transition')
+subplot(4,2,3)
+hist([Transitiondata.UP.sAPtimes],[-timebefore:0.05:timeafter])
+xlim([-timebefore,timeafter])
+ylabel('somatic APnum');
+subplot(4,2,4)
+hist([Transitiondata.DOWN.sAPtimes],[-timebefore:0.05:timeafter])
+xlim([-timebefore,timeafter])
+ylabel('somatic AP num');
+subplot(4,2,5)
+hist([Transitiondata.UP.aAPtimes],[-timebefore:0.05:timeafter])
+xlim([-timebefore,timeafter])
+ylabel('axonal APnum');
+subplot(4,2,6)
+hist([Transitiondata.DOWN.aAPtimes],[-timebefore:0.05:timeafter])
+xlim([-timebefore,timeafter])
+ylabel('axonal AP num');
+subplot(4,2,7)
+hist([Transitiondata.UP.eptimes],[-timebefore:0.05:timeafter])
+xlim([-timebefore,timeafter])
+ylabel('EPnum');
+subplot(4,2,8)
+hist([Transitiondata.DOWN.eptimes],[-timebefore:0.05:timeafter])
+xlim([-timebefore,timeafter])
+ylabel('EPnum');
+%%
 if projectnum==4
     %% defining stimepochs and spike clusters
     valtozok_stimepochs.overwrite=projectdata.owstimepoch;
@@ -160,18 +450,13 @@ if projectnum==4
             persistent_getv0dist(dirs,valtozok_states,valtozok_tau,taudata,fname);
         end
     end
-    
-    %% taking a look at EPSP kinetics
-    [icSelection,ok] = listdlg('ListString',{xlsdata(icdxes).ID},'ListSize',[300 600]); % az XLS file alapján kiválasztjuk, hogy melyik file összes mérésén szeretnénk végigmenni
-    
-    
 end
 if  projectnum==5
     %% checking somatically triggered axonal events
     timebefore=.003;
-    timeafter=.003;
-    cutofffreq=2500;
-    filterorder=3;
+    timeafter=.005;
+    cutofffreq=[3000];
+    filterorder=1;
     for i=1:length(xlsdata)
         if xlsdata(i).startT>xlsdata(i).endT
             xlsdata(i).endTmodified=xlsdata(i).endT+86400;
@@ -208,7 +493,11 @@ if  projectnum==5
                 end
                 si=bleb.bridgeddata(blebsweepnum).si;
                 ninq=.5/si;
+                if length(cutofffreq)==1
                  [b,a] = butter(filterorder,cutofffreq/ninq,'low');
+                else
+                    [b,a] = butter(filterorder,cutofffreq/ninq,'bandpass');
+                end
                  bleb.bridgeddata(blebsweepnum).y_filt=filter(b,a,bleb.bridgeddata(blebsweepnum).y);
             end
             apidxes=find(strcmp({ic.eventdata.type},'AP'));
@@ -279,14 +568,14 @@ if  projectnum==5
         idxes=find(time>min(x)&time<max(x));
         baselineidxes=find(time>min(baselinex)&time<max(baselinex));
         if strcmp(recordingmode,'V-Clamp')
-            [peakv,peakh]=min(bleb_y_filt(idxes));
-            peakv=-(peakv-bleb_y_baseline);
+            [peakv,peakh]=max(bleb_y_filt(idxes));
+            peakv=(peakv-bleb_y_baseline);
             peakh=peakh+idxes(1);
            [baselinepeakv,~]=min(bleb_y_filt(baselineidxes));
             baselinepeakv=-(baselinepeakv-bleb_y_baseline);
         elseif strcmp(recordingmode,'C-Clamp')
-            [peakv,peakh]=max(bleb_y_filt(idxes));
-            peakv=peakv-bleb_y_baseline;
+            [peakv,peakh]=min(bleb_y_filt(idxes));
+            peakv=-(peakv-bleb_y_baseline);
             peakh=peakh+idxes(1);
             [baselinepeakv,~]=max(bleb_y_filt(baselineidxes));
             baselinepeakv=(baselinepeakv-bleb_y_baseline);
