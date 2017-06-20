@@ -1,49 +1,59 @@
+function aE_ic_field_analysis(dirs,xlsdata,icxlsnum,timeborders,type)
 %% field and IC analysis values
 
-%% slice
-% oscillating slice - sporadic axonal APs
-fieldxlsnum=find(strcmp({xlsdata.ID},'1608041tm_3_1_2'));%341;
-icxlsnum=find(strcmp({xlsdata.ID},'1608041tm_3_5,17_4'));%342;
-timeborders=[0,300]+49821;
-
-% oscillating slice - rhythmic persistent firing
-fieldxlsnum=find(strcmp({xlsdata.ID},'1611091tm_1_1_3'));%401;
-icxlsnum=find(strcmp({xlsdata.ID},'1611091tm_3_1_4'));%403;
-timeborders=[44800,44900];
-
-%rat slow oscillation L1 interneuron receiving EPSPs
-fieldxlsnum=find(strcmp({xlsdata.ID},'1611151tm_3_2_3'));
-icxlsnum=find(strcmp({xlsdata.ID},'1611151tm_3_1_4'));
-timeborders=[];
+% %% slice
+% % oscillating slice - sporadic axonal APs
+% fieldxlsnum=find(strcmp({xlsdata.ID},'1608041tm_3_1_2'));%341;
+% icxlsnum=find(strcmp({xlsdata.ID},'1608041tm_3_5,17_4'));%342;
+% timeborders=[0,300]+49821;
 % 
-%rhythmic persisntent - dsfc - no field
-fieldxlsnum=find(strcmp({xlsdata.ID},'1702101tm_2_33_3'));
-fieldxlsnum=NaN;
-icxlsnum=find(strcmp({xlsdata.ID},'1702101tm_2_1,2_4'));
-timeborders=[53800, 55500];
-
-%rhythmic persisntent - dsfc - no field - NBQX-GBZ
-fieldxlsnum=NaN;
-icxlsnum=find(strcmp({xlsdata.ID},'1703032tm_2_1_4'));
-timeborders=[59220, 59220+350];
- %% invivo
-
- %nonNGF - no field
-fieldxlsnum=NaN;
-icxlsnum=find(strcmp({xlsdata.ID},'1704191rm_2_1,2_1'));
-timeborders=[67732, 68300];
-
-%axonal spikes - no field
-fieldxlsnum=NaN;
-icxlsnum=find(strcmp({xlsdata.ID},'1704191rm_3_1,2_1'));
-timeborders=[0, 10000000];
- 
-%  %axonal spikes - no field
+% % oscillating slice - rhythmic persistent firing
+% fieldxlsnum=find(strcmp({xlsdata.ID},'1611091tm_1_1_3'));%401;
+% icxlsnum=find(strcmp({xlsdata.ID},'1611091tm_3_1_4'));%403;
+% timeborders=[44800,44900];
+% 
+% %rat slow oscillation L1 interneuron receiving EPSPs
+% fieldxlsnum=find(strcmp({xlsdata.ID},'1611151tm_3_2_3'));
+% icxlsnum=find(strcmp({xlsdata.ID},'1611151tm_3_1_4'));
+% timeborders=[];
+% % 
+% %rhythmic persisntent - dsfc - no field
+% fieldxlsnum=find(strcmp({xlsdata.ID},'1702101tm_2_33_3'));
 % fieldxlsnum=NaN;
-% icxlsnum=find(strcmp({xlsdata.ID},'1704241rm_1_5,7,9_1'));
-% timeborders=[0,67101010600];
+% icxlsnum=find(strcmp({xlsdata.ID},'1702101tm_2_1,2_4'));
+% timeborders=[53800, 55500];
+% 
+% %rhythmic persisntent - dsfc - no field - NBQX-GBZ
+% fieldxlsnum=NaN;
+% icxlsnum=find(strcmp({xlsdata.ID},'1703032tm_2_1_4'));
+% timeborders=[59220, 59220+350];
+%  %% invivo
+% 
+%  %nonNGF - no field
+% fieldxlsnum=NaN;
+% icxlsnum=find(strcmp({xlsdata.ID},'1704191rm_2_1,2_1'));
+% timeborders=[67732, 68300];
+% 
+% %axonal spikes - no field
+% fieldxlsnum=NaN;
+% icxlsnum=find(strcmp({xlsdata.ID},'1704191rm_3_1,2_1'));
+% timeborders=[0, 10000000];
+%  
+% %  %axonal spikes - no field
+% % fieldxlsnum=NaN;
+% % icxlsnum=find(strcmp({xlsdata.ID},'1704241rm_1_5,7,9_1'));
+% % timeborders=[0,67101010600];
+% [icxlsnum,ok] = listdlg('ListString',{xlsdata.ID},'ListSize',[300 600]); % 
 
-%%
+% timeborders=[71320 71450];
+% timeborders=[0 70700];
+
+%% loading
+fieldxlsnum=find(strcmp(xlsdata(icxlsnum).HEKAfname,{xlsdata.HEKAfname}) & [xlsdata.field]==1);
+if isempty(fieldxlsnum)
+    fieldxlsnum(NaN);
+end
+
 ic=load([dirs.bridgeddir,xlsdata(icxlsnum).ID]);
 if isnan(fieldxlsnum)
     field=ic;
@@ -68,9 +78,9 @@ apdata=eventdata(strcmp({eventdata.type},'AP'));%& [eventdata.baselineval]<-.05
 epdata=eventdata(strcmp({eventdata.type},'ep'));
 ipdata=eventdata(strcmp({eventdata.type},'ip'));
 %
-close all
+% close all
 localextremumwin=.1;
-cutofffreq=[1 10];
+cutofffreq=[.1 5];
 timebefore=1;
 timeafter=1;
 NEXT=0;
@@ -91,7 +101,7 @@ ISI_next=[];
 NEXT=0;
 FieldData=struct;
 EventTimesRelative=struct;
-%% analysis relative to the Field
+% analysis relative to the Field
 progressbar('analyzing field data')
 for fieldsweepnum= 1: length(field.bridgeddata)
     progressbar(fieldsweepnum/ length(field.bridgeddata));
@@ -110,7 +120,7 @@ for fieldsweepnum= 1: length(field.bridgeddata)
     maxh=stepback;
     maxh2=stepback;
     if ~isempty(sweepnum)%% analysis relative to the Field
-        if isnan(fieldxlsnum) % the waveform is upside-down if the recording is intracellular
+        if isnan(fieldxlsnum) | strcmp(type,'peak') % the waveform is upside-down if the recording is intracellular
             yfield=yfield*-1;
         end
         icy=ic.bridgeddata(sweepnum).y;
@@ -120,12 +130,16 @@ for fieldsweepnum= 1: length(field.bridgeddata)
             while maxh<length(yfield)-lestep & max(yfield(maxh:maxh+lestep))>max(yfield(maxh-lestep:maxh))
                 maxh=maxh+lestep;
             end
-            minh2=maxh+lestep;
-            while minh2<length(yfield)-lestep & min(yfield(minh2:minh2+lestep))<min(yfield(minh2-lestep:minh2))
+            if maxh+2*lestep<length(yfield)
+                minh2=maxh+lestep;
+            end
+            while minh2<length(yfield)-2*lestep & minh2<length(yfield)-2*stepforward& min(yfield(minh2:minh2+lestep))<min(yfield(minh2-lestep:minh2))
                 minh2=minh2+lestep;
             end
-            maxh2=minh2+lestep;
-            while maxh2<length(yfield)-lestep & max(yfield(maxh2:maxh2+lestep))>max(yfield(maxh2-lestep:maxh2))
+            if minh2+2*lestep<length(yfield)
+                maxh2=minh2+lestep;
+            end
+            while maxh2<length(yfield)-2*lestep & max(yfield(maxh2:maxh2+lestep))>max(yfield(maxh2-lestep:maxh2))
                 maxh2=maxh2+lestep;
             end
             
@@ -136,7 +150,7 @@ for fieldsweepnum= 1: length(field.bridgeddata)
             [maxval2,sech2]=max(yfield(maxh2:maxh2+lestep));
             sech2=sech2+maxh2;
             
-            if isnan(fieldxlsnum) % the waveform is upside-down if the recording is intracellular
+            if isnan(fieldxlsnum) | strcmp(type,'peak') % the waveform is upside-down if the recording is intracellular
                 maxval=maxval*-1;
                 minval=minval*-1;
                 maxval2=maxval2*-1;
@@ -144,7 +158,7 @@ for fieldsweepnum= 1: length(field.bridgeddata)
             
             time=[-stepback:stepforward]*si;
             fieldidx=[-stepback:stepforward]+firsth2;
-            if isnan(fieldxlsnum) % the waveform is upside-down if the recording is intracellular
+            if isnan(fieldxlsnum) | strcmp(type,'peak') % the waveform is upside-down if the recording is intracellular
                 fieldy=-1*yfield(fieldidx);
             else
                 fieldy=yfield(fieldidx);
@@ -240,7 +254,9 @@ for fieldsweepnum= 1: length(field.bridgeddata)
 end
 
 FieldDataoriginal=FieldData;
-%%
+
+
+% plotting
 FieldData=FieldDataoriginal;
 for i=1:length(FieldData)
     FieldData(i).medicV=median(FieldData(i).ic);
@@ -254,7 +270,7 @@ for i = 1:length(FieldData)
     needed=FieldData(i).troughtime-timewindowforfieldamplitude/2<=[FieldData.troughtime] & FieldData(i).troughtime+timewindowforfieldamplitude/2>=[FieldData.troughtime];
     FieldData(i).medianamplitude=median([FieldData(needed).maxamplitude]);
 end
-needed=[FieldData.maxamplitude]>=[FieldData.medianamplitude]/1;%&[FieldData.maxamplitude]<=[FieldData.medianamplitude]*5;% & [FieldData.apnum]>0 ;
+needed=[FieldData.maxamplitude]>=[FieldData.medianamplitude]/2;%&[FieldData.maxamplitude]<=[FieldData.medianamplitude]*5;% & [FieldData.apnum]>0 ;
 FieldData=FieldData(needed);
 periodlength=nanmean([NaN,diff([FieldData.troughtime]);diff([FieldData.troughtime,NaN])]);
 needed=periodlength>.2 & periodlength<2;
@@ -291,6 +307,93 @@ axis tight
 ylabel('EPSP count')
 xlabel('time (s)')
 linkaxes(h,'x');
+
+%%
+pause
+
+
+%%
+events.AP=apdata;
+events.ep=epdata;
+events.ip=ipdata;
+eventtypes=fieldnames(events);
+for eventtypei=1:1%length(eventtypes)
+    eventdata=events.(eventtypes{eventtypei});
+    prevsweepnum=0;
+    for eventi=1:length(eventdata)
+        si=eventdata(eventi).si;
+        stepback=round(timebefore/si);
+        stepforward=round(timeafter/si);
+        maxh=eventdata(eventi).maxh;
+        sweepnum=eventdata(eventi).sweepnum;
+        lestep=round(localextremumwin/si);
+        if maxh>stepback+lestep & length(ic.bridgeddata(sweepnum).y)>maxh+stepforward
+            
+            x=[-stepback:stepforward]*si;
+            if sweepnum~=prevsweepnum
+                yicraw=ic.bridgeddata(sweepnum).y;
+                fieldsweepnum=find([field.bridgeddata.realtime]==eventdata(eventi).sweeptime);
+                yfieldraw=field.bridgeddata(fieldsweepnum).y;
+                prevsweepnum=sweepnum;
+            end
+            NOT FINISHED - filtering and phase detection needed
+            y=yraw(maxh-stepback:maxh+stepforward);
+            
+            [b,a]=butter(1,cutofffreq/(1/field.bridgeddata(fieldsweepnum).si)/2,'bandpass');
+            [bb,aa]=butter(1,500/(1/field.bridgeddata(fieldsweepnum).si)/2,'low');
+            
+            yfield=filtfilt(b,a,field.bridgeddata(fieldsweepnum).y);
+            yfieldorig=yfield;
+            yfieldorig=yfieldorig(maxh-stepback:maxh+stepforward);
+            yfield=yfield(maxh-stepback:maxh+stepforward);
+            yfieldtoshow=filtfilt(bb,aa,field.bridgeddata(fieldsweepnum).y);
+            yfieldtoshow=yfieldtoshow(maxh-stepback:maxh+stepforward);
+            
+            
+            maxtime=eventdata(eventi).maxtime;
+            prevtroughidx=find([FieldData.troughtime]<maxtime,1,'last');
+            prevtroughtime=FieldData(prevtroughidx).troughtime;
+            nexttroughidx=find([FieldData.troughtime]>maxtime,1,'first');
+            nexttroughtime=FieldData(nexttroughidx).troughtime;
+            
+            sweeptimevector=[0:length(ic.bridgeddata(sweepnum).y)]*ic.bridgeddata(sweepnum).si+ic.bridgeddata(sweepnum).realtime;
+            peaktimes=sort(sweeptimevector([FieldData(prevtroughidx).prevpeak,FieldData(prevtroughidx).nextpeak,FieldData(nexttroughidx).prevpeak,FieldData(nexttroughidx).nextpeak]));
+            
+            prevpeaktime=peaktimes(find(peaktimes<maxtime,1,'last'));
+            nextpeaktime=peaktimes(find(peaktimes>maxtime,1,'first'));
+            
+            timetoprevpeak=prevpeaktime-maxtime;
+            timetonextpeak=nextpeaktime-maxtime;
+            timetoprevtrough=prevtroughtime-maxtime;
+            timetonexttrough=nexttroughtime-maxtime;
+            
+            
+            X(NEXT,:)=x;
+            if x(1)==0
+                disp('lol')
+            end
+            Y(NEXT,:)=y;
+            YFIELD(NEXT,:)=yfield;
+            YFIELDreal(NEXT,:)=yfieldorig*1000000;
+            %         Yphase(NEXT)=phase;
+            YfieldAmplitude(NEXT)=fieldamplitude;
+            YfieldTimetoPrevTrough(NEXT)=timetoprevtrough;
+            YfieldTimetoNextTrough(NEXT)=timetonexttrough;
+            %         YfieldTimetoPeak(NEXT)=timetopeak;
+            APtime(NEXT)=eventdata(eventi).maxtime;
+            V0(NEXT)=eventdata(eventi).baselineval;
+            ISI(NEXT)=diffmin(eventi);
+            ISI_prev(NEXT)=diffs(eventi);
+            ISI_next(NEXT)=diffs2(eventi);
+        else
+            disp('lol')
+        end
+        progressbar(eventi/length(eventdata));
+    end
+end
+
+%%
+return
 %% analysis relative to the APs
 eventdata=apdata;
 for eventi=1:length(eventdata)
@@ -323,7 +426,6 @@ for eventi=1:length(eventdata)
         nexttroughidx=find([FieldData.troughtime]>maxtime,1,'first');
         nexttroughtime=FieldData(nexttroughidx).troughtime;
         
-%         peaktimes=sort([prevtroughtime+FieldData(prevtroughidx).time(FieldData(prevtroughidx).prevpeak),prevtroughtime+FieldData(prevtroughidx).time(FieldData(prevtroughidx).nextpeak),nexttroughtime+FieldData(nexttroughidx).time(FieldData(nexttroughidx).prevpeak),nexttroughtime+FieldData(nexttroughidx).time(FieldData(nexttroughidx).nextpeak)]);
         sweeptimevector=[0:length(ic.bridgeddata(sweepnum).y)]*ic.bridgeddata(sweepnum).si+ic.bridgeddata(sweepnum).realtime;
         peaktimes=sort(sweeptimevector([FieldData(prevtroughidx).prevpeak,FieldData(prevtroughidx).nextpeak,FieldData(nexttroughidx).prevpeak,FieldData(nexttroughidx).nextpeak]));
         
@@ -335,101 +437,14 @@ for eventi=1:length(eventdata)
         timetoprevtrough=prevtroughtime-maxtime;
         timetonexttrough=nexttroughtime-maxtime;
         
-%         % finding local extrema
-%         minh=stepback;
-%         maxh=stepback;
-%         if mean(yfield(stepback-lestep:stepback))<mean(yfield(stepback:stepback+lestep)) %increasing lfp value
-%             szorzo=1;
-%         else %decreasing lfp value
-%             szorzo=-1;
-%         end
-%         yfield=yfield*szorzo;
-%         minh=minh-lestep;
-%         while minh>lestep & min(yfield(minh:minh+lestep))>min(yfield(minh-lestep:minh))
-%             minh=minh-lestep;
-%         end
-%         if minh>lestep
-%             maxh2=minh-lestep;
-%         end
-%         while maxh2>lestep & max(yfield(maxh2:maxh2+lestep))<max(yfield(maxh2-lestep:maxh2))
-%             maxh2=maxh2-lestep;
-%         end
-%         maxh=maxh+lestep;
-%         while maxh<length(yfield)-lestep & max(yfield(maxh:maxh+lestep))>max(yfield(maxh-lestep:maxh))
-%             maxh=maxh+lestep;
-%         end
-%         minh2=maxh+lestep;
-%         while minh2<length(yfield)-lestep & min(yfield(minh2:minh2+lestep))<min(yfield(minh2-lestep:minh2))
-%             minh2=minh2+lestep;
-%         end
-%         [minval,firsth]=min(yfield(minh:minh+lestep));
-%         firsth=firsth+minh;
-%         [maxval,sech]=max(yfield(maxh-lestep:maxh)); 
-%         sech=sech+maxh-lestep;
-%         
-%         [minval2,firsth2]=min(yfield(minh2-lestep:minh2));
-%         firsth2=firsth2+minh2-lestep;
-%         [maxval2,sech2]=max(yfield(maxh2:maxh2+lestep)); 
-%         sech2=sech2+maxh2;
-%         
-%         yfieldreal=yfield*szorzo;
-%         yfield=((yfield-minval)/(maxval-minval)-.5)*2;
-%         yfield=yfield*szorzo;
-%         fieldval=yfield(stepback);
-%         fieldamplitude=maxval-minval;
-%         if szorzo==1
-%             phase=-radtodeg(acos(fieldval));
-%             timetoprevpeak=(sech2-stepback)*si;
-%             timetonextpeak=(sech-stepback)*si;
-%             timetoprevtrough=(firsth-stepback)*si;
-%             timetonexttrough=(firsth2-stepback)*si;
-%         else
-%             phase=radtodeg(acos(fieldval));
-%             timetoprevpeak=(firsth-stepback)*si;
-%             timetonextpeak=(firsth2-stepback)*si;
-%             timetoprevtrough=(sech2-stepback)*si;
-%             timetonexttrough=(sech-stepback)*si;
-%         end
-        
-        
-        
-%         figure(1)
-%                clf
-%         h(1)=subplot(3,1,1);
-%         plot(x,y)
-%         hold on
-%         xlim([nanmin(x),nanmax(x)])
-%         h(2)=subplot(3,1,2);
-%         cla
-%         hold on
-%         plot(x,yfieldorig,'k-','LineWIdth',2)
-%         plot(x(firsth),yfieldorig(firsth),'ro')
-%         plot(x(sech),yfieldorig(sech),'rx')
-%          plot(x(firsth2),yfieldorig(firsth2),'bo')
-%         plot(x(sech2),yfieldorig(sech2),'bx')
-%         title(num2str(phase));
-% %         ylim([-1 1])
-%         axis tight
-%         xlim([nanmin(x),nanmax(x)])
-%         h(3)=subplot(3,1,3);
-%         cla
-%         hold on
-%         plot(x,yfieldtoshow,'k-','LineWIdth',2)
-%         plot(x(firsth),yfieldtoshow(firsth),'ro')
-%         plot(x(sech),yfieldtoshow(sech),'ro')
-%         title(['time to prev trough : ',num2str(timetoprevtrough),'    time to next trough:',num2str(timetonexttrough)]);
-%         xlim([nanmin(x),nanmax(x)])
-%         ylim([nanmin(yfieldtoshow),nanmax(yfieldtoshow)])
-%         linkaxes([h],'x');
-% %         pause
-%         halfperiodlength(NEXT)=(sech-firsth)*si;
+
         X(NEXT,:)=x;
         if x(1)==0
             disp('lol')
         end
         Y(NEXT,:)=y;
         YFIELD(NEXT,:)=yfield;
-        YFIELDreal(NEXT,:)=yfieldreal*1000000;
+        YFIELDreal(NEXT,:)=yfieldorig*1000000;
 %         Yphase(NEXT)=phase;
         YfieldAmplitude(NEXT)=fieldamplitude;
         YfieldTimetoPrevTrough(NEXT)=timetoprevtrough;
@@ -449,7 +464,8 @@ end
 periodlength=YfieldTimetoNextTrough-YfieldTimetoPrevTrough;
 % periodlength=halfperiodlength;
 minamplitude=0E-5;
-minperiodlength=.1;
+minperiodlength=.1;%         peaktimes=sort([prevtroughtime+FieldData(prevtroughidx).time(FieldData(prevtroughidx).prevpeak),prevtroughtime+FieldData(prevtroughidx).time(FieldData(prevtroughidx).nextpeak),nexttroughtime+FieldData(nexttroughidx).time(FieldData(nexttroughidx).prevpeak),nexttroughtime+FieldData(nexttroughidx).time(FieldData(nexttroughidx).nextpeak)]);
+
 limit=.3;
 lfplimit=.5;
 close all

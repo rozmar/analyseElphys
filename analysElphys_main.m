@@ -43,7 +43,7 @@ elseif projectnum==2;
     % dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
     % dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
     % dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
-    % dirs.figuresdir=[dirs.basedir,'Figures/'];
+    dirs.figuresdir=[dirs.basedir,'Figures/'];
     xlsdata=aE_readxls([dirs.basedir,'invivodata.xls']);
     amplifier='HEKA';
 elseif projectnum==3;
@@ -121,7 +121,7 @@ valtozok.apthreshval=10;
 parallelcount=4;
 aE_findevents(valtozok,dirs,parallelcount,xlsdata)
 paralleldata.count=NaN;
-while isnan(paralleldata.count) | ~isZucca S, D’Urso G, Pasquale V, Vecchia D, Pica G, Bovetti S, Moretti C, Varani S, Molano-Mazón M, Chiappalone M, Panzeri S, Fellin T (2017) An inhibitory gate for state transition in cortex. Elife 6 Available at: http://elifesciences.org/lookup/doi/10.7554/eLife.26177.empty(paralleldata.files)
+while isnan(paralleldata.count) | ~isempty(paralleldata.files)
     paralleldata.files=dir(dirs.eventparaleldir);
     paralleldata.files([paralleldata.files.isdir])=[];
     pause(3)
@@ -131,7 +131,97 @@ while isnan(paralleldata.count) | ~isZucca S, D’Urso G, Pasquale V, Vecchia D,
         disp(['waiting for ',num2str(paralleldata.count),' eventfinding scripts to finish'])
     end
 end
-%% recording statistics
+
+%% UP-DOWN transitions
+if projectnum==2
+    valtozok=struct;
+    valtozok.overwrite=0;
+    valtozok.segmentlength=5;
+    valtozok.plotthestuff=0;
+    aE_UP_DOWN_detect(valtozok,dirs,xlsdata);
+    
+    valtozok=struct;
+    valtozok.overwrite=1;
+    valtozok.segmentlength=5;
+    valtozok.plotthestuff=1;
+    aE_UP_DOWN_detect_field(valtozok,dirs,xlsdata);
+end
+
+%% plot state transitions
+timeborders=[69070, 69510];
+timeborders=[0, 76500];
+timeborders=[0, inf];
+minimumstateduration=0;
+[Selection,ok] = listdlg('ListString',{xlsdata.ID},'ListSize',[300 600]);
+ID=xlsdata(Selection).ID;
+load([dirs.eventdir,ID],'eventdata');
+load([dirs.bridgeddir,ID],'bridgeddata','stimdata');
+load([dirs.statedir,ID],'statedata');
+statedata.UP=statedata.UP([statedata.UP.onsett]>timeborders(1)&[statedata.UP.onsett]<timeborders(2));
+statedata.DOWN=statedata.DOWN([statedata.DOWN.onsett]>timeborders(1)&[statedata.DOWN.onsett]<timeborders(2));
+% get transition data
+timebefore=1;
+timeafter=1;
+apdata=eventdata(strcmp({eventdata.type},'AP'));
+prevsweepnum=0;
+for api=1:length(apdata)
+    sweepnum=apdata(api).sweepnum;
+    if sweepnum~=prevsweepnum
+        y=bridgeddata(sweepnum).y;
+        si=bridgeddata(sweepnum).si;
+         yfiltered=moving(y,5);
+        dyfiltered=diff(yfiltered)/si;
+        prevsweepnum=sweepnum;
+        stepback=round(.0002/si);
+    end
+    onseth=apdata(api).onseth;
+    maxh=apdata(api).maxh;
+    threshh=maxh-stepback;
+    while dyfiltered(threshh)>5 & threshh>2
+        threshh=threshh-1;
+    end
+    threshv=yfiltered(threshh);
+    apdata(api).threshv=threshv;
+    apdata(api).APamplitude=apdata(api).maxval-apdata(api).threshv;
+%     if threshv>-.04% & threshv<-.04
+%         figure(1)
+%         clf
+%         hold on
+%         plot(yfiltered,'r-')
+%         plot(y,'k-')
+%         
+%         plot(maxh,yfiltered(maxh),'ro')
+%         plot(threshh,yfiltered(threshh),'ko')
+%         plot(onseth,yfiltered(onseth),'kx')
+%         pause
+%     end
+end
+figure(1)
+clf
+% hist([apdata.threshv],100)
+plot([apdata.threshv],[apdata.APamplitude],'ko')
+[x,~]=ginput(1);
+aapdata=apdata([apdata.threshv]<x);
+sapdata=apdata([apdata.threshv]>x);
+epdata=eventdata(strcmp({eventdata.type},'ep'));
+ipdata=eventdata(strcmp({eventdata.type},'ip'));
+statestocheck={'UP','DOWN'};
+%
+for statei=1:length(statestocheck)
+    statedatanow=statedata.(statestocheck{statei});
+    statedatanow=statedatanow([statedatanow.duration]>minimumstateduration);
+    transitiondata=struct;
+    for i=1:length(statedatanow)
+        sweepnum=statedatanow(i).sweepnum;
+        transitiont=statedatanow(i).onsett;
+        transitionh=statedatanow(i).onseth;
+        si=bridgeddata(sweepnum).si;
+        stepback=round(timebefore/si);
+        stepforward=round(timeafter/si);
+        y=bridgeddata(sweepnum).y;
+        if transitionh>stepback & length(y)>transitionh+stepforward
+            if isempty(fieldnames(transitiondata))
+                NEXT=1;%% recording statistics
 baselineSDbinsize=5;
 baselineSDbinnum=round(30*60/baselineSDbinsize);
 recstats=struct;
@@ -248,89 +338,6 @@ end
 ylim([0 1.2])
 xlabel('time (min)')
 ylabel('relative baseline SD')
-%% UP-DOWN transitions
-if projectnum==2
-    valtozok=struct;
-    valtozok.overwrite=1;
-    valtozok.segmentlength=5;
-    aE_UP_DOWN_detect(valtozok,dirs,xlsdata);
-end
-
-%% plot state transitions
-timeborders=[69070, 69510];
-timeborders=[0, 76500];
-timeborders=[0, inf];
-minimumstateduration=0;
-[Selection,ok] = listdlg('ListString',{xlsdata.ID},'ListSize',[300 600]);
-ID=xlsdata(Selection).ID;
-load([dirs.eventdir,ID],'eventdata');
-load([dirs.bridgeddir,ID],'bridgeddata','stimdata');
-load([dirs.statedir,ID],'statedata');
-statedata.UP=statedata.UP([statedata.UP.onsett]>timeborders(1)&[statedata.UP.onsett]<timeborders(2));
-statedata.DOWN=statedata.DOWN([statedata.DOWN.onsett]>timeborders(1)&[statedata.DOWN.onsett]<timeborders(2));
-% get transition data
-timebefore=1;
-timeafter=1;
-apdata=eventdata(strcmp({eventdata.type},'AP'));
-prevsweepnum=0;
-for api=1:length(apdata)
-    sweepnum=apdata(api).sweepnum;
-    if sweepnum~=prevsweepnum
-        y=bridgeddata(sweepnum).y;
-        si=bridgeddata(sweepnum).si;
-         yfiltered=moving(y,5);
-        dyfiltered=diff(yfiltered)/si;
-        prevsweepnum=sweepnum;
-        stepback=round(.0002/si);
-    end
-    onseth=apdata(api).onseth;
-    maxh=apdata(api).maxh;
-    threshh=maxh-stepback;
-    while dyfiltered(threshh)>5 & threshh>2
-        threshh=threshh-1;
-    end
-    threshv=yfiltered(threshh);
-    apdata(api).threshv=threshv;
-    apdata(api).APamplitude=apdata(api).maxval-apdata(api).threshv;
-%     if threshv>-.04% & threshv<-.04
-%         figure(1)
-%         clf
-%         hold on
-%         plot(yfiltered,'r-')
-%         plot(y,'k-')
-%         
-%         plot(maxh,yfiltered(maxh),'ro')
-%         plot(threshh,yfiltered(threshh),'ko')
-%         plot(onseth,yfiltered(onseth),'kx')
-%         pause
-%     end
-end
-figure(1)
-clf
-% hist([apdata.threshv],100)
-plot([apdata.threshv],[apdata.APamplitude],'ko')
-[x,~]=ginput(1);
-aapdata=apdata([apdata.threshv]<x);
-sapdata=apdata([apdata.threshv]>x);
-epdata=eventdata(strcmp({eventdata.type},'ep'));
-ipdata=eventdata(strcmp({eventdata.type},'ip'));
-statestocheck={'UP','DOWN'};
-%
-for statei=1:length(statestocheck)
-    statedatanow=statedata.(statestocheck{statei});
-    statedatanow=statedatanow([statedatanow.duration]>minimumstateduration);
-    transitiondata=struct;
-    for i=1:length(statedatanow)
-        sweepnum=statedatanow(i).sweepnum;
-        transitiont=statedatanow(i).onsett;
-        transitionh=statedatanow(i).onseth;
-        si=bridgeddata(sweepnum).si;
-        stepback=round(timebefore/si);
-        stepforward=round(timeafter/si);
-        y=bridgeddata(sweepnum).y;
-        if transitionh>stepback & length(y)>transitionh+stepforward
-            if isempty(fieldnames(transitiondata))
-                NEXT=1;
             else
                 NEXT=length(transitiondata)+1;
             end
@@ -419,6 +426,188 @@ subplot(4,2,8)
 hist([Transitiondata.DOWN.eptimes],[-timebefore:0.05:timeafter])
 xlim([-timebefore,timeafter])
 ylabel('EPnum');
+
+%% recording statistics
+anaesthgroups=unique({xlsdata.anaesthesia},'stable');
+baselineSDbinsize=5;
+baselineSDbinnum=round(30*60/baselineSDbinsize);
+recstats=struct;
+files={xlsdata.ID};
+for filei=1:length(files)
+    if xlsdata(filei).field==0
+        if isempty(fieldnames(recstats))
+            NEXT=1;
+        else
+            NEXT=length(recstats)+1;
+        end
+        ID=files{filei};
+        load([dirs.bridgeddir,ID],'bridgeddata','lightdata','stimdata');
+        recstats(NEXT).ID=ID;
+        recstats(NEXT).RS=nanmedian([lightdata.RS]);
+        recstats(NEXT).anaesth=xlsdata(filei).anaesthesia;
+        if lightdata(end).realtime>lightdata(1).realtime;
+            recstats(NEXT).recordinglength=lightdata(end).realtime-lightdata(1).realtime;
+        else
+            recstats(NEXT).recordinglength=lightdata(end).realtime-lightdata(1).realtime+24*3600;
+        end
+        recstats(NEXT).recordinglength= recstats(NEXT).recordinglength+bridgeddata(end).si*length(bridgeddata(end).y);
+        %baselineSD statistics
+        baselineSD=NaN(baselineSDbinnum,1);
+        if recstats(NEXT).recordinglength>=20*60
+            for bini=1:baselineSDbinnum
+                startt=(bini-1)*baselineSDbinsize+lightdata(1).realtime;
+                endt=(bini)*baselineSDbinsize+lightdata(1).realtime;
+                neededsweepnum=find([lightdata.realtime]>=startt & [lightdata.realtime]<=endt);
+                sweepSD=NaN;
+                if ~isempty(neededsweepnum)
+                    if neededsweepnum(1)>1
+                        neededsweepnum=[neededsweepnum(1)-1,neededsweepnum];
+                    end
+                    sweepSD=nan(size(neededsweepnum));
+                    for sweepi=1:length(neededsweepnum)
+                        sweepnum=neededsweepnum(sweepi);
+                        if strcmp(stimdata(sweepnum).Amplifiermode,'C-Clamp') &  any(strfind(bridgeddata(sweepnum).channellabel,'Vmon')) & std(stimdata(sweepnum).y)==0
+                            [b,a]=butter(1,500/(1/bridgeddata(sweepnum).si)/2,'low');
+                            y=bridgeddata(sweepnum).y;
+                            y=filtfilt(b,a,y);
+                            x=[1:length(bridgeddata(sweepnum).y)]*bridgeddata(sweepnum).si+bridgeddata(sweepnum).realtime-bridgeddata(sweepnum).si;
+                            neededidx=find(x>=startt & x<=endt);
+                            sweepSD(sweepi)=nanstd(y(neededidx));
+                        end
+                    end
+                end
+                baselineSD(bini)=nanmedian(sweepSD);
+            end
+%             figure(2)
+%             clf
+%             plot([1:baselineSDbinnum]*baselineSDbinsize/60,baselineSD,'ko-')
+%             pause
+        end
+        recstats(NEXT).baselineSD=baselineSD;
+    end
+end
+
+%%
+baselineSDtimevector=[1:baselineSDbinnum]*baselineSDbinsize/60;
+newbaselineSDtimevector=[1:1:30];
+newbaselineSDtimevectorcenters=newbaselineSDtimevector-mode(diff(newbaselineSDtimevector));
+newbaselineSDtimevectorsteps=mode(diff(newbaselineSDtimevector));
+for i=1:length(recstats)
+    recstats(i).newbaselineSD=[];
+    for stepi=1:length(newbaselineSDtimevectorcenters)
+        idx=find(baselineSDtimevector>=newbaselineSDtimevectorcenters(stepi)-newbaselineSDtimevectorsteps/2 & baselineSDtimevector<=newbaselineSDtimevectorcenters(stepi)+newbaselineSDtimevectorsteps/2);
+        recstats(i).newbaselineSD(stepi)=nanmean(recstats(i).baselineSD(idx));
+    end
+    recstats(i).newbaselineSD=(recstats(i).newbaselineSD/nanmedian(recstats(i).newbaselineSD(find(newbaselineSDtimevector>15))))';
+end
+figure(1)
+clf
+subplot(4,1,1)
+[nall,xbinn]=hist([recstats.recordinglength]/60,[2.5:5:62.5]);
+[RSall,xbinRS]=hist([recstats.RS]/10^6,[5:10:95]);
+xbinZ=[5:10:155];
+histstruct=struct;
+for groupi=1:length(anaesthgroups)
+    [histstruct(groupi).n,~]=hist([recstats(strcmp({recstats.anaesth},anaesthgroups{groupi})).recordinglength]/60,xbinn);
+    histstruct(groupi).n=histstruct(groupi).n';
+    [histstruct(groupi).RS,~]=hist([recstats(strcmp({recstats.anaesth},anaesthgroups{groupi})).RS]/10^6,xbinRS);
+    histstruct(groupi).RS=histstruct(groupi).RS';
+    histstruct(groupi).Z=[];
+    for xlsi=1:length(xlsdata)
+        if isnumeric( xlsdata(xlsi).locationz) & strcmp(xlsdata(xlsi).anaesthesia,anaesthgroups{groupi})
+            histstruct(groupi).Z=[histstruct(groupi).Z, xlsdata(xlsi).locationz];
+        end
+    end
+    [histstruct(groupi).Zhist,~]=hist(histstruct(groupi).Z,xbinZ);
+    histstruct(groupi).Zhist=histstruct(groupi).Zhist';
+end
+[hAxes,hBar,hLine] = plotyy(xbinn,[histstruct.n],xbinn,cumsum([histstruct.n]),'bar','plot');
+
+set(hBar,'BarLayout','stacked')
+% set(gca,'box','off')
+ylim([0,max(sum([histstruct.n]'))]);
+% set(gca,'Ytick',[0:max(sum([histstruct.n]'))]);
+set(hAxes(1), 'YLimMode', 'Auto');
+set(hAxes(1),'Ytickmode','auto');
+set(hAxes(2),'Ytickmode','auto');
+set(hAxes(2), 'YLimMode', 'Auto');
+set(hAxes(2),'XTick',[],'XTickLabel',[]);
+axes(hAxes(2))
+axis tight
+
+colororder=get(hAxes,'colororder');
+for groupi=2:length(anaesthgroups)
+    set(hBar(groupi),'FaceColor',colororder{1}(groupi,:));
+end
+set(hLine,'LineWidth',2)
+
+set(gca,'Xtick',[0:5:60])
+
+
+axes(hAxes(1))
+ylabel('# of cells')
+xlabel('recording length (min)')
+legend(anaesthgroups)
+% title('recording length')
+
+
+subplot(4,1,2)
+[hAxes,hBar,hLine] = plotyy(xbinRS,[histstruct.RS],xbinRS,cumsum([histstruct.RS]),'bar','plot');
+set(hBar,'BarLayout','stacked')
+set(gca,'box','off')
+% ylim([0,max(sum([histstruct.RS]'))]);
+set(hAxes(1), 'YLimMode', 'Auto');
+set(hAxes(1),'Ytickmode','auto');
+set(hAxes(2),'Ytickmode','auto');
+set(hAxes(2), 'YLimMode', 'Auto');
+set(hAxes(2),'XTick',[],'XTickLabel',[]);
+colororder=get(hAxes,'colororder');
+for groupi=2:length(anaesthgroups)
+    set(hBar(groupi),'FaceColor',colororder{1}(groupi,:));
+end
+ set(hLine,'LineWidth',2)
+% legend(anaesthgroups)
+set(gca,'Xtick',[0:10:90])
+xlabel('median RS (MOhm)')
+ylabel('# of cells')
+% title('median RS')
+
+
+subplot(4,1,3)
+[hAxes,hBar,hLine] = plotyy(xbinZ,[histstruct.Zhist],xbinZ,cumsum([histstruct.Zhist]),'bar','plot');
+set(hBar,'BarLayout','stacked')
+set(gca,'box','off')
+% ylim([0,max(sum([histstruct.RS]'))]);
+set(hAxes(1), 'YLimMode', 'Auto');
+set(hAxes(1),'Ytickmode','auto');
+set(hAxes(2),'Ytickmode','auto');
+set(hAxes(2), 'YLimMode', 'Auto');
+set(hAxes(2),'XTick',[],'XTickLabel',[]);
+colororder=get(hAxes,'colororder');
+for groupi=2:length(anaesthgroups)
+    set(hBar(groupi),'FaceColor',colororder{1}(groupi,:));
+end
+ set(hLine,'LineWidth',2)
+% legend(anaesthgroups)
+set(gca,'Xtick',[0:10:140])
+xlabel('Depth from pia (microns)')
+ylabel('# of cells')
+% title('Depth from the surface of the brain')
+
+
+subplot(4,1,4)
+hold on
+for i=1:length(recstats)
+    needed=find(~isnan(recstats(i).newbaselineSD));
+    groupnum=find(strcmp(recstats(i).anaesth,anaesthgroups));
+    colorka=colororder{1}(groupnum,:);
+    if ~isempty(needed)
+        plot(newbaselineSDtimevector(needed),recstats(i).newbaselineSD(needed),'Color',colorka,'LineWidth',2);
+    end
+end
+ylim([0 1.2])
+xlabel('time from the start of the recording (min)')
+ylabel('relative baseline SD')
 %%
 if projectnum==4
     %% defining stimepochs and spike clusters

@@ -20,7 +20,7 @@ for filenum=1:length(files)%1:length(files) % végigmegyünk az összes file-n
         source=[dirs.eventparaleldir,files(filenum).name];
         destination=[dirs.eventdir,files(filenum).name];
         save(source,'valtozok','dirs','files','filenum','sdval')
-        pause(1);
+        pause(10);
 %         aE_findevents_core(source,destination);
         unix(['matlab -nosplash -nodisplay -nojvm -r "aE_findevents_core(''',source,''',''',destination,'''), quit()"&']);
 %         disp(['matlab -nosplash -nodisplay -nojvm -r "aE_findevents_core(''',source,''',''',destination,'''), quit()"&']);

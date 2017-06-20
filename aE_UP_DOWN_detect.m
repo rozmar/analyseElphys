@@ -4,7 +4,7 @@ segmentlength=valtozok.segmentlength;
 APdelwin=[.002,.01];
 for filei=1:length({xlsdata.ID})
         a=dir([dirs.statedir,xlsdata(filei).ID,'.mat']);
-        if isempty(a) | overwrite==1
+        if xlsdata(filei).field==0 & (isempty(a) | overwrite==1)
         disp(['exporting state transitions from  ', xlsdata(filei).ID])
         %      [Selection,ok] = listdlg('ListString',{xlsdata.ID},'ListSize',[300 600]); % az XLS file alapján kiválasztjuk, hogy melyik file összes mérésén szeretnénk végigmenni
         temp=load([dirs.bridgeddir,xlsdata(filei).ID]);
@@ -130,7 +130,7 @@ for filei=1:length({xlsdata.ID})
                 stepback=10/si;
                 for upi=1:length(putativeUPtransitions)
                     if putativeUPtransitions(upi)>endidx & putativeUPtransitions(upi)>500
-                        startidxx=find(putativestatechanges<putativeUPtransitions(upi),1,'last');
+                        startidxx=find(putativestatechanges<=putativeUPtransitions(upi),1,'last');
                         startidx=putativestatechanges(startidxx);
                         
                         nowidx=startidx;
@@ -141,7 +141,7 @@ for filei=1:length({xlsdata.ID})
                         end
                         
                         if ~isempty(downidx)
-                            endidxx=find(putativestatechanges<putativeDOWNtransitions(downidx),1,'last');
+                            endidxx=find(putativestatechanges<=putativeDOWNtransitions(downidx),1,'last');
                             endidx=putativestatechanges(endidxx);
                         else
                             endidx=length(transitionvoltage);

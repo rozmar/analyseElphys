@@ -25,7 +25,7 @@ function varargout = aE_InspectTraces(varargin)
 
 % Edit the above text to modify the response to help aE_InspectTraces
 
-% Last Modified by GUIDE v2.5 27-May-2017 22:56:28
+% Last Modified by GUIDE v2.5 02-Jun-2017 16:05:49
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -493,8 +493,8 @@ for samplenum=1:length(handles.data.samples)
             plot(handles.data.samples(samplenum).datatoplot(sweepi).x(ettol:eddig),handles.data.samples(samplenum).datatoplot(sweepi).yvoltage(ettol:eddig),marker(1),'LineWidth',2)
         end
         markevents=get(handles.checkbox3,'Value');
-        if markevents==1& ~(isempty(handles.data.samples(samplenum).eventdata) | isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
-            neededevents=strcmp({handles.data.samples(samplenum).eventdata.type},'AP') & ~[handles.data.samples(samplenum).eventdata.stimulated];
+        if markevents==1 & ~isempty(handles.data.samples(samplenum).eventdata) %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
+            neededevents=[handles.data.samples(samplenum).eventdata.axonalAP]==1;%strcmp({handles.data.samples(samplenum).eventdata.type},'AP') & ~[handles.data.samples(samplenum).eventdata.stimulated];
             eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
             neededevents=false(size(eventsnow));
               for sweepi=1:length(neededwaves)
@@ -651,7 +651,7 @@ if handles.data.samples(selectedsamplenum).switch>0
     filterdeg=handles.data.samples(selectedsamplenum).filterdeg;
     shoulddownsample=get(handles.checkbox2,'Value');
     plotdetails=handles.data.samples(selectedsamplenum).plotdetails;
-    
+    if ~isempty(neededwaves)
     if isempty(fieldnames(plotdetails)) | ~(length(neededwaves)==length(plotdetails.neededwaves)) |~(neededwaves==plotdetails.neededwaves) | ~(neededsamplenum==plotdetails.neededsamplenum) | ~all(cutoffreq==plotdetails.cutoffreq) | ~(filterdeg==plotdetails.filterdeg) | ~(shoulddownsample==plotdetails.shoulddownsample)
         datatoplot=struct;
         plotdetails.neededwaves=neededwaves;
@@ -693,6 +693,7 @@ if handles.data.samples(selectedsamplenum).switch>0
         end
         handles.data.samples(selectedsamplenum).datatoplot=datatoplot;
         handles.data.samples(selectedsamplenum).plotdetails=plotdetails;
+    end
     end
 end
 end
@@ -1034,6 +1035,208 @@ function checkbox3_Callback(hObject, eventdata, handles)
 % hObject    handle to checkbox3 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+timeback=.001;
+timeforward=.001;
+APwaves=struct;
+if get(hObject,'Value')==true
+timeborders=[str2num(get(handles.edit4,'String')),str2num(get(handles.edit5,'String'))];
+for samplenum=1:length(handles.data.samples)
+    eventdata=handles.data.samples(samplenum).eventdata;
+    bridgeddata=handles.data.samples(samplenum).bridgeddata;
+    stimdata=handles.data.samples(samplenum).stimdata;
+    if ~isempty(eventdata) & ~isempty(fieldnames(eventdata))
+        apidxes=find(strcmp({eventdata.type},'AP'));
+        prevsweepnum=NaN;
+        for apii=1:length(apidxes)
+            api=apidxes(apii);
+            sweepnum=eventdata(api).sweepnum;
+            if sweepnum~=prevsweepnum
+                RS=stimdata(sweepnum).RS/10^6;
+                y=bridgeddata(sweepnum).y;
+                si=round(bridgeddata(sweepnum).si*10^6)/10^6;
+                yfiltered=moving(y,2);
+                dyfiltered=diff(yfiltered)/si;
+                prevsweepnum=sweepnum;
+                stepbackforthresh=round(.0002/si);
+            end
+            onseth=eventdata(api).onseth;
+            maxh=eventdata(api).maxh;
+            threshh=maxh-stepbackforthresh;
+            while dyfiltered(threshh)<max(dyfiltered(max(1,threshh-5):threshh)) & threshh>2
+                threshh=threshh-1;
+            end
+            while dyfiltered(threshh)>50 & threshh>2
+                threshh=threshh-1;
+            end
+            threshv=yfiltered(threshh);
+            eventdata(api).threshv=threshv;
+            eventdata(api).APamplitude=eventdata(api).maxval-eventdata(api).threshv;
+            
+            %     if threshv>-.04% & threshv<-.04
+            %         figure(1)
+            %         clf
+            %         hold on
+            %         plot(yfiltered,'r-')timeborders=[str2num(get(handles.edit4,'String')),str2num(get(handles.edit5,'String'))];
+            %         plot(y,'k-')
+            %
+            %         plot(maxh,yfiltered(maxh),'ro')
+            %         plot(threshh,yfiltered(threshh),'ko')
+            %         plot(onseth,yfiltered(onseth),'kx')
+            %         pause
+            %     end
+            dv=diff(y(threshh:maxh))/si;
+            [maxdval,maxdvh]=max(dv);
+            maxdvh=maxdvh+threshh-1;
+            centerh=maxdvh;
+            stepback=round(timeback/si);
+            stepforward=round(timeforward/si);
+            t=[-stepback:stepforward]*si*1000;
+            
+            
+            
+            if length(y)-stepforward<centerh
+                vegh=length(y);
+                nanvegen=stepforward-(length(y)-centerh);
+            else
+                vegh=centerh+stepforward;
+                nanvegen=0;
+            end
+            if stepback>=centerh
+                kezdeth=1;
+                nanelejen=stepback-centerh+1;
+            else
+                kezdeth=centerh-stepback;
+                nanelejen=0;
+            end
+             
+        v=[nan(nanelejen,1);y(kezdeth:vegh)';nan(nanvegen,1)]';
+                movingn=3;
+%             v=y([-stepback:stepforward]+centerh);
+            dv=diff(moving(v,movingn))'/si;
+            ddv=diff(moving(dv,movingn))'/si;
+            dddv=diff(moving(ddv,movingn))'/si;
+            vdv=mean([v(2:end);v(1:end-1)]);
+            vddv=mean([vdv(2:end);vdv(1:end-1)]);
+            vdddv=mean([vddv(2:end);vddv(1:end-1)]);
+            tdv=mean([t(2:end);t(1:end-1)]);
+            tddv=mean([tdv(2:end);tdv(1:end-1)]);
+            tdddv=mean([tddv(2:end);tddv(1:end-1)]);
+            APwaves(apii).t=t';
+            APwaves(apii).v=v';
+            APwaves(apii).dv=dv';
+            APwaves(apii).ddv=ddv';
+            APwaves(apii).dddv=dddv';
+            APwaves(apii).tdv=tdv';
+            APwaves(apii).tddv=tddv';
+            APwaves(apii).tdddv=tdddv';
+            APwaves(apii).vdv=vdv';
+            APwaves(apii).vddv=vddv';
+            APwaves(apii).vdddv=vdddv';
+            APwaves(apii).si=si;
+            APwaves(apii).RS=RS;
+            APwaves(apii).maxtime=eventdata(api).maxtime;
+            % elso derivalt helyi minimumanak keresese a masodik derivalton
+            difi=maxdvh-threshh;
+            ddvsegment=ddv(stepback-difi:stepback);
+            vege=length(ddvsegment);
+            while vege>1 & (ddvsegment(vege)<ddvsegment(vege-1) | ddvsegment(vege)<0)
+                vege=vege-1;
+            end
+            eleje=1;
+            while vege>eleje & (ddvsegment(eleje)<ddvsegment(eleje+1) | ddvsegment(eleje)<0)
+                eleje=eleje+1;
+            end
+            if any(moving(ddvsegment(eleje:vege),2,'max')<0)
+%                 figure(1)
+%                 clf
+%                 plot(ddvsegment,'k-')
+%                 hold on
+%                 plot(ddvsegment(1:vege),'r-')
+%                 pause
+                eventdata(api).axonalAP=true;
+                eventdata(api).somaticAP=false;
+                 APwaves(apii).axonalAP=true;
+                  APwaves(apii).somaticAP=false;
+            else
+                eventdata(api).axonalAP=false;
+                eventdata(api).somaticAP=true;
+                 APwaves(apii).axonalAP=false;
+                  APwaves(apii).somaticAP=true;
+            end
+        end
+   for api=1:length(eventdata)
+        if any(api==apidxes);
+%             
+%         if eventdata(api).threshv<x
+%             eventdata(api).axonalAP=true;
+%             eventdata(api).somaticAP=false;
+%         else
+%             eventdata(api).axonalAP=false;
+%             eventdata(api).somaticAP=true;
+%         end
+        else
+            eventdata(api).axonalAP=false;
+            eventdata(api).somaticAP=false;
+        end
+   end
+    for ii=1:2
+    figure(ii)
+    clf
+    sis=unique([APwaves.si]);
+    for i=1:length(sis)
+        needed=find([APwaves.si]==sis(i) & [APwaves.axonalAP]==(ii==1) & [APwaves.maxtime]>=timeborders(1) &[APwaves.maxtime]<=timeborders(2) );
+        subplot(2,4,1)
+        hold on
+        plot([APwaves(needed).t],[APwaves(needed).v]);
+        title('V')
+        subplot(2,4,2)
+        hold on
+        plot([APwaves(needed).tdv],[APwaves(needed).dv]);
+        title('dV')
+        subplot(2,4,3)
+        hold on
+        plot([APwaves(needed).tddv],[APwaves(needed).ddv]);
+        title('ddV')
+        subplot(2,4,4)
+        hold on
+        plot([APwaves(needed).tdddv],[APwaves(needed).dddv]);
+        title('dddV')
+        subplot(2,4,6)
+        hold on
+        plot([APwaves(needed).vdv],[APwaves(needed).dv]);
+        subplot(2,4,7)
+        hold on
+        plot([APwaves(needed).vddv],[APwaves(needed).ddv]);
+        subplot(2,4,8)
+        hold on
+        plot([APwaves(needed).vdddv],[APwaves(needed).dddv]);
+        subplot(2,4,5)
+        hist([APwaves(needed).RS]);
+        xlabel('RS (MOhm)')
+        ylabel('count')
+    end
+    end
+      figure(3)
+    clf
+    hold on
+    % hist([apdata.threshv],100)
+    needed=find([eventdata.maxtime]>=timeborders(1) &[eventdata.maxtime]<=timeborders(2) & [eventdata.axonalAP] );
+    plot([eventdata(needed).threshv],[eventdata(needed).APamplitude],'ro')
+    needed=find([eventdata.maxtime]>=timeborders(1) &[eventdata.maxtime]<=timeborders(2) & [eventdata.somaticAP] );
+    plot([eventdata(needed).threshv],[eventdata(needed).APamplitude],'ko')
+    xlabel('AP threshold (V)')
+    ylabel('AP amplitude (V)')
+%     [x,~]=ginput(1);
+    
+    handles.data.samples(samplenum).eventdata=eventdata;
+    figure(33)
+    clf
+    hist([APwaves.RS]);
+    xlabel('RS (MOhm)')
+    end
+ end
+guidata(hObject, handles)
+end
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox3
 
@@ -1102,9 +1305,6 @@ searchfield=searchfield{searchfieldnum};
 searchtext=get(handles.text10,'String');
 searchtext=[searchtext;{[searchfield,':.:',searchstr]}];
 
-%%
-
-    
 if ~isempty(searchstr')
     ezaz=true(size(xlsdata));
     for si=1:length(searchtext)
@@ -1124,6 +1324,7 @@ if ~isempty(searchstr')
     end
     set(handles.text10,'String',searchtext);
 end
+
 % --- Executes during object creation, after setting all properties.
 function edit6_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit6 (see GCBO)
@@ -1156,8 +1357,15 @@ function checkbox4_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkbox4
 
 
-
-
-
-
-
+% --- Executes on button press in pushbutton7.
+function pushbutton7_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton7 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+dirs=handles.data.dirs;
+xlsdata=handles.data.xlsdata;
+selectedsamplenum=get(handles.popupmenu1,'Value');
+ID=handles.data.IDs{handles.data.samples(selectedsamplenum).loadedID};
+icxlsnum=find(strcmp(ID,{xlsdata.ID}));
+timeborders=[str2num(get(handles.edit4,'String')),str2num(get(handles.edit5,'String'))];
+aE_ic_field_analysis(dirs,xlsdata,icxlsnum,timeborders,'trough')
