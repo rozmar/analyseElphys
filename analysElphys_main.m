@@ -9,7 +9,7 @@ projectdata.owbridge=0;
 projectdata.owbridge=0;
 projectdata.owevent=0;
 h = aE_projectselector(projectnames);
-uiwait(h); 
+uiwait(h);
 projectnum=projectdata.projectnum;
 
 
@@ -34,7 +34,7 @@ elseif projectnum==2;
     overwrite=0;
     locations=marcicucca_locations;
     dirs.basedir=[locations.tgtardir,'ANALYSISdata/marci/_persistent/_InVivo/'];
-%     dirs.rawdir=[locations.tgtardir,'AXONdata/'];
+    %     dirs.rawdir=[locations.tgtardir,'AXONdata/'];
     dirs.bridgeddir=[dirs.basedir,'Bridged_stim/'];
     dirs.rawexporteddir=[dirs.basedir,'Exported_raw/'];
     dirs.eventdir=[dirs.basedir,'Events/'];
@@ -76,7 +76,7 @@ elseif projectnum==4
     xlsdata=aE_readxls([dirs.basedir,'persistentdata_windows.xls']);
     dirs.v0distdir=[dirs.basedir,'v0_dist/'];
 elseif projectnum==5
-        overwrite=0;
+    overwrite=0;
     locations=marcicucca_locations;
     dirs.basedir=[locations.tgtardir,'ANALYSISdata/marci/_persistent/_BlebRecording/'];
     dirs.rawexporteddir=[dirs.basedir,'Exported_raw/'];
@@ -169,7 +169,7 @@ for api=1:length(apdata)
     if sweepnum~=prevsweepnum
         y=bridgeddata(sweepnum).y;
         si=bridgeddata(sweepnum).si;
-         yfiltered=moving(y,5);
+        yfiltered=moving(y,5);
         dyfiltered=diff(yfiltered)/si;
         prevsweepnum=sweepnum;
         stepback=round(.0002/si);
@@ -183,18 +183,18 @@ for api=1:length(apdata)
     threshv=yfiltered(threshh);
     apdata(api).threshv=threshv;
     apdata(api).APamplitude=apdata(api).maxval-apdata(api).threshv;
-%     if threshv>-.04% & threshv<-.04
-%         figure(1)
-%         clf
-%         hold on
-%         plot(yfiltered,'r-')
-%         plot(y,'k-')
-%         
-%         plot(maxh,yfiltered(maxh),'ro')
-%         plot(threshh,yfiltered(threshh),'ko')
-%         plot(onseth,yfiltered(onseth),'kx')
-%         pause
-%     end
+    %     if threshv>-.04% & threshv<-.04
+    %         figure(1)
+    %         clf
+    %         hold on
+    %         plot(yfiltered,'r-')
+    %         plot(y,'k-')
+    %
+    %         plot(maxh,yfiltered(maxh),'ro')
+    %         plot(threshh,yfiltered(threshh),'ko')
+    %         plot(onseth,yfiltered(onseth),'kx')
+    %         pause
+    %     end
 end
 figure(1)
 clf
@@ -222,122 +222,122 @@ for statei=1:length(statestocheck)
         if transitionh>stepback & length(y)>transitionh+stepforward
             if isempty(fieldnames(transitiondata))
                 NEXT=1;%% recording statistics
-baselineSDbinsize=5;
-baselineSDbinnum=round(30*60/baselineSDbinsize);
-recstats=struct;
-files={xlsdata.ID};
-for filei=1:length(files)
-    if xlsdata(filei).field==0
-        if isempty(fieldnames(recstats))
-            NEXT=1;
-        else
-            NEXT=length(recstats)+1;
-        end
-        ID=files{filei};
-        load([dirs.bridgeddir,ID],'bridgeddata','lightdata','stimdata');
-        recstats(NEXT).ID=ID;
-        recstats(NEXT).RS=nanmedian([lightdata.RS]);
-        recstats(NEXT).anaesth=xlsdata(filei).anaesthesia;
-        if lightdata(end).realtime>lightdata(1).realtime;
-            recstats(NEXT).recordinglength=lightdata(end).realtime-lightdata(1).realtime;
-        else
-            recstats(NEXT).recordinglength=lightdata(end).realtime-lightdata(1).realtime+24*3600;
-        end
-        recstats(NEXT).recordinglength= recstats(NEXT).recordinglength+bridgeddata(end).si*length(bridgeddata(end).y);
-        %baselineSD statistics
-        baselineSD=NaN(baselineSDbinnum,1);
-        if recstats(NEXT).recordinglength>=20*60
-            for bini=1:baselineSDbinnum
-                startt=(bini-1)*baselineSDbinsize+lightdata(1).realtime;
-                endt=(bini)*baselineSDbinsize+lightdata(1).realtime;
-                neededsweepnum=find([lightdata.realtime]>=startt & [lightdata.realtime]<=endt);
-                sweepSD=NaN;
-                if ~isempty(neededsweepnum)
-                    if neededsweepnum(1)>1
-                        neededsweepnum=[neededsweepnum(1)-1,neededsweepnum];
-                    end
-                    sweepSD=nan(size(neededsweepnum));
-                    for sweepi=1:length(neededsweepnum)
-                        sweepnum=neededsweepnum(sweepi);
-                        if strcmp(stimdata(sweepnum).Amplifiermode,'C-Clamp') &  any(strfind(bridgeddata(sweepnum).channellabel,'Vmon')) & std(stimdata(sweepnum).y)==0
-                            [b,a]=butter(1,500/(1/bridgeddata(sweepnum).si)/2,'low');
-                            y=bridgeddata(sweepnum).y;
-                            y=filtfilt(b,a,y);
-                            x=[1:length(bridgeddata(sweepnum).y)]*bridgeddata(sweepnum).si+bridgeddata(sweepnum).realtime-bridgeddata(sweepnum).si;
-                            neededidx=find(x>=startt & x<=endt);
-                            sweepSD(sweepi)=nanstd(y(neededidx));
+                baselineSDbinsize=5;
+                baselineSDbinnum=round(30*60/baselineSDbinsize);
+                recstats=struct;
+                files={xlsdata.ID};
+                for filei=1:length(files)
+                    if xlsdata(filei).field==0
+                        if isempty(fieldnames(recstats))
+                            NEXT=1;
+                        else
+                            NEXT=length(recstats)+1;
                         end
+                        ID=files{filei};
+                        load([dirs.bridgeddir,ID],'bridgeddata','lightdata','stimdata');
+                        recstats(NEXT).ID=ID;
+                        recstats(NEXT).RS=nanmedian([lightdata.RS]);
+                        recstats(NEXT).anaesth=xlsdata(filei).anaesthesia;
+                        if lightdata(end).realtime>lightdata(1).realtime;
+                            recstats(NEXT).recordinglength=lightdata(end).realtime-lightdata(1).realtime;
+                        else
+                            recstats(NEXT).recordinglength=lightdata(end).realtime-lightdata(1).realtime+24*3600;
+                        end
+                        recstats(NEXT).recordinglength= recstats(NEXT).recordinglength+bridgeddata(end).si*length(bridgeddata(end).y);
+                        %baselineSD statistics
+                        baselineSD=NaN(baselineSDbinnum,1);
+                        if recstats(NEXT).recordinglength>=20*60
+                            for bini=1:baselineSDbinnum
+                                startt=(bini-1)*baselineSDbinsize+lightdata(1).realtime;
+                                endt=(bini)*baselineSDbinsize+lightdata(1).realtime;
+                                neededsweepnum=find([lightdata.realtime]>=startt & [lightdata.realtime]<=endt);
+                                sweepSD=NaN;
+                                if ~isempty(neededsweepnum)
+                                    if neededsweepnum(1)>1
+                                        neededsweepnum=[neededsweepnum(1)-1,neededsweepnum];
+                                    end
+                                    sweepSD=nan(size(neededsweepnum));
+                                    for sweepi=1:length(neededsweepnum)
+                                        sweepnum=neededsweepnum(sweepi);
+                                        if strcmp(stimdata(sweepnum).Amplifiermode,'C-Clamp') &  any(strfind(bridgeddata(sweepnum).channellabel,'Vmon')) & std(stimdata(sweepnum).y)==0
+                                            [b,a]=butter(1,500/(1/bridgeddata(sweepnum).si)/2,'low');
+                                            y=bridgeddata(sweepnum).y;
+                                            y=filtfilt(b,a,y);
+                                            x=[1:length(bridgeddata(sweepnum).y)]*bridgeddata(sweepnum).si+bridgeddata(sweepnum).realtime-bridgeddata(sweepnum).si;
+                                            neededidx=find(x>=startt & x<=endt);
+                                            sweepSD(sweepi)=nanstd(y(neededidx));
+                                        end
+                                    end
+                                end
+                                baselineSD(bini)=nanmedian(sweepSD);
+                            end
+                            %             figure(2)
+                            %             clf
+                            %             plot([1:baselineSDbinnum]*baselineSDbinsize/60,baselineSD,'ko-')
+                            %             pause
+                        end
+                        recstats(NEXT).baselineSD=baselineSD;
                     end
                 end
-                baselineSD(bini)=nanmedian(sweepSD);
-            end
-%             figure(2)
-%             clf
-%             plot([1:baselineSDbinnum]*baselineSDbinsize/60,baselineSD,'ko-')
-%             pause
-        end
-        recstats(NEXT).baselineSD=baselineSD;
-    end
-end
-
-baselineSDtimevector=[1:baselineSDbinnum]*baselineSDbinsize/60;
-newbaselineSDtimevector=[1:1:30];
-newbaselineSDtimevectorcenters=newbaselineSDtimevector-mode(diff(newbaselineSDtimevector));
-newbaselineSDtimevectorsteps=mode(diff(newbaselineSDtimevector));
-for i=1:length(recstats)
-    recstats(i).newbaselineSD=[];
-    for stepi=1:length(newbaselineSDtimevectorcenters)
-        idx=find(baselineSDtimevector>=newbaselineSDtimevectorcenters(stepi)-newbaselineSDtimevectorsteps/2 & baselineSDtimevector<=newbaselineSDtimevectorcenters(stepi)+newbaselineSDtimevectorsteps/2);
-        recstats(i).newbaselineSD(stepi)=nanmean(recstats(i).baselineSD(idx));
-    end
-    recstats(i).newbaselineSD=(recstats(i).newbaselineSD/nanmedian(recstats(i).newbaselineSD(find(newbaselineSDtimevector>15))))';
-end
-figure(1)
-clf
-subplot(3,1,1)
-[nall,xbin]=hist([recstats.recordinglength]/60,[2.5:5:62.5]);
-[nketamine,~]=hist([recstats(strcmp({recstats.anaesth},'ketamine xylazine')).recordinglength]/60,[2.5:5:62.5]);
-[nchloral,~]=hist([recstats(strcmp({recstats.anaesth},'chloral hydrate')).recordinglength]/60,[2.5:5:62.5]);
-  [hAxes,hBar,hLine] = plotyy(xbin,[nketamine;nchloral]',xbin,cumsum([nketamine;nchloral]'),'bar','plot');
-  set(hBar,'BarLayout','stacked')
-  colororder=get(hAxes,'colororder');
-  set(hBar(2),'FaceColor',colororder{1}(2,:));
- set(hLine,'LineWidth',2) 
-legend({'ketamine xylazine','chloral hydrate'})
-set(gca,'Xtick',[0:5:60])
-xlabel('min')
-ylabel('# of cells')
-title('recording length')
-subplot(3,1,2)
-[nall,xbin]=hist([recstats.RS]/10^6,[5:10:95]);
-[nketamine,~]=hist([recstats(strcmp({recstats.anaesth},'ketamine xylazine')).RS]/10^6,[5:10:95]);
-[nchloral,~]=hist([recstats(strcmp({recstats.anaesth},'chloral hydrate')).RS]/10^6,[5:10:95]);
-  [hAxes,hBar,hLine] = plotyy(xbin,[nketamine;nchloral]',xbin,cumsum([nketamine;nchloral]'),'bar','plot');
-  set(hBar,'BarLayout','stacked')
-  colororder=get(hAxes,'colororder');
-  set(hBar(2),'FaceColor',colororder{1}(2,:));
- set(hLine,'LineWidth',2)
-legend({'ketamine xylazine','chloral hydrate'})
-set(gca,'Xtick',[0:10:90])
-xlabel('MOhm')
-ylabel('# of cells')
-title('median RS')
-subplot(3,1,3)
-hold on
-for i=1:length(recstats)
-    needed=find(~isnan(recstats(i).newbaselineSD));
-    if strcmp(recstats(i).anaesth,'ketamine xylazine')
-        colorka=colororder{1}(1,:);
-    elseif strcmp(recstats(i).anaesth,'chloral hydrate')
-        colorka=colororder{1}(2,:);
-    end
-    if ~isempty(needed)
-        plot(newbaselineSDtimevector(needed),recstats(i).newbaselineSD(needed),'Color',colorka,'LineWidth',2);
-    end
-end
-ylim([0 1.2])
-xlabel('time (min)')
-ylabel('relative baseline SD')
+                
+                baselineSDtimevector=[1:baselineSDbinnum]*baselineSDbinsize/60;
+                newbaselineSDtimevector=[1:1:30];
+                newbaselineSDtimevectorcenters=newbaselineSDtimevector-mode(diff(newbaselineSDtimevector));
+                newbaselineSDtimevectorsteps=mode(diff(newbaselineSDtimevector));
+                for i=1:length(recstats)
+                    recstats(i).newbaselineSD=[];
+                    for stepi=1:length(newbaselineSDtimevectorcenters)
+                        idx=find(baselineSDtimevector>=newbaselineSDtimevectorcenters(stepi)-newbaselineSDtimevectorsteps/2 & baselineSDtimevector<=newbaselineSDtimevectorcenters(stepi)+newbaselineSDtimevectorsteps/2);
+                        recstats(i).newbaselineSD(stepi)=nanmean(recstats(i).baselineSD(idx));
+                    end
+                    recstats(i).newbaselineSD=(recstats(i).newbaselineSD/nanmedian(recstats(i).newbaselineSD(find(newbaselineSDtimevector>15))))';
+                end
+                figure(1)
+                clf
+                subplot(3,1,1)
+                [nall,xbin]=hist([recstats.recordinglength]/60,[2.5:5:62.5]);
+                [nketamine,~]=hist([recstats(strcmp({recstats.anaesth},'ketamine xylazine')).recordinglength]/60,[2.5:5:62.5]);
+                [nchloral,~]=hist([recstats(strcmp({recstats.anaesth},'chloral hydrate')).recordinglength]/60,[2.5:5:62.5]);
+                [hAxes,hBar,hLine] = plotyy(xbin,[nketamine;nchloral]',xbin,cumsum([nketamine;nchloral]'),'bar','plot');
+                set(hBar,'BarLayout','stacked')
+                colororder=get(hAxes,'colororder');
+                set(hBar(2),'FaceColor',colororder{1}(2,:));
+                set(hLine,'LineWidth',2)
+                legend({'ketamine xylazine','chloral hydrate'})
+                set(gca,'Xtick',[0:5:60])
+                xlabel('min')
+                ylabel('# of cells')
+                title('recording length')
+                subplot(3,1,2)
+                [nall,xbin]=hist([recstats.RS]/10^6,[5:10:95]);
+                [nketamine,~]=hist([recstats(strcmp({recstats.anaesth},'ketamine xylazine')).RS]/10^6,[5:10:95]);
+                [nchloral,~]=hist([recstats(strcmp({recstats.anaesth},'chloral hydrate')).RS]/10^6,[5:10:95]);
+                [hAxes,hBar,hLine] = plotyy(xbin,[nketamine;nchloral]',xbin,cumsum([nketamine;nchloral]'),'bar','plot');
+                set(hBar,'BarLayout','stacked')
+                colororder=get(hAxes,'colororder');
+                set(hBar(2),'FaceColor',colororder{1}(2,:));
+                set(hLine,'LineWidth',2)
+                legend({'ketamine xylazine','chloral hydrate'})
+                set(gca,'Xtick',[0:10:90])
+                xlabel('MOhm')
+                ylabel('# of cells')
+                title('median RS')
+                subplot(3,1,3)
+                hold on
+                for i=1:length(recstats)
+                    needed=find(~isnan(recstats(i).newbaselineSD));
+                    if strcmp(recstats(i).anaesth,'ketamine xylazine')
+                        colorka=colororder{1}(1,:);
+                    elseif strcmp(recstats(i).anaesth,'chloral hydrate')
+                        colorka=colororder{1}(2,:);
+                    end
+                    if ~isempty(needed)
+                        plot(newbaselineSDtimevector(needed),recstats(i).newbaselineSD(needed),'Color',colorka,'LineWidth',2);
+                    end
+                end
+                ylim([0 1.2])
+                xlabel('time (min)')
+                ylabel('relative baseline SD')
             else
                 NEXT=length(transitiondata)+1;
             end
@@ -478,16 +478,15 @@ for filei=1:length(files)
                 end
                 baselineSD(bini)=nanmedian(sweepSD);
             end
-%             figure(2)
-%             clf
-%             plot([1:baselineSDbinnum]*baselineSDbinsize/60,baselineSD,'ko-')
-%             pause
+            %             figure(2)
+            %             clf
+            %             plot([1:baselineSDbinnum]*baselineSDbinsize/60,baselineSD,'ko-')
+            %             pause
         end
         recstats(NEXT).baselineSD=baselineSD;
     end
 end
 
-%%
 baselineSDtimevector=[1:baselineSDbinnum]*baselineSDbinsize/60;
 newbaselineSDtimevector=[1:1:30];
 newbaselineSDtimevectorcenters=newbaselineSDtimevector-mode(diff(newbaselineSDtimevector));
@@ -532,9 +531,8 @@ set(hAxes(1),'Ytickmode','auto');
 set(hAxes(2),'Ytickmode','auto');
 set(hAxes(2), 'YLimMode', 'Auto');
 set(hAxes(2),'XTick',[],'XTickLabel',[]);
-axes(hAxes(2))
-axis tight
-
+% axes(hAxes(2))
+% axis tight
 colororder=get(hAxes,'colororder');
 for groupi=2:length(anaesthgroups)
     set(hBar(groupi),'FaceColor',colororder{1}(groupi,:));
@@ -544,10 +542,11 @@ set(hLine,'LineWidth',2)
 set(gca,'Xtick',[0:5:60])
 
 
-axes(hAxes(1))
-ylabel('# of cells')
+
 xlabel('recording length (min)')
 legend(anaesthgroups)
+% axes(hAxes(1))
+ylabel('# of cells')
 % title('recording length')
 
 
@@ -565,7 +564,7 @@ colororder=get(hAxes,'colororder');
 for groupi=2:length(anaesthgroups)
     set(hBar(groupi),'FaceColor',colororder{1}(groupi,:));
 end
- set(hLine,'LineWidth',2)
+set(hLine,'LineWidth',2)
 % legend(anaesthgroups)
 set(gca,'Xtick',[0:10:90])
 xlabel('median RS (MOhm)')
@@ -587,7 +586,7 @@ colororder=get(hAxes,'colororder');
 for groupi=2:length(anaesthgroups)
     set(hBar(groupi),'FaceColor',colororder{1}(groupi,:));
 end
- set(hLine,'LineWidth',2)
+set(hLine,'LineWidth',2)
 % legend(anaesthgroups)
 set(gca,'Xtick',[0:10:140])
 xlabel('Depth from pia (microns)')
@@ -608,6 +607,8 @@ end
 ylim([0 1.2])
 xlabel('time from the start of the recording (min)')
 ylabel('relative baseline SD')
+saveas(gcf,[dirs.figuresdir,'recording_stats'],'pdf')
+saveas(gcf,[dirs.figuresdir,'recording_stats'],'jpg')
 %%
 if projectnum==4
     %% defining stimepochs and spike clusters
@@ -662,7 +663,7 @@ if  projectnum==5
         blebSelection=zeros(size(blebidxes));
         for blebi=1:length(blebidxes)
             blebidx=blebidxes(blebi);
-            if strcmp(xlsdata(icxlsidx).HEKAfname,xlsdata(blebidx).HEKAfname) & xlsdata(blebidx).startT<xlsdata(icxlsidx).endTmodified & xlsdata(icxlsidx).startT<xlsdata(blebidx).endTmodified 
+            if strcmp(xlsdata(icxlsidx).HEKAfname,xlsdata(blebidx).HEKAfname) & xlsdata(blebidx).startT<xlsdata(icxlsidx).endTmodified & xlsdata(icxlsidx).startT<xlsdata(blebidx).endTmodified
                 blebSelection(blebi)=1;
             end
         end
@@ -678,16 +679,16 @@ if  projectnum==5
             bleb=load([dirs.bridgeddir,xlsdata(blebxlsidx).ID]);
             for blebsweepnum=1:length(bleb.bridgeddata) %filtering
                 if strcmp(xlsdata(blebxlsidx).ID,'1702083rm_2_20_1')
-                  bleb.bridgeddata(blebsweepnum).realtime=bleb.bridgeddata(blebsweepnum).realtime+24*3600;
+                    bleb.bridgeddata(blebsweepnum).realtime=bleb.bridgeddata(blebsweepnum).realtime+24*3600;
                 end
                 si=bleb.bridgeddata(blebsweepnum).si;
                 ninq=.5/si;
                 if length(cutofffreq)==1
-                 [b,a] = butter(filterorder,cutofffreq/ninq,'low');
+                    [b,a] = butter(filterorder,cutofffreq/ninq,'low');
                 else
                     [b,a] = butter(filterorder,cutofffreq/ninq,'bandpass');
                 end
-                 bleb.bridgeddata(blebsweepnum).y_filt=filter(b,a,bleb.bridgeddata(blebsweepnum).y);
+                bleb.bridgeddata(blebsweepnum).y_filt=filter(b,a,bleb.bridgeddata(blebsweepnum).y);
             end
             apidxes=find(strcmp({ic.eventdata.type},'AP'));
             APdata=struct;
@@ -760,7 +761,7 @@ if  projectnum==5
             [peakv,peakh]=max(bleb_y_filt(idxes));
             peakv=(peakv-bleb_y_baseline);
             peakh=peakh+idxes(1);
-           [baselinepeakv,~]=min(bleb_y_filt(baselineidxes));
+            [baselinepeakv,~]=min(bleb_y_filt(baselineidxes));
             baselinepeakv=-(baselinepeakv-bleb_y_baseline);
         elseif strcmp(recordingmode,'C-Clamp')
             [peakv,peakh]=min(bleb_y_filt(idxes));
@@ -783,7 +784,7 @@ if  projectnum==5
     
     todel=find([APdata.bleb_amplitude]<minamplitude&strcmp({APdata.bleb_Amplifiermode},recordingmode) );
     
- APdata(todel)=[];
+    APdata(todel)=[];
     
     close all
     figure(33)
@@ -863,11 +864,11 @@ if  projectnum==5
             ylabel('peak amplitude')
         end
     end
-
+    
 end
 % return
 % %% uj cucc
-% 
+%
 % files=dir(dirs.bridgeddir);
 % files([files.isdir])=[];
 % sweepdata=struct;
@@ -881,8 +882,8 @@ end
 %     end
 %     progressbar(fi/length(files))
 % end
-% 
-% 
+%
+%
 % %% puffnlightstim
 % aE_persistent_puffnlightstim %this script plots puffing and light stim experiments.. ap waveforms and onsets are analysed - base values are needed from this main script
 %% check electrotonic and chemical connectivity
@@ -923,8 +924,9 @@ aE_checkGJandChemicalSynapse(valtozok,xlsdata,dirs)
 
 valtozok.plot.betumeret=8;
 valtozok.plot.axesvastagsag=2;
-
-
+valtozok.plot.xcm=20;
+valtozok.plot.ycm=14;
+valtozok.plot.dpi=150;
 xinch=valtozok.plot.xcm/2.54;
 yinch=valtozok.plot.ycm/2.54;
 valtozok.plot.xsize=valtozok.plot.dpi*xinch;
@@ -947,83 +949,33 @@ for prenum=1:length(xlsdata)
     hyps=strfind(gsc,'_');
     commas=strfind(gsc,',');
     g=num2str(gsc(1:hyps(1)-1));
-    if isempty(commas)
-        s=num2str(gsc(hyps(1)+1:hyps(2)-1));
-    elseif dothesecond(prenum)==1 & length(commas)==1
-        s=num2str(gsc(commas(1)+1:hyps(2)-1));
-    elseif dothesecond(prenum)==1 & length(commas)>1
-        s=num2str(gsc(commas(1)+1:commas(2)-1));
-    else
-        s=num2str(gsc(hyps(1)+1:commas(1)-1));
-    end
-    c=num2str(gsc(hyps(2)+1:end));
-    iv=iv.(['g',g,'_s',s,'_c',c]);
-    si=mode(diff(iv.time));
-    [b,a]=butter(3,15000/(1/mode(diff(iv.time)))/2,'low');
-    [bb,aa]=butter(3,1000/(1/mode(diff(iv.time)))/2,'low');
-    %     for ii=1:iv.sweepnum
-    %         if ii<5
-    %             iv.(['v',num2str(ii)])=filtfilt(bb,aa,iv.(['v',num2str(ii)]));
-    %         else
-    %             iv.(['v',num2str(ii)])=filtfilt(b,a,iv.(['v',num2str(ii)]));
-    %         end
-    %     end
-    sweeplevonas=xlsdata(prenum).IV_sweeplevonas;
-    if strcmp(sweeplevonas,'NaN')
-        sweeplevonas=NaN;
-    else
-        sweeplevonas=str2num(sweeplevonas);
-    end
-    if isnan(sweeplevonas)
-        figure(3)
+
+    commas=[hyps(1),commas,hyps(2)];
+    for is=1:length(commas)-1
+        s=num2str(gsc(commas(is)+1:commas(is+1)-1));
+        c=num2str(gsc(hyps(2)+1:end));
+        iv=iv.(['g',g,'_s',s,'_c',c]);
+        si=mode(diff(iv.time));
+        [b,a]=butter(3,15000/(1/mode(diff(iv.time)))/2,'low');
+        [bb,aa]=butter(3,1000/(1/mode(diff(iv.time)))/2,'low');
+            
+        
+
+        figure(33)
         clf
-        subplot(5,1,1)
-        hold on;
-        plot(iv.time,iv.v1,'k-','LineWidth',2)
-        plot(iv.time,iv.(['v',num2str(iv.sweepnum-4)]),'k-','LineWidth',2);
+        hold on
+        plot(iv.time,filtfilt(bb,aa,iv.v1),'k-','LineWidth',2)
+        plot(iv.time,filtfilt(b,a,iv.(['v',num2str(iv.sweepnum-(sweeplevonas))])),'k-','LineWidth',2);
         axis tight
-        title(xlsdata(prenum).ID)
-        subplot(5,1,2)
-        hold on;
-        plot(iv.time,iv.v1,'k-','LineWidth',2)
-        plot(iv.time,iv.(['v',num2str(iv.sweepnum-3)]),'k-','LineWidth',2);
-        axis tight
-        title(['Ca: ',num2str(xlsdata(prenum).Ca),' mM    Mg:',num2str(xlsdata(prenum).Mg),' mM'])
-        subplot(5,1,3)
-        hold on;
-        plot(iv.time,iv.v1,'k-','LineWidth',2)
-        plot(iv.time,iv.(['v',num2str(iv.sweepnum-2)]),'k-','LineWidth',2);
-        axis tight
-        subplot(5,1,4)
-        hold on;
-        plot(iv.time,iv.v1,'k-','LineWidth',2)
-        plot(iv.time,iv.(['v',num2str(iv.sweepnum-1)]),'k-','LineWidth',2);
-        axis tight
-        subplot(5,1,5)
-        hold on;
-        plot(iv.time,iv.v1,'k-','LineWidth',2)
-        plot(iv.time,iv.(['v',num2str(iv.sweepnum)]),'k-','LineWidth',2);
-        axis tight
-        pause
-        sweeplevonas=0;
+        ylim([-.13 .050])
+        xlim([0 1])
+        %     ylimitek(:,i)=get(gca,'Ylim');
+        set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])
+        axis off
+        set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
+        print(gcf,[dirs.figuresdir,'/IVs/IV_',xlsdata(prenum).ID,'.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
+        saveas(gcf,[dirs.figuresdir,'/IVs/IV_',xlsdata(prenum).ID,'.fig'])
     end
-    
-    %
-    figure(33)
-    clf
-    hold on
-    plot(iv.time,filtfilt(bb,aa,iv.v1),'k-','LineWidth',2)
-    plot(iv.time,filtfilt(b,a,iv.(['v',num2str(iv.sweepnum-(sweeplevonas))])),'k-','LineWidth',2);
-    axis tight
-    ylim([-.13 .050])
-    xlim([0 1])
-    %     ylimitek(:,i)=get(gca,'Ylim');
-    set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])
-    axis off
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
-    print(gcf,[dirs.figuresdir,'/IVs/IV_',xlsdata(prenum).ID,'.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
-    saveas(gcf,[dirs.figuresdir,'/IVs/IV_',xlsdata(prenum).ID,'.fig'])
-    
 end
 figure(1)
 clf

@@ -1,4 +1,4 @@
-function aE_ic_field_analysis(dirs,xlsdata,icxlsnum,timeborders,type)
+function aE_ic_field_analysis(dirs,xlsdata,icxlsnum,timeborders,type,additionaldata)
 %% field and IC analysis values
 
 % %% slice
@@ -51,7 +51,7 @@ function aE_ic_field_analysis(dirs,xlsdata,icxlsnum,timeborders,type)
 %% loading
 fieldxlsnum=find(strcmp(xlsdata(icxlsnum).HEKAfname,{xlsdata.HEKAfname}) & [xlsdata.field]==1);
 if isempty(fieldxlsnum)
-    fieldxlsnum(NaN);
+    fieldxlsnum=(NaN);
 end
 
 ic=load([dirs.bridgeddir,xlsdata(icxlsnum).ID]);
@@ -59,8 +59,22 @@ if isnan(fieldxlsnum)
     field=ic;
 else
     field=load([dirs.bridgeddir,xlsdata(fieldxlsnum).ID]);
+    jo=0; % -if there is no overlap between the field and the ic recording..
+    for i=1:length(ic.lightdata)
+        if any([ic.lightdata(i).realtime]==[field.lightdata.realtime])
+            jo=1;
+        end
+    end
+    if jo==0
+        fieldxlsnum=NaN;
+        field=ic;
+    end
 end
-load([dirs.eventdir,xlsdata(icxlsnum).ID],'eventdata');
+if nargin<6 & ~any(strcmp(fieldnames(additionaldata),'eventdata'))
+    load([dirs.eventdir,xlsdata(icxlsnum).ID],'eventdata');
+else
+    eventdata=additionaldata.eventdata;
+end
 if ~isempty(timeborders)
     needed=find([eventdata.maxtime]>=timeborders(1)& [eventdata.maxtime]<=timeborders(2));
     eventdata=eventdata(needed);
@@ -74,15 +88,19 @@ diffs2=[diff([eventdata.maxtime]),inf];
 diffmin=min([diffs;diffs2]);
 needed=diffmin>0;
 eventdata=eventdata(needed);
-apdata=eventdata(strcmp({eventdata.type},'AP'));%& [eventdata.baselineval]<-.05
+apdata=eventdata(strcmp({eventdata.type},'AP') & [eventdata.stimulated]==0);%& [eventdata.baselineval]<-.05
+aapdata=eventdata(strcmp({eventdata.type},'AP') & [eventdata.axonalAP] & [eventdata.stimulated]==0);%& [eventdata.baselineval]<-.05
+sapdata=eventdata(strcmp({eventdata.type},'AP') & [eventdata.somaticAP] & [eventdata.stimulated]==0);%& [eventdata.baselineval]<-.05
 epdata=eventdata(strcmp({eventdata.type},'ep'));
 ipdata=eventdata(strcmp({eventdata.type},'ip'));
 %
 % close all
 localextremumwin=.1;
-cutofffreq=[.1 5];
+cutofffreq=[1 5];
 timebefore=1;
 timeafter=1;
+timebefore_corr=2;
+timeafter_corr=2;
 NEXT=0;
 X=[];
 Y=[];
@@ -101,10 +119,12 @@ ISI_next=[];
 NEXT=0;
 FieldData=struct;
 EventTimesRelative=struct;
+
 % analysis relative to the Field
 progressbar('analyzing field data')
 for fieldsweepnum= 1: length(field.bridgeddata)
     progressbar(fieldsweepnum/ length(field.bridgeddata));
+    if isempty(timeborders) | (field.bridgeddata(fieldsweepnum).realtime>=timeborders(1) & field.bridgeddata(fieldsweepnum).realtime<=timeborders(2))
     si=field.bridgeddata(fieldsweepnum).si;
     [b,a]=butter(1,cutofffreq/(1/field.bridgeddata(fieldsweepnum).si)/2,'bandpass');
     [bb,aa]=butter(1,500/(1/field.bridgeddata(fieldsweepnum).si)/2,'low');
@@ -172,6 +192,7 @@ for fieldsweepnum= 1: length(field.bridgeddata)
             NEXT=NEXT+1;
             amplitudes=abs(diff(fieldy(relativepeakhs)));
             FieldData(NEXT).time=time';
+            FieldData(NEXT).si=mode(diff(time));
             FieldData(NEXT).fieldtodetect=fieldy';
             FieldData(NEXT).fieldfilt=fieldtoshow';
             FieldData(NEXT).ic=intracell';
@@ -188,6 +209,7 @@ for fieldsweepnum= 1: length(field.bridgeddata)
             FieldData(NEXT).fieldsweepnum=fieldsweepnum;
             FieldData(NEXT).sweepnum=sweepnum;
             FieldData(NEXT).troughtime=sweeptime(firsth2);
+            
             eventdata=apdata;
             neededevents=find([eventdata.maxtime]>=FieldData(NEXT).troughtime-timebefore & [eventdata.maxtime]<=FieldData(NEXT).troughtime+timeafter);
             FieldData(NEXT).relativeAPtimes=[eventdata(neededevents).maxtime]-FieldData(NEXT).troughtime;
@@ -196,6 +218,16 @@ for fieldsweepnum= 1: length(field.bridgeddata)
             else
                 FieldData(NEXT).apnum=length(FieldData(NEXT).relativeAPtimes);
             end
+            
+            eventdata=aapdata;
+            neededevents=find([eventdata.maxtime]>=FieldData(NEXT).troughtime-timebefore & [eventdata.maxtime]<=FieldData(NEXT).troughtime+timeafter);
+            FieldData(NEXT).relativeaxonalAPtimes=[eventdata(neededevents).maxtime]-FieldData(NEXT).troughtime;
+            if isempty(FieldData(NEXT).relativeaxonalAPtimes)
+                FieldData(NEXT).axonalapnum=0;
+            else
+                FieldData(NEXT).axonalapnum=length(FieldData(NEXT).relativeaxonalAPtimes);
+            end
+            
             eventdata=epdata;
             neededevents=find([eventdata.maxtime]>=FieldData(NEXT).troughtime-timebefore & [eventdata.maxtime]<=FieldData(NEXT).troughtime+timeafter);
             FieldData(NEXT).relativeeptimes=[eventdata(neededevents).maxtime]-FieldData(NEXT).troughtime;
@@ -204,6 +236,7 @@ for fieldsweepnum= 1: length(field.bridgeddata)
             else
                 FieldData(NEXT).epnum=length(FieldData(NEXT).relativeeptimes);
             end
+            
             eventdata=ipdata;
             neededevents=find([eventdata.maxtime]>=FieldData(NEXT).troughtime-timebefore & [eventdata.maxtime]<=FieldData(NEXT).troughtime+timeafter);
             FieldData(NEXT).relativeiptimes=[eventdata(neededevents).maxtime]-FieldData(NEXT).troughtime;
@@ -213,6 +246,7 @@ for fieldsweepnum= 1: length(field.bridgeddata)
                 FieldData(NEXT).ipnum=length(FieldData(NEXT).relativeiptimes);
             end
             FieldData(NEXT).eventnum=FieldData(NEXT).ipnum+FieldData(NEXT).epnum+FieldData(NEXT).apnum;
+            
 %             figure(3)
 %             clf
 %             subplot(3,1,1)
@@ -251,18 +285,42 @@ for fieldsweepnum= 1: length(field.bridgeddata)
 % %             pause
 %         end
     end
+    end
+end
+FieldDataoriginal=FieldData;
+%% calculating cross correlations
+events.AP=apdata;
+events.aAP=aapdata;
+events.sAP=sapdata;
+events.EP=epdata;
+events.IP=ipdata;
+tocalculate=fieldnames(events);
+for i=1:length(tocalculate)
+    events_now=events.(tocalculate{i});
+    for j=1:length(tocalculate)
+        events_now2=events.(tocalculate{j});
+        for eventi=1:length(events_now);
+            maxtime=events_now(eventi).maxtime;
+            neededevents=find([events_now2.maxtime]>=maxtime-timebefore_corr & [events_now2.maxtime]<=maxtime+timeafter_corr);
+            data=[events_now2(neededevents).maxtime]-maxtime;
+            data(data==0)=[];
+            events_now(eventi).(['relativetimes_',tocalculate{j}])=data;
+        end
+    end
+    events.(tocalculate{i})=events_now;
 end
 
-FieldDataoriginal=FieldData;
 
 
-% plotting
+%% plotting
 FieldData=FieldDataoriginal;
 for i=1:length(FieldData)
     FieldData(i).medicV=median(FieldData(i).ic);
 end
 FieldData([FieldData.eventnum]==0)=[];
 timestep=.05;
+bins=[-timebefore:timestep:timeafter];
+bins_corr=[-timebefore_corr:timestep:timeafter_corr];
 timewindowforfieldamplitude=10;
 % needed=[FieldData.maxamplitude]>=2*10^-5&[FieldData.maxamplitude]<=10*10^-5;
 % FieldData=FieldData(needed);
@@ -277,7 +335,8 @@ needed=periodlength>.2 & periodlength<2;
 FieldData=FieldData(needed);
 % needed=[FieldData.medicV]<-.055;
 % FieldData=FieldData(needed);
-ido=[FieldData.time];%bsxfun(@(A,B) A+B,[FieldData.time],[FieldData.troughtime]);
+% ido=[FieldData.time];%bsxfun(@(A,B) A+B,[FieldData.time],[FieldData.troughtime]);
+%%
 figure(1)
 clf
 plot([FieldData.troughtime],[FieldData.maxamplitude],'k-')
@@ -285,20 +344,32 @@ hold on
 % plot([FieldData.troughtime],[FieldData.medianamplitude],'r-')
 figure(2)
 clf
-h(1)=subplot(4,1,1);
-plot(ido,[FieldData.ic]*1000)
-hold on
-% plot(ido,mean([FieldData.ic],2)*1000,'k-','LineWIdth',3);
-ylabel('IC (mV)')
-axis tight
-h(2)=subplot(4,1,2);
-hold on
-plot(ido,[FieldData.fieldtodetect]*1000); %bsxfun(@(A,B )A-B,[FieldData.fieldtodetect],[FieldData.troughvalue])
-plot(ido,mean([FieldData.fieldtodetect],2)*1000,'k-','LineWIdth',3);
-ylabel('Field (mV)')
-axis tight
+sis=unique([FieldData.si]);
+for i=1:length(sis)
+    needed=[FieldData.si]==sis(i);
+    h(1)=subplot(4,1,1);
+    plot([FieldData(needed).time],[FieldData(needed).ic]*1000)
+    hold on
+    % plot(ido,mean([FieldData.ic],2)*1000,'k-','LineWIdth',3);
+    ylabel('IC (mV)')
+    axis tight
+    h(2)=subplot(4,1,2);
+    hold on
+    plot([FieldData(needed).time],[FieldData(needed).fieldtodetect]*1000); %bsxfun(@(A,B )A-B,[FieldData.fieldtodetect],[FieldData.troughvalue])
+    plot([FieldData(needed).time],mean([FieldData(needed).fieldtodetect],2)*1000,'k-','LineWIdth',3);
+    if isnan(fieldxlsnum)
+        ylabel('Filtered intra (mV) -no field ')
+    else
+        ylabel('Field (mV)')
+    end
+    axis tight
+end
 h(3)=subplot(4,1,3);
-hist([FieldData.relativeAPtimes],[-timebefore:timestep:timeafter])
+[nAP,bins]=hist([FieldData.relativeAPtimes],[-timebefore:timestep:timeafter]);
+[naxonalAP,~]=hist([FieldData.relativeaxonalAPtimes],[-timebefore:timestep:timeafter]);
+hold on
+bar(bins,nAP,'b')
+bar(bins,naxonalAP,'r')
 ylabel('AP count')
 axis tight
 h(4)=subplot(4,1,4);
@@ -307,11 +378,33 @@ axis tight
 ylabel('EPSP count')
 xlabel('time (s)')
 linkaxes(h,'x');
-
 %%
-pause
+figure(3)
+clf
+for i=1:length(tocalculate)
+    for j=1:length(tocalculate)
+        subplot(length(tocalculate),length(tocalculate),(i-1)*length(tocalculate)+j);
+        if length((events.(tocalculate{i})))>1
+        hist([events.(tocalculate{i}).(['relativetimes_',tocalculate{j}])],bins_corr);
+         axis tight
+        end
+       
+        title([tocalculate{j},' relative to ',tocalculate{i}])
+    end
+end
 
+%% saving images
 
+ID=xlsdata(icxlsnum).ID;
+figure(2)
+saveas(gcf,[dirs.figuresdir,ID,'_field_anal'],'pdf')
+saveas(gcf,[dirs.figuresdir,ID,'_field_anal'],'jpg')
+figure(3)
+saveas(gcf,[dirs.figuresdir,ID,'_event_correlations'],'pdf')
+saveas(gcf,[dirs.figuresdir,ID,'_event_correlations'],'jpg')
+disp('field analysis finished')
+%%
+return
 %%
 events.AP=apdata;
 events.ep=epdata;
@@ -328,29 +421,26 @@ for eventtypei=1:1%length(eventtypes)
         sweepnum=eventdata(eventi).sweepnum;
         lestep=round(localextremumwin/si);
         if maxh>stepback+lestep & length(ic.bridgeddata(sweepnum).y)>maxh+stepforward
-            
             x=[-stepback:stepforward]*si;
             if sweepnum~=prevsweepnum
                 yicraw=ic.bridgeddata(sweepnum).y;
                 fieldsweepnum=find([field.bridgeddata.realtime]==eventdata(eventi).sweeptime);
                 yfieldraw=field.bridgeddata(fieldsweepnum).y;
+                [b_deltaFilt,a_deltaFilt] = ellip(1,0.1,40,[0.1 4].*si);
+                yfield_deltafilt = filtfilt(b_deltaFilt,a_deltaFilt,yfieldraw);
+                yfield_hil = hilbert(yfield_deltafilt);
+                K_yfield = abs(yfield_hil);
+                yfield_deltafilt_phi= angle(yfield_hil); 
                 prevsweepnum=sweepnum;
-            end
-            NOT FINISHED - filtering and phase detection needed
-            y=yraw(maxh-stepback:maxh+stepforward);
-            
-            [b,a]=butter(1,cutofffreq/(1/field.bridgeddata(fieldsweepnum).si)/2,'bandpass');
-            [bb,aa]=butter(1,500/(1/field.bridgeddata(fieldsweepnum).si)/2,'low');
-            
-            yfield=filtfilt(b,a,field.bridgeddata(fieldsweepnum).y);
-            yfieldorig=yfield;
-            yfieldorig=yfieldorig(maxh-stepback:maxh+stepforward);
-            yfield=yfield(maxh-stepback:maxh+stepforward);
-            yfieldtoshow=filtfilt(bb,aa,field.bridgeddata(fieldsweepnum).y);
-            yfieldtoshow=yfieldtoshow(maxh-stepback:maxh+stepforward);
-            
-            
+            end  
+            yicraw_now=yicraw(maxh-stepback:maxh+stepforward);
+            yfieldraw_now=yfieldraw(maxh-stepback:maxh+stepforward);
+            yfield_deltafilt_now=yfield_deltafilt(maxh-stepback:maxh+stepforward);
             maxtime=eventdata(eventi).maxtime;
+            
+            %%
+            pause
+%             NINCSENKÉSZ!!!!! asdfasfgasfsa
             prevtroughidx=find([FieldData.troughtime]<maxtime,1,'last');
             prevtroughtime=FieldData(prevtroughidx).troughtime;
             nexttroughidx=find([FieldData.troughtime]>maxtime,1,'first');
