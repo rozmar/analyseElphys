@@ -1,4 +1,5 @@
-function aE_ic_field_analysis(dirs,xlsdata,icxlsnum,timeborders,type,additionaldata)
+function dataout=aE_ic_field_analysis(dirs,xlsdata,icxlsnum,timeborders,type,additionaldata)
+dataout=struct;
 %% field and IC analysis values
 
 % %% slice
@@ -97,10 +98,10 @@ ipdata=eventdata(strcmp({eventdata.type},'ip'));
 % close all
 localextremumwin=.1;
 cutofffreq=[1 5];
-timebefore=1;
-timeafter=1;
-timebefore_corr=2;
-timeafter_corr=2;
+timebefore=.5;
+timeafter=.5;
+timebefore_corr=1;
+timeafter_corr=1;
 NEXT=0;
 X=[];
 Y=[];
@@ -130,11 +131,13 @@ for fieldsweepnum= 1: length(field.bridgeddata)
     [bb,aa]=butter(1,500/(1/field.bridgeddata(fieldsweepnum).si)/2,'low');
     [bic,aic]=butter(1,1500/(1/field.bridgeddata(fieldsweepnum).si)/2,'low');
     yfield=filtfilt(b,a,field.bridgeddata(fieldsweepnum).y);
+    
     yfieldorig=yfield;
     yfieldtoshow=filtfilt(bb,aa,field.bridgeddata(fieldsweepnum).y);
     stepback=round(timebefore/si);
     stepforward=round(timeafter/si);
     sweepnum=find([ic.bridgeddata.realtime]==field.bridgeddata(fieldsweepnum).realtime);
+    ic.bridgeddata(sweepnum).yfield=yfield;
     lestep=round(localextremumwin/si);
     minh2=stepback;
     maxh=stepback;
@@ -310,8 +313,9 @@ for i=1:length(tocalculate)
     events.(tocalculate{i})=events_now;
 end
 
-
-
+dataout.events=events;
+dataout.FieldData=FieldData;
+dataout.bridgeddata=ic.bridgeddata;
 %% plotting
 FieldData=FieldDataoriginal;
 for i=1:length(FieldData)
@@ -328,6 +332,7 @@ for i = 1:length(FieldData)
     needed=FieldData(i).troughtime-timewindowforfieldamplitude/2<=[FieldData.troughtime] & FieldData(i).troughtime+timewindowforfieldamplitude/2>=[FieldData.troughtime];
     FieldData(i).medianamplitude=median([FieldData(needed).maxamplitude]);
 end
+dataout.FieldData=FieldData;
 needed=[FieldData.maxamplitude]>=[FieldData.medianamplitude]/2;%&[FieldData.maxamplitude]<=[FieldData.medianamplitude]*5;% & [FieldData.apnum]>0 ;
 FieldData=FieldData(needed);
 periodlength=nanmean([NaN,diff([FieldData.troughtime]);diff([FieldData.troughtime,NaN])]);
@@ -405,301 +410,895 @@ saveas(gcf,[dirs.figuresdir,ID,'_event_correlations'],'jpg')
 disp('field analysis finished')
 %%
 return
-%%
-events.AP=apdata;
-events.ep=epdata;
-events.ip=ipdata;
-eventtypes=fieldnames(events);
-for eventtypei=1:1%length(eventtypes)
-    eventdata=events.(eventtypes{eventtypei});
-    prevsweepnum=0;
-    for eventi=1:length(eventdata)
-        si=eventdata(eventi).si;
-        stepback=round(timebefore/si);
-        stepforward=round(timeafter/si);
-        maxh=eventdata(eventi).maxh;
-        sweepnum=eventdata(eventi).sweepnum;
-        lestep=round(localextremumwin/si);
-        if maxh>stepback+lestep & length(ic.bridgeddata(sweepnum).y)>maxh+stepforward
-            x=[-stepback:stepforward]*si;
-            if sweepnum~=prevsweepnum
-                yicraw=ic.bridgeddata(sweepnum).y;
-                fieldsweepnum=find([field.bridgeddata.realtime]==eventdata(eventi).sweeptime);
-                yfieldraw=field.bridgeddata(fieldsweepnum).y;
-                [b_deltaFilt,a_deltaFilt] = ellip(1,0.1,40,[0.1 4].*si);
-                yfield_deltafilt = filtfilt(b_deltaFilt,a_deltaFilt,yfieldraw);
-                yfield_hil = hilbert(yfield_deltafilt);
-                K_yfield = abs(yfield_hil);
-                yfield_deltafilt_phi= angle(yfield_hil); 
-                prevsweepnum=sweepnum;
-            end  
-            yicraw_now=yicraw(maxh-stepback:maxh+stepforward);
-            yfieldraw_now=yfieldraw(maxh-stepback:maxh+stepforward);
-            yfield_deltafilt_now=yfield_deltafilt(maxh-stepback:maxh+stepforward);
-            maxtime=eventdata(eventi).maxtime;
-            
-            %%
-            pause
-%             NINCSENKÉSZ!!!!! asdfasfgasfsa
-            prevtroughidx=find([FieldData.troughtime]<maxtime,1,'last');
-            prevtroughtime=FieldData(prevtroughidx).troughtime;
-            nexttroughidx=find([FieldData.troughtime]>maxtime,1,'first');
-            nexttroughtime=FieldData(nexttroughidx).troughtime;
-            
-            sweeptimevector=[0:length(ic.bridgeddata(sweepnum).y)]*ic.bridgeddata(sweepnum).si+ic.bridgeddata(sweepnum).realtime;
-            peaktimes=sort(sweeptimevector([FieldData(prevtroughidx).prevpeak,FieldData(prevtroughidx).nextpeak,FieldData(nexttroughidx).prevpeak,FieldData(nexttroughidx).nextpeak]));
-            
-            prevpeaktime=peaktimes(find(peaktimes<maxtime,1,'last'));
-            nextpeaktime=peaktimes(find(peaktimes>maxtime,1,'first'));
-            
-            timetoprevpeak=prevpeaktime-maxtime;
-            timetonextpeak=nextpeaktime-maxtime;
-            timetoprevtrough=prevtroughtime-maxtime;
-            timetonexttrough=nexttroughtime-maxtime;
-            
-            
-            X(NEXT,:)=x;
-            if x(1)==0
-                disp('lol')
-            end
-            Y(NEXT,:)=y;
-            YFIELD(NEXT,:)=yfield;
-            YFIELDreal(NEXT,:)=yfieldorig*1000000;
-            %         Yphase(NEXT)=phase;
-            YfieldAmplitude(NEXT)=fieldamplitude;
-            YfieldTimetoPrevTrough(NEXT)=timetoprevtrough;
-            YfieldTimetoNextTrough(NEXT)=timetonexttrough;
-            %         YfieldTimetoPeak(NEXT)=timetopeak;
-            APtime(NEXT)=eventdata(eventi).maxtime;
-            V0(NEXT)=eventdata(eventi).baselineval;
-            ISI(NEXT)=diffmin(eventi);
-            ISI_prev(NEXT)=diffs(eventi);
-            ISI_next(NEXT)=diffs2(eventi);
-        else
-            disp('lol')
-        end
-        progressbar(eventi/length(eventdata));
-    end
-end
-
-%%
-return
-%% analysis relative to the APs
-eventdata=apdata;
-for eventi=1:length(eventdata)
-    si=eventdata(eventi).si;
-    stepback=round(timebefore/si);
-    stepforward=round(timeafter/si);
-    maxh=eventdata(eventi).maxh;
-    sweepnum=eventdata(eventi).sweepnum;
-    lestep=round(localextremumwin/si);
-    if maxh>stepback+lestep & length(ic.bridgeddata(sweepnum).y)>maxh+stepforward
-        NEXT=NEXT+1;
-        x=[-stepback:stepforward]*si;
-        %         y=nan(size(x));
-        y=ic.bridgeddata(sweepnum).y(maxh-stepback:maxh+stepforward);
-        fieldsweepnum=find([field.bridgeddata.realtime]==eventdata(eventi).sweeptime);
-        [b,a]=butter(1,cutofffreq/(1/field.bridgeddata(fieldsweepnum).si)/2,'bandpass');
-        [bb,aa]=butter(1,500/(1/field.bridgeddata(fieldsweepnum).si)/2,'low');
-        
-        yfield=filtfilt(b,a,field.bridgeddata(fieldsweepnum).y);
-        yfieldorig=yfield;
-        yfieldorig=yfieldorig(maxh-stepback:maxh+stepforward);
-        yfield=yfield(maxh-stepback:maxh+stepforward);
-        yfieldtoshow=filtfilt(bb,aa,field.bridgeddata(fieldsweepnum).y);
-        yfieldtoshow=yfieldtoshow(maxh-stepback:maxh+stepforward);
-        
-        
-        maxtime=eventdata(eventi).maxtime;
-        prevtroughidx=find([FieldData.troughtime]<maxtime,1,'last');
-        prevtroughtime=FieldData(prevtroughidx).troughtime;
-        nexttroughidx=find([FieldData.troughtime]>maxtime,1,'first');
-        nexttroughtime=FieldData(nexttroughidx).troughtime;
-        
-        sweeptimevector=[0:length(ic.bridgeddata(sweepnum).y)]*ic.bridgeddata(sweepnum).si+ic.bridgeddata(sweepnum).realtime;
-        peaktimes=sort(sweeptimevector([FieldData(prevtroughidx).prevpeak,FieldData(prevtroughidx).nextpeak,FieldData(nexttroughidx).prevpeak,FieldData(nexttroughidx).nextpeak]));
-        
-        prevpeaktime=peaktimes(find(peaktimes<maxtime,1,'last'));
-        nextpeaktime=peaktimes(find(peaktimes>maxtime,1,'first'));
-        
-        timetoprevpeak=prevpeaktime-maxtime;
-        timetonextpeak=nextpeaktime-maxtime;
-        timetoprevtrough=prevtroughtime-maxtime;
-        timetonexttrough=nexttroughtime-maxtime;
-        
-
-        X(NEXT,:)=x;
-        if x(1)==0
-            disp('lol')
-        end
-        Y(NEXT,:)=y;
-        YFIELD(NEXT,:)=yfield;
-        YFIELDreal(NEXT,:)=yfieldorig*1000000;
-%         Yphase(NEXT)=phase;
-        YfieldAmplitude(NEXT)=fieldamplitude;
-        YfieldTimetoPrevTrough(NEXT)=timetoprevtrough;
-        YfieldTimetoNextTrough(NEXT)=timetonexttrough;
-%         YfieldTimetoPeak(NEXT)=timetopeak;
-        APtime(NEXT)=eventdata(eventi).maxtime;
-        V0(NEXT)=eventdata(eventi).baselineval;
-        ISI(NEXT)=diffmin(eventi);
-        ISI_prev(NEXT)=diffs(eventi);
-        ISI_next(NEXT)=diffs2(eventi);
-    else
-        disp('lol')
-    end
-    progressbar(eventi/length(eventdata));
-end
-%%
-periodlength=YfieldTimetoNextTrough-YfieldTimetoPrevTrough;
-% periodlength=halfperiodlength;
-minamplitude=0E-5;
-minperiodlength=.1;%         peaktimes=sort([prevtroughtime+FieldData(prevtroughidx).time(FieldData(prevtroughidx).prevpeak),prevtroughtime+FieldData(prevtroughidx).time(FieldData(prevtroughidx).nextpeak),nexttroughtime+FieldData(nexttroughidx).time(FieldData(nexttroughidx).prevpeak),nexttroughtime+FieldData(nexttroughidx).time(FieldData(nexttroughidx).nextpeak)]);
-
-limit=.3;
-lfplimit=.5;
-close all
-figure(1)
-clf
-subplot(5,4,1)
-needed=ISI>limit & YfieldAmplitude>minamplitude & periodlength>minperiodlength;
-rose(degtorad(Yphase(needed)),20);
-[tout,rout] =rose(degtorad(Yphase(needed)),20);
-figure(2)
-plotCircularBarchart(rout, 0, 'solitary APs')
-figure(1)
-title('solitary APs')
-subplot(5,4,5)
-% shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
-hold on
-plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
-axis tight
-% ylim([-1 1])
-% xlim([-lfplimit lfplimit])
-subplot(5,4,9)
-hold all
-plot(X(needed,:)',Y(needed,:)')
-xlim([-limit limit])
-subplot(5,4,13);
-prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
-nexttroughtimes=[YfieldTimetoNextTrough(needed)];
-periodlengths=nexttroughtimes-prevtroughtimes;
-periodprigresses=-prevtroughtimes./periodlengths;
-hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
-xlabel('normalized time to trough')
-subplot(5,4,17);
-plot(APtime(needed),periodprigresses,'ko-')
-xlabel('Time (s)')
-ylabel('Phase (trought-to-trough')
-
-subplot(5,4,2)
-needed=ISI<limit  & YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
-rose(degtorad(Yphase(needed)),20);
-[tout,rout] =rose(degtorad(Yphase(needed)),20);
-figure(3)
-plotCircularBarchart(rout, 0, 'grouped APs')
-figure(1)
-title('grouped APs')
-subplot(5,4,6)
-% shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
-hold on
-plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
-axis tight
-% ylim([-1 1])
-% xlim([-lfplimit lfplimit])
-subplot(5,4,10)
-hold all
-plot(X(needed,:)',Y(needed,:)')
-xlim([-limit limit])
-subplot(5,4,14);
-prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
-nexttroughtimes=[YfieldTimetoNextTrough(needed)];
-periodlengths=nexttroughtimes-prevtroughtimes;
-periodprigresses=-prevtroughtimes./periodlengths;
-hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
-xlabel('normalized time to trough')
-subplot(5,4,18);
-plot(APtime(needed),periodprigresses,'ko-')
-xlabel('Time (s)')
-ylabel('Phase (trought-to-trough')
-
-subplot(5,4,3)
-needed=ISI_prev>limit & ISI_next<limit & YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
-rose(degtorad(Yphase(needed)),20);
-[tout,rout] =rose(degtorad(Yphase(needed)),20);
-figure(4)
-plotCircularBarchart(rout, 0, 'group leading APs')
-figure(1)
-title('group leading APs')
-subplot(5,4,7)
-% shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
-hold on
-plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
-axis tight
-% ylim([-1 1])persistent_experimental.m
-% xlim([-lfplimit lfplimit])
-subplot(5,4,11)
-hold all
-plot(X(needed,:)',Y(needed,:)')
-xlim([-limit limit])
-subplot(5,4,15);
-prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
-nexttroughtimes=[YfieldTimetoNextTrough(needed)];
-periodlengths=nexttroughtimes-prevtroughtimes;
-periodprigresses=-prevtroughtimes./periodlengths;
-hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
-xlabel('normalized time to trough')
-subplot(5,4,19);
-plot(APtime(needed),periodprigresses,'ko-')
-xlabel('Time (s)')
-ylabel('Phase (trought-to-trough')
-
-subplot(5,4,4)
-needed=YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
-rose(degtorad(Yphase(needed)),20);
-[tout,rout] =rose(degtorad(Yphase(needed)),20);
-figure(5)
-plotCircularBarchart(rout, 0, 'ALL APs')
-figure(1)
-title('ALL APs')
-subplot(5,4,8)
-% shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
-hold on
-plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
-axis tight
-% ylim([-1 1])
-% xlim([-lfplimit lfplimit])
-subplot(5,4,12)
-hold all
-plot(X(needed,:)',Y(needed,:)')
-xlim([-limit limit])
-subplot(5,4,16);
-prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
-nexttroughtimes=[YfieldTimetoNextTrough(needed)];
-periodlengths=nexttroughtimes-prevtroughtimes;
-periodprigresses=-prevtroughtimes./periodlengths;
-hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
-xlabel('normalized time to trough')
-subplot(5,4,20);
-plot(APtime(needed),periodprigresses,'ko-')
-xlabel('Time (s)')
-ylabel('Phase (trought-to-trough')
 % %%
+% events.AP=apdata;
+% events.ep=epdata;
+% events.ip=ipdata;
+% eventtypes=fieldnames(events);
+% for eventtypei=1:1%length(eventtypes)
+%     eventdata=events.(eventtypes{eventtypei});
+%     prevsweepnum=0;
+%     for eventi=1:length(eventdata)
+%         si=eventdata(eventi).si;
+%         stepback=round(timebefore/si);
+%         stepforward=round(timeafter/si);
+%         maxh=eventdata(eventi).maxh;
+%         sweepnum=eventdata(eventi).sweepnum;
+%         lestep=round(localextremumwin/si);
+%         if maxh>stepback+lestep & length(ic.bridgeddata(sweepnum).y)>maxh+stepforward
+%             x=[-stepback:stepforward]*si;
+%             if sweepnum~=prevsweepnum
+%                 yicraw=ic.bridgeddata(sweepnum).y;
+%                 fieldsweepnum=find([field.bridgeddata.realtime]==eventdata(eventi).sweeptime);
+%                 yfieldraw=field.bridgeddata(fieldsweepnum).y;
+%                 [b_deltaFilt,a_deltaFilt] = ellip(1,0.1,40,[0.1 4].*si);
+%                 yfield_deltafilt = filtfilt(b_deltaFilt,a_deltaFilt,yfieldraw);
+%                 yfield_hil = hilbert(yfield_deltafilt);
+%                 K_yfield = abs(yfield_hil);
+%                 yfield_deltafilt_phi= angle(yfield_hil); 
+%                 prevsweepnum=sweepnum;
+%             end  
+%             yicraw_now=yicraw(maxh-stepback:maxh+stepforward);
+%             yfieldraw_now=yfieldraw(maxh-stepback:maxh+stepforward);
+%             yfield_deltafilt_now=yfield_deltafilt(maxh-stepback:maxh+stepforward);
+%             maxtime=eventdata(eventi).maxtime;
+%             
+%             %%
+%             pause
+% %             NINCSENKÉSZ!!!!! asdfasfgasfsa
+%             prevtroughidx=find([FieldData.troughtime]<maxtime,1,'last');
+%             prevtroughtime=FieldData(prevtroughidx).troughtime;
+%             nexttroughidx=find([FieldData.troughtime]>maxtime,1,'first');
+%             nexttroughtime=FieldData(nexttroughidx).troughtime;
+%             
+%             sweeptimevector=[0:length(ic.bridgeddata(sweepnum).y)]*ic.bridgeddata(sweepnum).si+ic.bridgeddata(sweepnum).realtime;
+%             peaktimes=sort(sweeptimevector([FieldData(prevtroughidx).prevpeak,FieldData(prevtroughidx).nextpeak,FieldData(nexttroughidx).prevpeak,FieldData(nexttroughidx).nextpeak]));
+%             
+%             prevpeaktime=peaktimes(find(peaktimes<maxtime,1,'last'));
+%             nextpeaktime=peaktimes(find(peaktimes>maxtime,1,'first'));
+%             
+%             timetoprevpeak=prevpeaktime-maxtime;
+%             timetonextpeak=nextpeaktime-maxtime;
+%             timetoprevtrough=prevtroughtime-maxtime;
+%             timetonexttrough=nexttroughtime-maxtime;
+%             
+%             
+%             X(NEXT,:)=x;
+%             if x(1)==0
+%                 disp('lol')
+%             end
+%             Y(NEXT,:)=y;
+%             YFIELD(NEXT,:)=yfield;
+%             YFIELDreal(NEXT,:)=yfieldorig*1000000;
+%             %         Yphase(NEXT)=phase;
+%             YfieldAmplitude(NEXT)=fieldamplitude;
+%             YfieldTimetoPrevTrough(NEXT)=timetoprevtrough;
+%             YfieldTimetoNextTrough(NEXT)=timetonexttrough;
+%             %         YfieldTimetoPeak(NEXT)=timetopeak;
+%             APtime(NEXT)=eventdata(eventi).maxtime;
+%             V0(NEXT)=eventdata(eventi).baselineval;
+%             ISI(NEXT)=diffmin(eventi);
+%             ISI_prev(NEXT)=diffs(eventi);
+%             ISI_next(NEXT)=diffs2(eventi);
+%         else
+%             disp('lol')
+%         end
+%         progressbar(eventi/length(eventdata));
+%     end
+% end
+% 
+% %%
+% return
+% %% analysis relative to the APs
+% eventdata=apdata;
+% for eventi=1:length(eventdata)
+%     si=eventdata(eventi).si;
+%     stepback=round(timebefore/si);
+%     stepforward=round(timeafter/si);
+%     maxh=eventdata(eventi).maxh;
+%     sweepnum=eventdata(eventi).sweepnum;
+%     lestep=round(localextremumwin/si);
+%     if maxh>stepback+lestep & length(ic.bridgeddata(sweepnum).y)>maxh+stepforward
+%         NEXT=NEXT+1;
+%         x=[-stepback:stepforward]*si;
+%         %         y=nan(size(x));
+%         y=ic.bridgeddata(sweepnum).y(maxh-stepback:maxh+stepforward);
+%         fieldsweepnum=find([field.bridgeddata.realtime]==eventdata(eventi).sweeptime);
+%         [b,a]=butter(1,cutofffreq/(1/field.bridgeddata(fieldsweepnum).si)/2,'bandpass');
+%         [bb,aa]=butter(1,500/(1/field.bridgeddata(fieldsweepnum).si)/2,'low');
+%         
+%         yfield=filtfilt(b,a,field.bridgeddata(fieldsweepnum).y);
+%         yfieldorig=yfield;
+%         yfieldorig=yfieldorig(maxh-stepback:maxh+stepforward);
+%         yfield=yfield(maxh-stepback:maxh+stepforward);
+%         yfieldtoshow=filtfilt(bb,aa,field.bridgeddata(fieldsweepnum).y);
+%         yfieldtoshow=yfieldtoshow(maxh-stepback:maxh+stepforward);
+%         
+%         
+%         maxtime=eventdata(eventi).maxtime;
+%         prevtroughidx=find([FieldData.troughtime]<maxtime,1,'last');
+%         prevtroughtime=FieldData(prevtroughidx).troughtime;
+%         nexttroughidx=find([FieldData.troughtime]>maxtime,1,'first');
+%         nexttroughtime=FieldData(nexttroughidx).troughtime;
+%         
+%         sweeptimevector=[0:length(ic.bridgeddata(sweepnum).y)]*ic.bridgeddata(sweepnum).si+ic.bridgeddata(sweepnum).realtime;
+%         peaktimes=sort(sweeptimevector([FieldData(prevtroughidx).prevpeak,FieldData(prevtroughidx).nextpeak,FieldData(nexttroughidx).prevpeak,FieldData(nexttroughidx).nextpeak]));
+%         
+%         prevpeaktime=peaktimes(find(peaktimes<maxtime,1,'last'));
+%         nextpeaktime=peaktimes(find(peaktimes>maxtime,1,'first'));
+%         
+%         timetoprevpeak=prevpeaktime-maxtime;
+%         timetonextpeak=nextpeaktime-maxtime;
+%         timetoprevtrough=prevtroughtime-maxtime;
+%         timetonexttrough=nexttroughtime-maxtime;
+%         
+% 
+%         X(NEXT,:)=x;
+%         if x(1)==0
+%             disp('lol')
+%         end
+%         Y(NEXT,:)=y;
+%         YFIELD(NEXT,:)=yfield;
+%         YFIELDreal(NEXT,:)=yfieldorig*1000000;
+% %         Yphase(NEXT)=phase;
+%         YfieldAmplitude(NEXT)=fieldamplitude;
+%         YfieldTimetoPrevTrough(NEXT)=timetoprevtrough;
+%         YfieldTimetoNextTrough(NEXT)=timetonexttrough;
+% %         YfieldTimetoPeak(NEXT)=timetopeak;
+%         APtime(NEXT)=eventdata(eventi).maxtime;
+%         V0(NEXT)=eventdata(eventi).baselineval;
+%         ISI(NEXT)=diffmin(eventi);
+%         ISI_prev(NEXT)=diffs(eventi);
+%         ISI_next(NEXT)=diffs2(eventi);
+%     else
+%         disp('lol')
+%     end
+%     progressbar(eventi/length(eventdata));
+% end
+% %%
+% periodlength=YfieldTimetoNextTrough-YfieldTimetoPrevTrough;
+% % periodlength=halfperiodlength;
+% minamplitude=0E-5;
+% minperiodlength=.1;%         peaktimes=sort([prevtroughtime+FieldData(prevtroughidx).time(FieldData(prevtroughidx).prevpeak),prevtroughtime+FieldData(prevtroughidx).time(FieldData(prevtroughidx).nextpeak),nexttroughtime+FieldData(nexttroughidx).time(FieldData(nexttroughidx).prevpeak),nexttroughtime+FieldData(nexttroughidx).time(FieldData(nexttroughidx).nextpeak)]);
+% 
+% limit=.3;
+% lfplimit=.5;
 % close all
+% figure(1)
+% clf
+% subplot(5,4,1)
+% needed=ISI>limit & YfieldAmplitude>minamplitude & periodlength>minperiodlength;
+% rose(degtorad(Yphase(needed)),20);
+% [tout,rout] =rose(degtorad(Yphase(needed)),20);
+% figure(2)
+% plotCircularBarchart(rout, 0, 'solitary APs')
+% figure(1)
+% title('solitary APs')
+% subplot(5,4,5)
+% % shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
+% hold on
+% plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
+% axis tight
+% % ylim([-1 1])
+% % xlim([-lfplimit lfplimit])
+% subplot(5,4,9)
+% hold all
+% plot(X(needed,:)',Y(needed,:)')
+% xlim([-limit limit])
+% subplot(5,4,13);
+% prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
+% nexttroughtimes=[YfieldTimetoNextTrough(needed)];
+% periodlengths=nexttroughtimes-prevtroughtimes;
+% periodprigresses=-prevtroughtimes./periodlengths;
+% hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
+% xlabel('normalized time to trough')
+% subplot(5,4,17);
+% plot(APtime(needed),periodprigresses,'ko-')
+% xlabel('Time (s)')
+% ylabel('Phase (trought-to-trough')
+% 
+% subplot(5,4,2)
+% needed=ISI<limit  & YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
+% rose(degtorad(Yphase(needed)),20);
+% [tout,rout] =rose(degtorad(Yphase(needed)),20);
+% figure(3)
+% plotCircularBarchart(rout, 0, 'grouped APs')
+% figure(1)
+% title('grouped APs')
+% subplot(5,4,6)
+% % shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
+% hold on
+% plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
+% axis tight
+% % ylim([-1 1])
+% % xlim([-lfplimit lfplimit])
+% subplot(5,4,10)
+% hold all
+% plot(X(needed,:)',Y(needed,:)')
+% xlim([-limit limit])
+% subplot(5,4,14);
+% prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
+% nexttroughtimes=[YfieldTimetoNextTrough(needed)];
+% periodlengths=nexttroughtimes-prevtroughtimes;
+% periodprigresses=-prevtroughtimes./periodlengths;
+% hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
+% xlabel('normalized time to trough')
+% subplot(5,4,18);
+% plot(APtime(needed),periodprigresses,'ko-')
+% xlabel('Time (s)')
+% ylabel('Phase (trought-to-trough')
+% 
+% subplot(5,4,3)
 % needed=ISI_prev>limit & ISI_next<limit & YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
-% neededidxs=find(needed);
-% for i=1:length(neededidxs)
-%     idxnow=neededidxs(i);
-%     figure(23)
-%     clf
-%     subplot(3,1,1)
-%     plot(X(idxnow,:),Y(idxnow,:),'k-')
-%     subplot(3,1,2)
-%     plot(X(idxnow,:),YFIELD(idxnow,:),'k-')
-%     axis tight
-%     ylim([-1.5 1.5])
-%     subplot(3,1,3)
-%     plot(X(idxnow,:),YFIELDreal(idxnow,:),'k-')
-%     axis tight
-%     pause
+% rose(degtorad(Yphase(needed)),20);
+% [tout,rout] =rose(degtorad(Yphase(needed)),20);
+% figure(4)
+% plotCircularBarchart(rout, 0, 'group leading APs')
+% figure(1)
+% title('group leading APs')% %%
+% events.AP=apdata;
+% events.ep=epdata;
+% events.ip=ipdata;
+% eventtypes=fieldnames(events);
+% for eventtypei=1:1%length(eventtypes)
+%     eventdata=events.(eventtypes{eventtypei});
+%     prevsweepnum=0;
+%     for eventi=1:length(eventdata)
+%         si=eventdata(eventi).si;
+%         stepback=round(timebefore/si);
+%         stepforward=round(timeafter/si);
+%         maxh=eventdata(eventi).maxh;
+%         sweepnum=eventdata(eventi).sweepnum;
+%         lestep=round(localextremumwin/si);
+%         if maxh>stepback+lestep & length(ic.bridgeddata(sweepnum).y)>maxh+stepforward
+%             x=[-stepback:stepforward]*si;
+%             if sweepnum~=prevsweepnum
+%                 yicraw=ic.bridgeddata(sweepnum).y;
+%                 fieldsweepnum=find([field.bridgeddata.realtime]==eventdata(eventi).sweeptime);
+%                 yfieldraw=field.bridgeddata(fieldsweepnum).y;
+%                 [b_deltaFilt,a_deltaFilt] = ellip(1,0.1,40,[0.1 4].*si);
+%                 yfield_deltafilt = filtfilt(b_deltaFilt,a_deltaFilt,yfieldraw);
+%                 yfield_hil = hilbert(yfield_deltafilt);
+%                 K_yfield = abs(yfield_hil);
+%                 yfield_deltafilt_phi= angle(yfield_hil); 
+%                 prevsweepnum=sweepnum;
+%             end  
+%             yicraw_now=yicraw(maxh-stepback:maxh+stepforward);
+%             yfieldraw_now=yfieldraw(maxh-stepback:maxh+stepforward);
+%             yfield_deltafilt_now=yfield_deltafilt(maxh-stepback:maxh+stepforward);
+%             maxtime=eventdata(eventi).maxtime;
+%             
+%             %%
+%             pause
+% %             NINCSENKÉSZ!!!!! asdfasfgasfsa
+%             prevtroughidx=find([FieldData.troughtime]<maxtime,1,'last');
+%             prevtroughtime=FieldData(prevtroughidx).troughtime;
+%             nexttroughidx=find([FieldData.troughtime]>maxtime,1,'first');
+%             nexttroughtime=FieldData(nexttroughidx).troughtime;
+%             
+%             sweeptimevector=[0:length(ic.bridgeddata(sweepnum).y)]*ic.bridgeddata(sweepnum).si+ic.bridgeddata(sweepnum).realtime;
+%             peaktimes=sort(sweeptimevector([FieldData(prevtroughidx).prevpeak,FieldData(prevtroughidx).nextpeak,FieldData(nexttroughidx).prevpeak,FieldData(nexttroughidx).nextpeak]));
+%             
+%             prevpeaktime=peaktimes(find(peaktimes<maxtime,1,'last'));
+%             nextpeaktime=peaktimes(find(peaktimes>maxtime,1,'first'));
+%             
+%             timetoprevpeak=prevpeaktime-maxtime;
+%             timetonextpeak=nextpeaktime-maxtime;
+%             timetoprevtrough=prevtroughtime-maxtime;
+%             timetonexttrough=nexttroughtime-maxtime;
+%             
+%             
+%             X(NEXT,:)=x;
+%             if x(1)==0
+%                 disp('lol')
+%             end
+%             Y(NEXT,:)=y;
+%             YFIELD(NEXT,:)=yfield;
+%             YFIELDreal(NEXT,:)=yfieldorig*1000000;
+%             %         Yphase(NEXT)=phase;
+%             YfieldAmplitude(NEXT)=fieldamplitude;
+%             YfieldTimetoPrevTrough(NEXT)=timetoprevtrough;
+%             YfieldTimetoNextTrough(NEXT)=timetonexttrough;
+%             %         YfieldTimetoPeak(NEXT)=timetopeak;
+%             APtime(NEXT)=eventdata(eventi).maxtime;
+%             V0(NEXT)=eventdata(eventi).baselineval;
+%             ISI(NEXT)=diffmin(eventi);
+%             ISI_prev(NEXT)=diffs(eventi);
+%             ISI_next(NEXT)=diffs2(eventi);
+%         else
+%             disp('lol')
+%         end
+%         progressbar(eventi/length(eventdata));
+%     end
+% end
+% 
+% %%
+% return
+% %% analysis relative to the APs
+% eventdata=apdata;
+% for eventi=1:length(eventdata)
+%     si=eventdata(eventi).si;
+%     stepback=round(timebefore/si);
+%     stepforward=round(timeafter/si);
+%     maxh=eventdata(eventi).maxh;
+%     sweepnum=eventdata(eventi).sweepnum;
+%     lestep=round(localextremumwin/si);
+%     if maxh>stepback+lestep & length(ic.bridgeddata(sweepnum).y)>maxh+stepforward
+%         NEXT=NEXT+1;
+%         x=[-stepback:stepforward]*si;
+%         %         y=nan(size(x));
+%         y=ic.bridgeddata(sweepnum).y(maxh-stepback:maxh+stepforward);
+%         fieldsweepnum=find([field.bridgeddata.realtime]==eventdata(eventi).sweeptime);
+%         [b,a]=butter(1,cutofffreq/(1/field.bridgeddata(fieldsweepnum).si)/2,'bandpass');
+%         [bb,aa]=butter(1,500/(1/field.bridgeddata(fieldsweepnum).si)/2,'low');
+%         
+%         yfield=filtfilt(b,a,field.bridgeddata(fieldsweepnum).y);
+%         yfieldorig=yfield;
+%         yfieldorig=yfieldorig(maxh-stepback:maxh+stepforward);
+%         yfield=yfield(maxh-stepback:maxh+stepforward);
+%         yfieldtoshow=filtfilt(bb,aa,field.bridgeddata(fieldsweepnum).y);
+%         yfieldtoshow=yfieldtoshow(maxh-stepback:maxh+stepforward);
+%         
+%         
+%         maxtime=eventdata(eventi).maxtime;
+%         prevtroughidx=find([FieldData.troughtime]<maxtime,1,'last');
+%         prevtroughtime=FieldData(prevtroughidx).troughtime;
+%         nexttroughidx=find([FieldData.troughtime]>maxtime,1,'first');
+%         nexttroughtime=FieldData(nexttroughidx).troughtime;
+%         
+%         sweeptimevector=[0:length(ic.bridgeddata(sweepnum).y)]*ic.bridgeddata(sweepnum).si+ic.bridgeddata(sweepnum).realtime;
+%         peaktimes=sort(sweeptimevector([FieldData(prevtroughidx).prevpeak,FieldData(prevtroughidx).nextpeak,FieldData(nexttroughidx).prevpeak,FieldData(nexttroughidx).nextpeak]));
+%         
+%         prevpeaktime=peaktimes(find(peaktimes<maxtime,1,'last'));
+%         nextpeaktime=peaktimes(find(peaktimes>maxtime,1,'first'));
+%         
+%         timetoprevpeak=prevpeaktime-maxtime;
+%         timetonextpeak=nextpeaktime-maxtime;
+%         timetoprevtrough=prevtroughtime-maxtime;
+%         timetonexttrough=nexttroughtime-maxtime;
+%         
+% 
+%         X(NEXT,:)=x;
+%         if x(1)==0
+%             disp('lol')
+%         end
+%         Y(NEXT,:)=y;
+%         YFIELD(NEXT,:)=yfield;
+%         YFIELDreal(NEXT,:)=yfieldorig*1000000;
+% %         Yphase(NEXT)=phase;
+%         YfieldAmplitude(NEXT)=fieldamplitude;
+%         YfieldTimetoPrevTrough(NEXT)=timetoprevtrough;
+%         YfieldTimetoNextTrough(NEXT)=timetonexttrough;
+% %         YfieldTimetoPeak(NEXT)=timetopeak;
+%         APtime(NEXT)=eventdata(eventi).maxtime;
+%         V0(NEXT)=eventdata(eventi).baselineval;
+%         ISI(NEXT)=diffmin(eventi);
+%         ISI_prev(NEXT)=diffs(eventi);
+%         ISI_next(NEXT)=diffs2(eventi);
+%     else
+%         disp('lol')
+%     end
+%     progressbar(eventi/length(eventdata));
+% end
+% %%
+% periodlength=YfieldTimetoNextTrough-YfieldTimetoPrevTrough;
+% % periodlength=halfperiodlength;
+% minamplitude=0E-5;
+% minperiodlength=.1;%         peaktimes=sort([prevtroughtime+FieldData(prevtroughidx).time(FieldData(prevtroughidx).prevpeak),prevtroughtime+FieldData(prevtroughidx).time(FieldData(prevtroughidx).nextpeak),nexttroughtime+FieldData(nexttroughidx).time(FieldData(nexttroughidx).prevpeak),nexttroughtime+FieldData(nexttroughidx).time(FieldData(nexttroughidx).nextpeak)]);
+% 
+% limit=.3;
+% lfplimit=.5;
+% close all
+% figure(1)
+% clf
+% subplot(5,4,1)
+% needed=ISI>limit & YfieldAmplitude>minamplitude & periodlength>minperiodlength;
+% rose(degtorad(Yphase(needed)),20);
+% [tout,rout] =rose(degtorad(Yphase(needed)),20);
+% figure(2)
+% plotCircularBarchart(rout, 0, 'solitary APs')
+% figure(1)
+% title('solitary APs')
+% subplot(5,4,5)
+% % shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
+% hold on
+% plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
+% axis tight
+% % ylim([-1 1])
+% % xlim([-lfplimit lfplimit])
+% subplot(5,4,9)
+% hold all
+% plot(X(needed,:)',Y(needed,:)')
+% xlim([-limit limit])
+% subplot(5,4,13);
+% prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
+% nexttroughtimes=[YfieldTimetoNextTrough(needed)];
+% periodlengths=nexttroughtimes-prevtroughtimes;
+% periodprigresses=-prevtroughtimes./periodlengths;
+% hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
+% xlabel('normalized time to trough')
+% subplot(5,4,17);
+% plot(APtime(needed),periodprigresses,'ko-')
+% xlabel('Time (s)')
+% ylabel('Phase (trought-to-trough')
+% 
+% subplot(5,4,2)
+% needed=ISI<limit  & YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
+% rose(degtorad(Yphase(needed)),20);
+% [tout,rout] =rose(degtorad(Yphase(needed)),20);
+% figure(3)
+% plotCircularBarchart(rout, 0, 'grouped APs')
+% figure(1)
+% title('grouped APs')
+% subplot(5,4,6)
+% % shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
+% hold on
+% plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
+% axis tight
+% % ylim([-1 1])
+% % xlim([-lfplimit lfplimit])
+% subplot(5,4,10)
+% hold all
+% plot(X(needed,:)',Y(needed,:)')
+% xlim([-limit limit])
+% subplot(5,4,14);
+% prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
+% nexttroughtimes=[YfieldTimetoNextTrough(needed)];
+% periodlengths=nexttroughtimes-prevtroughtimes;
+% periodprigresses=-prevtroughtimes./periodlengths;
+% hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
+% xlabel('normalized time to trough')
+% subplot(5,4,18);
+% plot(APtime(needed),periodprigresses,'ko-')
+% xlabel('Time (s)')
+% ylabel('Phase (trought-to-trough')
+% 
+% subplot(5,4,3)
+% needed=ISI_prev>limit & ISI_next<limit & YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
+% rose(degtorad(Yphase(needed)),20);
+% [tout,rout] =rose(degtorad(Yphase(needed)),20);
+% figure(4)
+% plotCircularBarchart(rout, 0, 'group leading APs')
+% figure(1)
+% title('group leading APs')
+% subplot(5,4,7)
+% % shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
+% hold on
+% plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
+% axis tight
+% % ylim([-1 1])persistent_experimental.m
+% % xlim([-lfplimit lfplimit])
+% subplot(5,4,11)
+% hold all
+% plot(X(needed,:)',Y(needed,:)')
+% xlim([-limit limit])
+% subplot(5,4,15);
+% prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
+% nexttroughtimes=[YfieldTimetoNextTrough(needed)];
+% periodlengths=nexttroughtimes-prevtroughtimes;
+% periodprigresses=-prevtroughtimes./periodlengths;
+% hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
+% xlabel('normalized time to trough')
+% subplot(5,4,19);
+% plot(APtime(needed),periodprigresses,'ko-')
+% xlabel('Time (s)')
+% ylabel('Phase (trought-to-trough')
+% 
+% subplot(5,4,4)
+% needed=YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
+% rose(degtorad(Yphase(needed)),20);
+% [tout,rout] =rose(degtorad(Yphase(needed)),20);
+% figure(5)
+% plotCircularBarchart(rout, 0, 'ALL APs')
+% figure(1)
+% title('ALL APs')
+% subplot(5,4,8)
+% % shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
+% hold on
+% plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
+% axis tight
+% % ylim([-1 1])
+% % xlim([-lfplimit lfplimit])
+% subplot(5,4,12)
+% hold all
+% plot(X(needed,:)',Y(needed,:)')
+% xlim([-limit limit])
+% subplot(5,4,16);
+% prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
+% nexttroughtimes=[YfieldTimetoNextTrough(needed)];
+% periodlengths=nexttroughtimes-prevtroughtimes;
+% periodprigresses=-prevtroughtimes./periodlengths;
+% hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
+% xlabel('normalized time to trough')
+% subplot(5,4,20);
+% plot(APtime(needed),periodprigresses,'ko-')
+% xlabel('Time (s)')
+% ylabel('Phase (trought-to-trough')
+% % %%
+% % close all
+% % needed=ISI_prev>limit & ISI_next<limit & YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
+% % neededidxs=find(needed);
+% % for i=1:length(neededidxs)
+% %     idxnow=neededidxs(i);
+% %     figure(23)
+% %     clf
+% %     subplot(3,1,1)
+% %     plot(X(idxnow,:),Y(idxnow,:),'k-')
+% %     subplot(3,1,2)
+% %     plot(X(idxnow,:),YFIELD(idxnow,:),'k-')
+% %     axis tight
+% %     ylim([-1.5 1.5])
+% %     subplot(3,1,3)
+% %     plot(X(idxnow,:),YFIELDreal(idxnow,:),'k-')
+% %     axis tight
+% %     pause% %%
+% events.AP=apdata;
+% events.ep=epdata;
+% events.ip=ipdata;
+% eventtypes=fieldnames(events);
+% for eventtypei=1:1%length(eventtypes)
+%     eventdata=events.(eventtypes{eventtypei});
+%     prevsweepnum=0;
+%     for eventi=1:length(eventdata)
+%         si=eventdata(eventi).si;
+%         stepback=round(timebefore/si);
+%         stepforward=round(timeafter/si);
+%         maxh=eventdata(eventi).maxh;
+%         sweepnum=eventdata(eventi).sweepnum;
+%         lestep=round(localextremumwin/si);
+%         if maxh>stepback+lestep & length(ic.bridgeddata(sweepnum).y)>maxh+stepforward
+%             x=[-stepback:stepforward]*si;
+%             if sweepnum~=prevsweepnum
+%                 yicraw=ic.bridgeddata(sweepnum).y;
+%                 fieldsweepnum=find([field.bridgeddata.realtime]==eventdata(eventi).sweeptime);
+%                 yfieldraw=field.bridgeddata(fieldsweepnum).y;
+%                 [b_deltaFilt,a_deltaFilt] = ellip(1,0.1,40,[0.1 4].*si);
+%                 yfield_deltafilt = filtfilt(b_deltaFilt,a_deltaFilt,yfieldraw);
+%                 yfield_hil = hilbert(yfield_deltafilt);
+%                 K_yfield = abs(yfield_hil);
+%                 yfield_deltafilt_phi= angle(yfield_hil); 
+%                 prevsweepnum=sweepnum;
+%             end  
+%             yicraw_now=yicraw(maxh-stepback:maxh+stepforward);
+%             yfieldraw_now=yfieldraw(maxh-stepback:maxh+stepforward);
+%             yfield_deltafilt_now=yfield_deltafilt(maxh-stepback:maxh+stepforward);
+%             maxtime=eventdata(eventi).maxtime;
+%             
+%             %%
+%             pause
+% %             NINCSENKÉSZ!!!!! asdfasfgasfsa
+%             prevtroughidx=find([FieldData.troughtime]<maxtime,1,'last');
+%             prevtroughtime=FieldData(prevtroughidx).troughtime;
+%             nexttroughidx=find([FieldData.troughtime]>maxtime,1,'first');
+%             nexttroughtime=FieldData(nexttroughidx).troughtime;
+%             
+%             sweeptimevector=[0:length(ic.bridgeddata(sweepnum).y)]*ic.bridgeddata(sweepnum).si+ic.bridgeddata(sweepnum).realtime;
+%             peaktimes=sort(sweeptimevector([FieldData(prevtroughidx).prevpeak,FieldData(prevtroughidx).nextpeak,FieldData(nexttroughidx).prevpeak,FieldData(nexttroughidx).nextpeak]));
+%             
+%             prevpeaktime=peaktimes(find(peaktimes<maxtime,1,'last'));
+%             nextpeaktime=peaktimes(find(peaktimes>maxtime,1,'first'));
+%             
+%             timetoprevpeak=prevpeaktime-maxtime;
+%             timetonextpeak=nextpeaktime-maxtime;
+%             timetoprevtrough=prevtroughtime-maxtime;
+%             timetonexttrough=nexttroughtime-maxtime;
+%             
+%             
+%             X(NEXT,:)=x;
+%             if x(1)==0
+%                 disp('lol')
+%             end
+%             Y(NEXT,:)=y;
+%             YFIELD(NEXT,:)=yfield;
+%             YFIELDreal(NEXT,:)=yfieldorig*1000000;
+%             %         Yphase(NEXT)=phase;
+%             YfieldAmplitude(NEXT)=fieldamplitude;
+%             YfieldTimetoPrevTrough(NEXT)=timetoprevtrough;
+%             YfieldTimetoNextTrough(NEXT)=timetonexttrough;
+%             %         YfieldTimetoPeak(NEXT)=timetopeak;
+%             APtime(NEXT)=eventdata(eventi).maxtime;
+%             V0(NEXT)=eventdata(eventi).baselineval;
+%             ISI(NEXT)=diffmin(eventi);
+%             ISI_prev(NEXT)=diffs(eventi);
+%             ISI_next(NEXT)=diffs2(eventi);
+%         else
+%             disp('lol')
+%         end
+%         progressbar(eventi/length(eventdata));
+%     end
+% end
+% 
+% %%
+% return
+% %% analysis relative to the APs
+% eventdata=apdata;
+% for eventi=1:length(eventdata)
+%     si=eventdata(eventi).si;
+%     stepback=round(timebefore/si);
+%     stepforward=round(timeafter/si);
+%     maxh=eventdata(eventi).maxh;
+%     sweepnum=eventdata(eventi).sweepnum;
+%     lestep=round(localextremumwin/si);
+%     if maxh>stepback+lestep & length(ic.bridgeddata(sweepnum).y)>maxh+stepforward
+%         NEXT=NEXT+1;
+%         x=[-stepback:stepforward]*si;
+%         %         y=nan(size(x));
+%         y=ic.bridgeddata(sweepnum).y(maxh-stepback:maxh+stepforward);
+%         fieldsweepnum=find([field.bridgeddata.realtime]==eventdata(eventi).sweeptime);
+%         [b,a]=butter(1,cutofffreq/(1/field.bridgeddata(fieldsweepnum).si)/2,'bandpass');
+%         [bb,aa]=butter(1,500/(1/field.bridgeddata(fieldsweepnum).si)/2,'low');
+%         
+%         yfield=filtfilt(b,a,field.bridgeddata(fieldsweepnum).y);
+%         yfieldorig=yfield;
+%         yfieldorig=yfieldorig(maxh-stepback:maxh+stepforward);
+%         yfield=yfield(maxh-stepback:maxh+stepforward);
+%         yfieldtoshow=filtfilt(bb,aa,field.bridgeddata(fieldsweepnum).y);
+%         yfieldtoshow=yfieldtoshow(maxh-stepback:maxh+stepforward);
+%         
+%         
+%         maxtime=eventdata(eventi).maxtime;
+%         prevtroughidx=find([FieldData.troughtime]<maxtime,1,'last');
+%         prevtroughtime=FieldData(prevtroughidx).troughtime;
+%         nexttroughidx=find([FieldData.troughtime]>maxtime,1,'first');
+%         nexttroughtime=FieldData(nexttroughidx).troughtime;
+%         
+%         sweeptimevector=[0:length(ic.bridgeddata(sweepnum).y)]*ic.bridgeddata(sweepnum).si+ic.bridgeddata(sweepnum).realtime;
+%         peaktimes=sort(sweeptimevector([FieldData(prevtroughidx).prevpeak,FieldData(prevtroughidx).nextpeak,FieldData(nexttroughidx).prevpeak,FieldData(nexttroughidx).nextpeak]));
+%         
+%         prevpeaktime=peaktimes(find(peaktimes<maxtime,1,'last'));
+%         nextpeaktime=peaktimes(find(peaktimes>maxtime,1,'first'));
+%         
+%         timetoprevpeak=prevpeaktime-maxtime;
+%         timetonextpeak=nextpeaktime-maxtime;
+%         timetoprevtrough=prevtroughtime-maxtime;
+%         timetonexttrough=nexttroughtime-maxtime;
+%         
+% 
+%         X(NEXT,:)=x;
+%         if x(1)==0
+%             disp('lol')
+%         end
+%         Y(NEXT,:)=y;
+%         YFIELD(NEXT,:)=yfield;
+%         YFIELDreal(NEXT,:)=yfieldorig*1000000;
+% %         Yphase(NEXT)=phase;
+%         YfieldAmplitude(NEXT)=fieldamplitude;
+%         YfieldTimetoPrevTrough(NEXT)=timetoprevtrough;
+%         YfieldTimetoNextTrough(NEXT)=timetonexttrough;
+% %         YfieldTimetoPeak(NEXT)=timetopeak;
+%         APtime(NEXT)=eventdata(eventi).maxtime;
+%         V0(NEXT)=eventdata(eventi).baselineval;
+%         ISI(NEXT)=diffmin(eventi);
+%         ISI_prev(NEXT)=diffs(eventi);
+%         ISI_next(NEXT)=diffs2(eventi);
+%     else
+%         disp('lol')
+%     end
+%     progressbar(eventi/length(eventdata));
+% end
+% %%
+% periodlength=YfieldTimetoNextTrough-YfieldTimetoPrevTrough;
+% % periodlength=halfperiodlength;
+% minamplitude=0E-5;
+% minperiodlength=.1;%         peaktimes=sort([prevtroughtime+FieldData(prevtroughidx).time(FieldData(prevtroughidx).prevpeak),prevtroughtime+FieldData(prevtroughidx).time(FieldData(prevtroughidx).nextpeak),nexttroughtime+FieldData(nexttroughidx).time(FieldData(nexttroughidx).prevpeak),nexttroughtime+FieldData(nexttroughidx).time(FieldData(nexttroughidx).nextpeak)]);
+% 
+% limit=.3;
+% lfplimit=.5;
+% close all
+% figure(1)
+% clf
+% subplot(5,4,1)
+% needed=ISI>limit & YfieldAmplitude>minamplitude & periodlength>minperiodlength;
+% rose(degtorad(Yphase(needed)),20);
+% [tout,rout] =rose(degtorad(Yphase(needed)),20);
+% figure(2)
+% plotCircularBarchart(rout, 0, 'solitary APs')
+% figure(1)
+% title('solitary APs')
+% subplot(5,4,5)
+% % shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
+% hold on
+% plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
+% axis tight
+% % ylim([-1 1])
+% % xlim([-lfplimit lfplimit])
+% subplot(5,4,9)
+% hold all
+% plot(X(needed,:)',Y(needed,:)')
+% xlim([-limit limit])
+% subplot(5,4,13);
+% prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
+% nexttroughtimes=[YfieldTimetoNextTrough(needed)];
+% periodlengths=nexttroughtimes-prevtroughtimes;
+% periodprigresses=-prevtroughtimes./periodlengths;
+% hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
+% xlabel('normalized time to trough')
+% subplot(5,4,17);
+% plot(APtime(needed),periodprigresses,'ko-')
+% xlabel('Time (s)')
+% ylabel('Phase (trought-to-trough')
+% 
+% subplot(5,4,2)
+% needed=ISI<limit  & YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
+% rose(degtorad(Yphase(needed)),20);
+% [tout,rout] =rose(degtorad(Yphase(needed)),20);
+% figure(3)
+% plotCircularBarchart(rout, 0, 'grouped APs')
+% figure(1)
+% title('grouped APs')
+% subplot(5,4,6)
+% % shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
+% hold on
+% plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
+% axis tight
+% % ylim([-1 1])
+% % xlim([-lfplimit lfplimit])
+% subplot(5,4,10)
+% hold all
+% plot(X(needed,:)',Y(needed,:)')
+% xlim([-limit limit])
+% subplot(5,4,14);
+% prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
+% nexttroughtimes=[YfieldTimetoNextTrough(needed)];
+% periodlengths=nexttroughtimes-prevtroughtimes;
+% periodprigresses=-prevtroughtimes./periodlengths;
+% hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
+% xlabel('normalized time to trough')
+% subplot(5,4,18);
+% plot(APtime(needed),periodprigresses,'ko-')
+% xlabel('Time (s)')
+% ylabel('Phase (trought-to-trough')
+% 
+% subplot(5,4,3)
+% needed=ISI_prev>limit & ISI_next<limit & YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
+% rose(degtorad(Yphase(needed)),20);
+% [tout,rout] =rose(degtorad(Yphase(needed)),20);
+% figure(4)
+% plotCircularBarchart(rout, 0, 'group leading APs')
+% figure(1)
+% title('group leading APs')
+% subplot(5,4,7)
+% % shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
+% hold on
+% plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
+% axis tight
+% % ylim([-1 1])persistent_experimental.m
+% % xlim([-lfplimit lfplimit])
+% subplot(5,4,11)
+% hold all
+% plot(X(needed,:)',Y(needed,:)')
+% xlim([-limit limit])
+% subplot(5,4,15);
+% prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
+% nexttroughtimes=[YfieldTimetoNextTrough(needed)];
+% periodlengths=nexttroughtimes-prevtroughtimes;
+% periodprigresses=-prevtroughtimes./periodlengths;
+% hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
+% xlabel('normalized time to trough')
+% subplot(5,4,19);
+% plot(APtime(needed),periodprigresses,'ko-')
+% xlabel('Time (s)')
+% ylabel('Phase (trought-to-trough')
+% 
+% subplot(5,4,4)
+% needed=YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
+% rose(degtorad(Yphase(needed)),20);
+% [tout,rout] =rose(degtorad(Yphase(needed)),20);
+% figure(5)
+% plotCircularBarchart(rout, 0, 'ALL APs')
+% figure(1)
+% title('ALL APs')
+% subplot(5,4,8)
+% % shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
+% hold on
+% plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
+% axis tight
+% % ylim([-1 1])
+% % xlim([-lfplimit lfplimit])
+% subplot(5,4,12)
+% hold all
+% plot(X(needed,:)',Y(needed,:)')
+% xlim([-limit limit])
+% subplot(5,4,16);
+% prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
+% nexttroughtimes=[YfieldTimetoNextTrough(needed)];
+% periodlengths=nexttroughtimes-prevtroughtimes;
+% periodprigresses=-prevtroughtimes./periodlengths;
+% hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
+% xlabel('normalized time to trough')
+% subplot(5,4,20);
+% plot(APtime(needed),periodprigresses,'ko-')
+% xlabel('Time (s)')
+% ylabel('Phase (trought-to-trough')
+% % %%
+% % close all
+% % needed=ISI_prev>limit & ISI_next<limit & YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
+% % neededidxs=find(needed);
+% % for i=1:length(neededidxs)
+% %     idxnow=neededidxs(i);
+% %     figure(23)
+% %     clf
+% %     subplot(3,1,1)
+% %     plot(X(idxnow,:),Y(idxnow,:),'k-')
+% %     subplot(3,1,2)
+% %     plot(X(idxnow,:),YFIELD(idxnow,:),'k-')
+% %     axis tight
+% %     ylim([-1.5 1.5])
+% %     subplot(3,1,3)
+% %     plot(X(idxnow,:),YFIELDreal(idxnow,:),'k-')
+% %     axis tight
+% %     pause
+
+
+% subplot(5,4,7)
+% % shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
+% hold on
+% plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
+% axis tight
+% % ylim([-1 1])persistent_experimental.m
+% % xlim([-lfplimit lfplimit])
+% subplot(5,4,11)
+% hold all
+% plot(X(needed,:)',Y(needed,:)')
+% xlim([-limit limit])
+% subplot(5,4,15);
+% prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
+% nexttroughtimes=[YfieldTimetoNextTrough(needed)];
+% periodlengths=nexttroughtimes-prevtroughtimes;
+% periodprigresses=-prevtroughtimes./periodlengths;
+% hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
+% xlabel('normalized time to trough')
+% subplot(5,4,19);
+% plot(APtime(needed),periodprigresses,'ko-')
+% xlabel('Time (s)')
+% ylabel('Phase (trought-to-trough')
+% 
+% subplot(5,4,4)
+% needed=YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
+% rose(degtorad(Yphase(needed)),20);
+% [tout,rout] =rose(degtorad(Yphase(needed)),20);
+% figure(5)
+% plotCircularBarchart(rout, 0, 'ALL APs')
+% figure(1)
+% title('ALL APs')
+% subplot(5,4,8)
+% % shadedErrorBar(mean(X(needed,:)),mean(YFIELDreal(needed,:)),std(YFIELDreal(needed,:)),'k')
+% hold on
+% plot(mean(X(needed,:)),mean(YFIELDreal(needed,:)),'k-','LineWidth',3)
+% axis tight
+% % ylim([-1 1])
+% % xlim([-lfplimit lfplimit])
+% subplot(5,4,12)
+% hold all
+% plot(X(needed,:)',Y(needed,:)')
+% xlim([-limit limit])
+% subplot(5,4,16);
+% prevtroughtimes=[YfieldTimetoPrevTrough(needed)];
+% nexttroughtimes=[YfieldTimetoNextTrough(needed)];
+% periodlengths=nexttroughtimes-prevtroughtimes;
+% periodprigresses=-prevtroughtimes./periodlengths;
+% hist(-[prevtroughtimes./periodlengths,nexttroughtimes./periodlengths],[-1:.1:1])
+% xlabel('normalized time to trough')
+% subplot(5,4,20);
+% plot(APtime(needed),periodprigresses,'ko-')
+% xlabel('Time (s)')
+% ylabel('Phase (trought-to-trough')
+% % %%
+% % close all
+% % needed=ISI_prev>limit & ISI_next<limit & YfieldAmplitude>minamplitude& periodlength>minperiodlength ;
+% % neededidxs=find(needed);
+% % for i=1:length(neededidxs)
+% %     idxnow=neededidxs(i);
+% %     figure(23)
+% %     clf
+% %     subplot(3,1,1)
+% %     plot(X(idxnow,:),Y(idxnow,:),'k-')
+% %     subplot(3,1,2)
+% %     plot(X(idxnow,:),YFIELD(idxnow,:),'k-')
+% %     axis tight
+% %     ylim([-1.5 1.5])
+% %     subplot(3,1,3)
+% %     plot(X(idxnow,:),YFIELDreal(idxnow,:),'k-')
+% %     axis tight
+% %     pause
 % end

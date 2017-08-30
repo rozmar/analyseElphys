@@ -40,6 +40,7 @@ elseif projectnum==2;
     dirs.eventdir=[dirs.basedir,'Events/'];
     dirs.eventparaleldir=[dirs.basedir,'Events/paralel/'];
     dirs.statedir=[dirs.basedir,'State/'];
+    dirs.taxonomydir=[locations.tgtardir,'ANALYSISdata/marci/_Taxonomy/persistent_invivo/'];
     % dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
     % dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
     % dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
@@ -66,6 +67,7 @@ elseif projectnum==4
     dirs.basedir=[locations.EMdir,'ANALYSISdata/marci/_persistent/'];
     dirs.rawexporteddir=[dirs.basedir,'Exported_raw/'];
     dirs.bridgeddir=[dirs.basedir,'Bridged_stim/'];
+    dirs.taxonomydir=[locations.tgtardir,'ANALYSISdata/marci/_Taxonomy/persistent_slice/'];
     dirs.eventdir=[dirs.basedir,'Events/'];
     dirs.eventparaleldir=[dirs.basedir,'Events/paralel/'];
     dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
@@ -90,6 +92,52 @@ elseif projectnum==5
     amplifier='HEKA';
     xlsdata=aE_readxls([dirs.basedir,'blebdata_windows.xls']);
 end
+%% create neurontaxonomy xls file
+if isfield(dirs,'taxonomydir')
+    path=[locations.matlabstuffdir,'NotMine/20130227_xlwrite/'];
+    javaaddpath([path 'poi_library/poi-3.8-20120326.jar']);
+    javaaddpath([path 'poi_library/poi-ooxml-3.8-20120326.jar']);
+    javaaddpath([path 'poi_library/poi-ooxml-schemas-3.8-20120326.jar']);
+    javaaddpath([path 'poi_library/xmlbeans-2.3.0.jar']);
+    javaaddpath([path 'poi_library/dom4j-1.6.1.jar']);
+    path=[locations.matlabstuffdir,'20130227_xlwrite/'];
+    javaaddpath([path 'poi_library/poi-3.8-20120326.jar']);
+    javaaddpath([path 'poi_library/poi-ooxml-3.8-20120326.jar']);
+    javaaddpath([path 'poi_library/poi-ooxml-schemas-3.8-20120326.jar']);
+    javaaddpath([path 'poi_library/xmlbeans-2.3.0.jar']);
+    javaaddpath([path 'poi_library/dom4j-1.6.1.jar']);
+    taxdata=struct;
+    for xlsi=1:length(xlsdata)
+        if xlsdata(xlsi).field==0 && xlsdata(xlsi).juxta==0
+            if isempty(fieldnames(taxdata))
+                NEXT=1;
+            else
+                NEXT=length(taxdata)+1;
+            end
+            gsc=xlsdata(xlsi).G_S_C;
+            hyps=strfind(gsc,'_');
+            g=num2str(gsc(1:hyps(1)-1));
+            s=num2str(gsc(hyps(1)+1:hyps(2)-1));
+            c=num2str(gsc(hyps(2)+1:end));
+            
+            taxdata(NEXT).anatgroup='0';
+            taxdata(NEXT).g=g;
+            taxdata(NEXT).s=s;
+            taxdata(NEXT).c=c;
+            taxdata(NEXT).ID=num2str(xlsi);
+            taxdata(NEXT).fname=xlsdata(xlsi).HEKAfname;
+            if any(strfind(taxdata(NEXT).fname,','))
+                eddig=strfind(taxdata(NEXT).fname,',');
+                eddig=eddig(1)-1;
+                taxdata(NEXT).fname=taxdata(NEXT).fname(1:eddig);
+            end
+        end
+    end
+    outmatrix=[{taxdata.anatgroup}',{taxdata.ID}',{taxdata.fname}',{taxdata.g}',{taxdata.s}',{taxdata.c}'];
+    delete([dirs.taxonomydir,'/taxonomydata.xls']);
+    xlwrite([dirs.taxonomydir,'/taxonomydata.xls'],outmatrix,'Sheet 1',['A1']);
+end
+
 %%
 if strcmp(amplifier,'AXON')
     aE_exportAXONdata(dirs,xlsdata,projectdata.owexport)
@@ -921,7 +969,9 @@ valtozok.prerecordingmode='C-Clamp';%'C-Clamp' or 'V-Clamp' or 'any'
 
 aE_checkGJandChemicalSynapse(valtozok,xlsdata,dirs)
 %% plotting IV
-
+sweepbordersrelativetorheobase=[-1,2];
+scalebarx=[.1];
+scalebary=[.05];
 valtozok.plot.betumeret=8;
 valtozok.plot.axesvastagsag=2;
 valtozok.plot.xcm=20;
@@ -934,60 +984,56 @@ valtozok.plot.ysize=valtozok.plot.dpi*yinch;
 
 
 dothesecond=zeros(size(xlsdata));
-
-for prenum=1:length(xlsdata)
+files=dir([dirs.taxonomydir,'IVs']);
+files([files.isdir])=[];
+datafiles=dir([dirs.taxonomydir,'datafiles']);
+datafiles([datafiles.isdir])=[];
+for filenum=1:length(files)
     %     pause
-    fname=[xlsdata(prenum).ID,'.mat'];
-    HEKAfname=xlsdata(prenum).HEKAfname;
-    if any(strfind(HEKAfname,','))
-        comma=strfind(HEKAfname,',');
-        HEKAfname=HEKAfname(1:comma(1)-1);
+    fname=files(filenum).name;
+    datafileidx=[];
+    for datai=1:length(datafiles)
+        if any(strfind(datafiles(datai).name,fname))
+            datafileidx=datai;
+        end
     end
-    load([locations.tgtardir,'MATLABdata/IV/',xlsdata(prenum).setup,'/',HEKAfname,'.mat']);
+    load([dirs.taxonomydir,'IVs/',files(filenum).name]);
+    load([dirs.taxonomydir,'datafiles/',datafiles(datafileidx).name]);
+    rheobasesweep=find(cellStruct.apNums>0,1,'first');
+    si=mode(diff(iv.time));
+    [b,a]=butter(3,15000/(1/mode(diff(iv.time)))/2,'low');
+    [bb,aa]=butter(3,1000/(1/mode(diff(iv.time)))/2,'low');
+    sweepborders=sweepbordersrelativetorheobase+rheobasesweep;
+    sweepnums=[1,[sweepborders(1):sweepborders(2)]];
+    vs=[filtfilt(bb,aa,iv.v1)];
+    for sweepi=2:length(sweepnums)
+        if sweepnums(sweepi)<=iv.sweepnum
+            vs(:,sweepi)=[filtfilt(b,a,iv.(['v',num2str(sweepnums(sweepi))]))];
+            difi=diff(vs(:,sweepi-1:sweepi)');
+            vs(:,sweepi)=vs(:,sweepi)-min(difi)+.01;
+        end
+    end
+
+    figure(33)
+    clf
+    hold on
+    plot(iv.time,vs,'k-','LineWidth',2)
+    medv=median(vs(:));
+    maxt=max(iv.time);
+    plot([0 0]+maxt,[0 scalebary]+medv,'k-','LineWidth',5)
+    plot([0 scalebarx]+maxt,[0 0]+medv,'k-','LineWidth',5)
+
+    text(maxt+scalebarx/2,medv+scalebary/2,{[num2str(scalebary*1000), 'mV'],[num2str(scalebarx*1000), 'ms']})
+    axis tight
+    set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])
+    axis off
+    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
+
+%     print(gcf,[dirs.figuresdir,'/IVs/IV_',xlsdata(prenum).ID,'.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
+
+    fname([strfind(fname,'.mat'),strfind(fname,'.mat')+1,strfind(fname,'.mat')+2,strfind(fname,'.mat')+3])=[];
     
-    gsc=xlsdata(prenum).G_S_C;
-    hyps=strfind(gsc,'_');
-    commas=strfind(gsc,',');
-    g=num2str(gsc(1:hyps(1)-1));
-
-    commas=[hyps(1),commas,hyps(2)];
-    for is=1:length(commas)-1
-        s=num2str(gsc(commas(is)+1:commas(is+1)-1));
-        c=num2str(gsc(hyps(2)+1:end));
-        iv=iv.(['g',g,'_s',s,'_c',c]);
-        si=mode(diff(iv.time));
-        [b,a]=butter(3,15000/(1/mode(diff(iv.time)))/2,'low');
-        [bb,aa]=butter(3,1000/(1/mode(diff(iv.time)))/2,'low');
-            
-        
-
-        figure(33)
-        clf
-        hold on
-        plot(iv.time,filtfilt(bb,aa,iv.v1),'k-','LineWidth',2)
-        plot(iv.time,filtfilt(b,a,iv.(['v',num2str(iv.sweepnum-(sweeplevonas))])),'k-','LineWidth',2);
-        axis tight
-        ylim([-.13 .050])
-        xlim([0 1])
-        %     ylimitek(:,i)=get(gca,'Ylim');
-        set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])
-        axis off
-        set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
-        print(gcf,[dirs.figuresdir,'/IVs/IV_',xlsdata(prenum).ID,'.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
-        saveas(gcf,[dirs.figuresdir,'/IVs/IV_',xlsdata(prenum).ID,'.fig'])
-    end
+    saveas(gcf,[dirs.figuresdir,'IV/',fname],'jpg')
+    saveas(gcf,[dirs.figuresdir,'IV/',fname],'pdf')
+    
 end
-figure(1)
-clf
-hold on
-
-plot([.5 .5],[-.050 -.03],'k-','LineWidth',5)
-plot([.5 .6],[-.050 -.050],'k-','LineWidth',5)
-ylim([-.13 .050])
-xlim([0 1])
-axis off
-
-set(gca,'Position',[0 0 1 1])
-set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
-print(gcf,[dirs.figuresdir,'/IVs/IVscalebar_100ms_20mV.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
-saveas(gcf,[dirs.figuresdir,'/IVs/IVscalebar_100ms_20mV.fig'])
