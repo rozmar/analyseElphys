@@ -972,7 +972,7 @@ function edit7_Callback(hObject, eventdata, handles)
 startval=get(handles.slider1,'Value');
 endval=get(handles.slider2,'Value');
 selectedsamplenum=get(handles.popupmenu1,'Value');
-timedifi=handles.data.samples(selectedsamplenum).endtime-handles.data.samples(selectedsamplenum).starttime;
+% timedifi=handles.data.samples(selectedsamplenum).endtime-handles.data.samples(selectedsamplenum).starttime;
 % timedifi=max([handles.data.samples.endtime])-min([handles.data.samples.starttime]);
 timeentered=str2num(get(hObject,'String'));
 valneeded=(timeentered-min([handles.data.samples.starttime]))/timedifi;

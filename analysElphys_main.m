@@ -41,6 +41,7 @@ elseif projectnum==2;
     dirs.eventparaleldir=[dirs.basedir,'Events/paralel/'];
     dirs.statedir=[dirs.basedir,'State/'];
     dirs.taxonomydir=[locations.tgtardir,'ANALYSISdata/marci/_Taxonomy/persistent_invivo/'];
+    dirs.PSDdir=[dirs.basedir,'PSD/'];
     % dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
     % dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
     % dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
@@ -166,7 +167,7 @@ valtozok.diffmovingt=.0005;
 valtozok.steptime=.0005; %s
 valtozok.eventminsdval=3;
 valtozok.apthreshval=10;
-parallelcount=4;
+parallelcount=6;
 aE_findevents(valtozok,dirs,parallelcount,xlsdata)
 paralleldata.count=NaN;
 while isnan(paralleldata.count) | ~isempty(paralleldata.files)
@@ -997,43 +998,44 @@ for filenum=1:length(files)
             datafileidx=datai;
         end
     end
-    load([dirs.taxonomydir,'IVs/',files(filenum).name]);
-    load([dirs.taxonomydir,'datafiles/',datafiles(datafileidx).name]);
-    rheobasesweep=find(cellStruct.apNums>0,1,'first');
-    si=mode(diff(iv.time));
-    [b,a]=butter(3,15000/(1/mode(diff(iv.time)))/2,'low');
-    [bb,aa]=butter(3,1000/(1/mode(diff(iv.time)))/2,'low');
-    sweepborders=sweepbordersrelativetorheobase+rheobasesweep;
-    sweepnums=[1,[sweepborders(1):sweepborders(2)]];
-    vs=[filtfilt(bb,aa,iv.v1)];
-    for sweepi=2:length(sweepnums)
-        if sweepnums(sweepi)<=iv.sweepnum
-            vs(:,sweepi)=[filtfilt(b,a,iv.(['v',num2str(sweepnums(sweepi))]))];
-            difi=diff(vs(:,sweepi-1:sweepi)');
-            vs(:,sweepi)=vs(:,sweepi)-min(difi)+.01;
+    if ~isempty(datafileidx)
+        load([dirs.taxonomydir,'IVs/',files(filenum).name]);
+        load([dirs.taxonomydir,'datafiles/',datafiles(datafileidx).name]);
+        rheobasesweep=find(cellStruct.apNums>0,1,'first');
+        si=mode(diff(iv.time));
+        [b,a]=butter(3,15000/(1/mode(diff(iv.time)))/2,'low');
+        [bb,aa]=butter(3,1000/(1/mode(diff(iv.time)))/2,'low');
+        sweepborders=sweepbordersrelativetorheobase+rheobasesweep;
+        sweepnums=[1,[sweepborders(1):sweepborders(2)]];
+        vs=[filtfilt(bb,aa,iv.v1)];
+        for sweepi=2:length(sweepnums)
+            if sweepnums(sweepi)<=iv.sweepnum
+                vs(:,sweepi)=[filtfilt(b,a,iv.(['v',num2str(sweepnums(sweepi))]))];
+                difi=diff(vs(:,sweepi-1:sweepi)');
+                vs(:,sweepi)=vs(:,sweepi)-min(difi)+.01;
+            end
         end
+        
+        figure(33)
+        clf
+        hold on
+        plot(iv.time,vs,'k-','LineWidth',2)
+        medv=median(vs(:));
+        maxt=max(iv.time);
+        plot([0 0]+maxt,[0 scalebary]+medv,'k-','LineWidth',5)
+        plot([0 scalebarx]+maxt,[0 0]+medv,'k-','LineWidth',5)
+        
+        text(maxt+scalebarx/2,medv+scalebary/2,{[num2str(scalebary*1000), 'mV'],[num2str(scalebarx*1000), 'ms']})
+        axis tight
+        set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])
+        axis off
+        set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
+        
+        %     print(gcf,[dirs.figuresdir,'/IVs/IV_',xlsdata(prenum).ID,'.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
+        
+        fname([strfind(fname,'.mat'),strfind(fname,'.mat')+1,strfind(fname,'.mat')+2,strfind(fname,'.mat')+3])=[];
+        
+        saveas(gcf,[dirs.figuresdir,'IV/',fname],'jpg')
+        saveas(gcf,[dirs.figuresdir,'IV/',fname],'pdf')
     end
-
-    figure(33)
-    clf
-    hold on
-    plot(iv.time,vs,'k-','LineWidth',2)
-    medv=median(vs(:));
-    maxt=max(iv.time);
-    plot([0 0]+maxt,[0 scalebary]+medv,'k-','LineWidth',5)
-    plot([0 scalebarx]+maxt,[0 0]+medv,'k-','LineWidth',5)
-
-    text(maxt+scalebarx/2,medv+scalebary/2,{[num2str(scalebary*1000), 'mV'],[num2str(scalebarx*1000), 'ms']})
-    axis tight
-    set(gca,'LineWidth',valtozok.plot.axesvastagsag,'FontSize',valtozok.plot.betumeret,'Position',[1/valtozok.plot.xcm 1/valtozok.plot.ycm 1-2/valtozok.plot.xcm 1-2/valtozok.plot.ycm])
-    axis off
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 valtozok.plot.xsize/valtozok.plot.dpi valtozok.plot.ysize/valtozok.plot.dpi])
-
-%     print(gcf,[dirs.figuresdir,'/IVs/IV_',xlsdata(prenum).ID,'.jpg'],'-djpeg',['-r',num2str(valtozok.plot.dpi)])
-
-    fname([strfind(fname,'.mat'),strfind(fname,'.mat')+1,strfind(fname,'.mat')+2,strfind(fname,'.mat')+3])=[];
-    
-    saveas(gcf,[dirs.figuresdir,'IV/',fname],'jpg')
-    saveas(gcf,[dirs.figuresdir,'IV/',fname],'pdf')
-    
 end

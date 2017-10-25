@@ -1,5 +1,6 @@
 function dataout=aE_ic_field_analysis(dirs,xlsdata,icxlsnum,timeborders,type,additionaldata)
 dataout=struct;
+plotthestuff=0;
 %% field and IC analysis values
 
 % %% slice
@@ -137,7 +138,11 @@ for fieldsweepnum= 1: length(field.bridgeddata)
     stepback=round(timebefore/si);
     stepforward=round(timeafter/si);
     sweepnum=find([ic.bridgeddata.realtime]==field.bridgeddata(fieldsweepnum).realtime);
-    ic.bridgeddata(sweepnum).yfield=yfield;
+    if ~isempty(sweepnum)
+        
+        ic.bridgeddata(sweepnum).yfield=field.bridgeddata(fieldsweepnum).y;
+        ic.bridgeddata(sweepnum).yfield_filt=yfield;
+    end
     lestep=round(localextremumwin/si);
     minh2=stepback;
     maxh=stepback;
@@ -292,28 +297,28 @@ for fieldsweepnum= 1: length(field.bridgeddata)
 end
 FieldDataoriginal=FieldData;
 %% calculating cross correlations
-events.AP=apdata;
-events.aAP=aapdata;
-events.sAP=sapdata;
-events.EP=epdata;
-events.IP=ipdata;
-tocalculate=fieldnames(events);
-for i=1:length(tocalculate)
-    events_now=events.(tocalculate{i});
-    for j=1:length(tocalculate)
-        events_now2=events.(tocalculate{j});
-        for eventi=1:length(events_now);
-            maxtime=events_now(eventi).maxtime;
-            neededevents=find([events_now2.maxtime]>=maxtime-timebefore_corr & [events_now2.maxtime]<=maxtime+timeafter_corr);
-            data=[events_now2(neededevents).maxtime]-maxtime;
-            data(data==0)=[];
-            events_now(eventi).(['relativetimes_',tocalculate{j}])=data;
-        end
-    end
-    events.(tocalculate{i})=events_now;
-end
-
-dataout.events=events;
+% events.AP=apdata;
+% events.aAP=aapdata;
+% events.sAP=sapdata;
+% events.EP=epdata;
+% events.IP=ipdata;
+% tocalculate=fieldnames(events);
+% for i=1:length(tocalculate)
+%     events_now=events.(tocalculate{i});
+%     for j=1:length(tocalculate)
+%         events_now2=events.(tocalculate{j});
+%         for eventi=1:length(events_now);
+%             maxtime=events_now(eventi).maxtime;
+%             neededevents=find([events_now2.maxtime]>=maxtime-timebefore_corr & [events_now2.maxtime]<=maxtime+timeafter_corr);
+%             data=[events_now2(neededevents).maxtime]-maxtime;
+%             data(data==0)=[];
+%             events_now(eventi).(['relativetimes_',tocalculate{j}])=data;
+%         end
+%     end
+%     events.(tocalculate{i})=events_now;
+% end
+% 
+% dataout.events=events;
 dataout.FieldData=FieldData;
 dataout.bridgeddata=ic.bridgeddata;
 %% plotting
@@ -342,71 +347,73 @@ FieldData=FieldData(needed);
 % FieldData=FieldData(needed);
 % ido=[FieldData.time];%bsxfun(@(A,B) A+B,[FieldData.time],[FieldData.troughtime]);
 %%
-figure(1)
-clf
-plot([FieldData.troughtime],[FieldData.maxamplitude],'k-')
-hold on
-% plot([FieldData.troughtime],[FieldData.medianamplitude],'r-')
-figure(2)
-clf
-sis=unique([FieldData.si]);
-for i=1:length(sis)
-    needed=[FieldData.si]==sis(i);
-    h(1)=subplot(4,1,1);
-    plot([FieldData(needed).time],[FieldData(needed).ic]*1000)
+if plotthestuff==1
+    figure(1)
+    clf
+    plot([FieldData.troughtime],[FieldData.maxamplitude],'k-')
     hold on
-    % plot(ido,mean([FieldData.ic],2)*1000,'k-','LineWIdth',3);
-    ylabel('IC (mV)')
-    axis tight
-    h(2)=subplot(4,1,2);
-    hold on
-    plot([FieldData(needed).time],[FieldData(needed).fieldtodetect]*1000); %bsxfun(@(A,B )A-B,[FieldData.fieldtodetect],[FieldData.troughvalue])
-    plot([FieldData(needed).time],mean([FieldData(needed).fieldtodetect],2)*1000,'k-','LineWIdth',3);
-    if isnan(fieldxlsnum)
-        ylabel('Filtered intra (mV) -no field ')
-    else
-        ylabel('Field (mV)')
-    end
-    axis tight
-end
-h(3)=subplot(4,1,3);
-[nAP,bins]=hist([FieldData.relativeAPtimes],[-timebefore:timestep:timeafter]);
-[naxonalAP,~]=hist([FieldData.relativeaxonalAPtimes],[-timebefore:timestep:timeafter]);
-hold on
-bar(bins,nAP,'b')
-bar(bins,naxonalAP,'r')
-ylabel('AP count')
-axis tight
-h(4)=subplot(4,1,4);
-hist([FieldData.relativeeptimes],[-timebefore:timestep:timeafter])
-axis tight
-ylabel('EPSP count')
-xlabel('time (s)')
-linkaxes(h,'x');
-%%
-figure(3)
-clf
-for i=1:length(tocalculate)
-    for j=1:length(tocalculate)
-        subplot(length(tocalculate),length(tocalculate),(i-1)*length(tocalculate)+j);
-        if length((events.(tocalculate{i})))>1
-        hist([events.(tocalculate{i}).(['relativetimes_',tocalculate{j}])],bins_corr);
-         axis tight
+    % plot([FieldData.troughtime],[FieldData.medianamplitude],'r-')
+    figure(2)
+    clf
+    sis=unique([FieldData.si]);
+    for i=1:length(sis)
+        needed=[FieldData.si]==sis(i);
+        h(1)=subplot(4,1,1);
+        plot([FieldData(needed).time],[FieldData(needed).ic]*1000)
+        hold on
+        % plot(ido,mean([FieldData.ic],2)*1000,'k-','LineWIdth',3);
+        ylabel('IC (mV)')
+        axis tight
+        h(2)=subplot(4,1,2);
+        hold on
+        plot([FieldData(needed).time],[FieldData(needed).fieldtodetect]*1000); %bsxfun(@(A,B )A-B,[FieldData.fieldtodetect],[FieldData.troughvalue])
+        plot([FieldData(needed).time],mean([FieldData(needed).fieldtodetect],2)*1000,'k-','LineWIdth',3);
+        if isnan(fieldxlsnum)
+            ylabel('Filtered intra (mV) -no field ')
+        else
+            ylabel('Field (mV)')
         end
-       
-        title([tocalculate{j},' relative to ',tocalculate{i}])
+        axis tight
     end
+    h(3)=subplot(4,1,3);
+    [nAP,bins]=hist([FieldData.relativeAPtimes],[-timebefore:timestep:timeafter]);
+    [naxonalAP,~]=hist([FieldData.relativeaxonalAPtimes],[-timebefore:timestep:timeafter]);
+    hold on
+    bar(bins,nAP,'b')
+    bar(bins,naxonalAP,'r')
+    ylabel('AP count')
+    axis tight
+    h(4)=subplot(4,1,4);
+    hist([FieldData.relativeeptimes],[-timebefore:timestep:timeafter])
+    axis tight
+    ylabel('EPSP count')
+    xlabel('time (s)')
+    linkaxes(h,'x');
+    %%
+    figure(3)
+    clf
+    for i=1:length(tocalculate)
+        for j=1:length(tocalculate)
+            subplot(length(tocalculate),length(tocalculate),(i-1)*length(tocalculate)+j);
+            if length((events.(tocalculate{i})))>1
+                hist([events.(tocalculate{i}).(['relativetimes_',tocalculate{j}])],bins_corr);
+                axis tight
+            end
+            
+            title([tocalculate{j},' relative to ',tocalculate{i}])
+        end
+    end
+    
+    %% saving images
+    
+    ID=xlsdata(icxlsnum).ID;
+    figure(2)
+    saveas(gcf,[dirs.figuresdir,ID,'_field_anal'],'pdf')
+    saveas(gcf,[dirs.figuresdir,ID,'_field_anal'],'jpg')
+    figure(3)
+    saveas(gcf,[dirs.figuresdir,ID,'_event_correlations'],'pdf')
+    saveas(gcf,[dirs.figuresdir,ID,'_event_correlations'],'jpg')
 end
-
-%% saving images
-
-ID=xlsdata(icxlsnum).ID;
-figure(2)
-saveas(gcf,[dirs.figuresdir,ID,'_field_anal'],'pdf')
-saveas(gcf,[dirs.figuresdir,ID,'_field_anal'],'jpg')
-figure(3)
-saveas(gcf,[dirs.figuresdir,ID,'_event_correlations'],'pdf')
-saveas(gcf,[dirs.figuresdir,ID,'_event_correlations'],'jpg')
 disp('field analysis finished')
 %%
 return
@@ -1047,7 +1054,7 @@ return
 %         
 %         prevpeaktime=peaktimes(find(peaktimes<maxtime,1,'last'));
 %         nextpeaktime=peaktimes(find(peaktimes>maxtime,1,'first'));
-%         
+%         55130
 %         timetoprevpeak=prevpeaktime-maxtime;
 %         timetonextpeak=nextpeaktime-maxtime;
 %         timetoprevtrough=prevtroughtime-maxtime;
