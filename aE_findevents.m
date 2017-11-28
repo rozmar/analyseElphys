@@ -2,8 +2,8 @@ function aE_findevents(valtozok,dirs,parallelcount,xlsdata)
 sdval=5;
 files=dir(dirs.bridgeddir);
 files([files.isdir])=[];
-delete([dirs.eventparaleldir,'*.mat']);
-for filenum=1:length(files)%1:length(files) % végigmegyünk az összes file-n
+% delete([dirs.eventparaleldir,'*.mat']);
+for filenum=length(files):-1:1%1:length(files) % végigmegyünk az összes file-n
     a=dir([dirs.eventdir,files(filenum).name]);
     if isfield(xlsdata,'ID')
         xlsnum=find(strcmp(files(filenum).name(1:end-4),{xlsdata.ID}));

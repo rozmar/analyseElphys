@@ -179,6 +179,7 @@ if xlsnum>0
     ylabel('maxdV/dt (mv/ms)')
     xlabel('amplitude');
     if diff(valtozok.dvmaxborders)==0
+        pause
         [~,mindvperdt]=ginput(2);
         valtozok.dvmaxborders=sort(mindvperdt);
     else

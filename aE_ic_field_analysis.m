@@ -338,7 +338,7 @@ for i = 1:length(FieldData)
     FieldData(i).medianamplitude=median([FieldData(needed).maxamplitude]);
 end
 dataout.FieldData=FieldData;
-needed=[FieldData.maxamplitude]>=[FieldData.medianamplitude]/2;%&[FieldData.maxamplitude]<=[FieldData.medianamplitude]*5;% & [FieldData.apnum]>0 ;
+needed=[FieldData.maxamplitude]>=[FieldData.medianamplitude]/3;%&[FieldData.maxamplitude]<=[FieldData.medianamplitude]*5;% & [FieldData.apnum]>0 ;
 FieldData=FieldData(needed);
 periodlength=nanmean([NaN,diff([FieldData.troughtime]);diff([FieldData.troughtime,NaN])]);
 needed=periodlength>.2 & periodlength<2;

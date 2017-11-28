@@ -138,10 +138,10 @@ function pushbutton1_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.output.projectnum=get(handles.listbox1,'Value');
-handles.output.owexport=get(handles.checkbox1,'Value');
-handles.output.owbridge=get(handles.checkbox2,'Value');
-handles.output.owevent=get(handles.checkbox3,'Value');
-handles.output.owstimepoch=get(handles.checkbox4,'Value');;
-assignin('base', 'projectdata', handles.output);
+handles.outputt.projectnum=get(handles.listbox1,'Value');
+handles.outputt.owexport=get(handles.checkbox1,'Value');
+handles.outputt.owbridge=get(handles.checkbox2,'Value');
+handles.outputt.owevent=get(handles.checkbox3,'Value');
+handles.outputt.owstimepoch=get(handles.checkbox4,'Value');;
+assignin('base', 'projectdata', handles.outputt);
 close(handles.figure1);

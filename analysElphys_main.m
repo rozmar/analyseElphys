@@ -42,6 +42,7 @@ elseif projectnum==2;
     dirs.statedir=[dirs.basedir,'State/'];
     dirs.taxonomydir=[locations.tgtardir,'ANALYSISdata/marci/_Taxonomy/persistent_invivo/'];
     dirs.PSDdir=[dirs.basedir,'PSD/'];
+    dirs.videodir=[dirs.basedir,'Videodata/'];
     % dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
     % dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
     % dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
@@ -150,7 +151,7 @@ else
     aE_generatePGF_bridge_HEKA(dirs,xlsdata,projectdata.owbridge)
 end
 
-%% finding events
+% finding events
 valtozok.overwrite=projectdata.owevent;
 valtozok.plotit=0;
 valtozok.threshholdaveragetime=30;%s
@@ -167,7 +168,7 @@ valtozok.diffmovingt=.0005;
 valtozok.steptime=.0005; %s
 valtozok.eventminsdval=3;
 valtozok.apthreshval=10;
-parallelcount=6;
+parallelcount=2;
 aE_findevents(valtozok,dirs,parallelcount,xlsdata)
 paralleldata.count=NaN;
 while isnan(paralleldata.count) | ~isempty(paralleldata.files)
@@ -181,6 +182,57 @@ while isnan(paralleldata.count) | ~isempty(paralleldata.files)
     end
 end
 
+%% extracting movement info from video
+
+valtozok.sampleinterval=.05;
+valtozok.overwrite=1;
+for xlsi=1:length(xlsdata)
+    if any(strfind(xlsdata(xlsi).anaesthesia,'awake'))
+        valtozok.setupname=xlsdata(xlsi).setup;
+        valtozok.filename=xlsdata(xlsi).HEKAfname;
+        aE_analyzevideo_main(valtozok,dirs);
+    end
+end
+
+%% processing Gaspar's pupil diameter data
+
+savedir=[dirs.videodir,'eye/'];
+for xlsi=1:length(xlsdata)
+    setupname=xlsdata(xlsi).setup;
+    filename=xlsdata(xlsi).HEKAfname(1:6);
+    pupilsizedir=[locations.tgtardir,'VIDEOdata/',setupname,'/pupilsize/'];
+    files=dir(pupilsizedir);
+    files([files.isdir])=[];
+    if length(files)>0
+        for i=1:length(files)
+            hyps=strfind(files(i).name,'_');
+            files(i).filename=[files(i).name(hyps(1)-2:hyps(1)-1),files(i).name(hyps(1)+1:hyps(2)-1),files(i).name(hyps(2)+1:hyps(3)-1)];
+            files(i).timestamp=[files(i).name(1:hyps(end)+2)];
+            files(i).ext=files(i).name(end-2:end);
+        end
+        neededfiles=find(strcmp({files.filename},filename));
+        if length(neededfiles)>0
+            time=[];
+            diameter=[];
+            flash=[];
+            for i=1:length(neededfiles)
+                txt=load([pupilsizedir,files(neededfiles(i)).name]);
+                time=[time;txt(:,3)];
+                diameter=[diameter;txt(:,4)];
+                flash=[flash;txt(:,5)];
+            end
+            [time,ix]=sort(time);
+            diameter=diameter(ix);
+            flash=flash(ix);
+            pupildata.diameter=diameter;
+            pupildata.time=time;
+            pupildata.flash=flash;
+            save([savedir,xlsdata(xlsi).HEKAfname],'pupildata');
+        end
+    end
+end
+
+return
 %% UP-DOWN transitions
 if projectnum==2
     valtozok=struct;
