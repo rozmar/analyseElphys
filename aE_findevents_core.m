@@ -7,29 +7,45 @@ filenum=temp.filenum;
 sdval=temp.sdval;
 load([dirs.bridgeddir,files(filenum).name]);
 eventdata=struct;
-threshdys=NaN(size(bridgeddata));
+threshdys=struct;
 for sweepnum=1:length(bridgeddata) % threshold kalkulálása
     if (strcmp(bridgeddata(sweepnum).channellabel(1:end-2),'Vmon') | strcmp(bridgeddata(sweepnum).channellabel(1:end-2),'IN')) && strcmp(stimdata(sweepnum).Amplifiermode,'C-Clamp')
-        sdvalue=aE_calculatebaselineSD(0:bridgeddata(sweepnum).si:(length(bridgeddata(sweepnum).y)-1)*bridgeddata(sweepnum).si,bridgeddata(sweepnum).y,valtozok,sdval);
-        threshdys(sweepnum)=sdvalue;
+        tic
+        [sdvalue,sdvaluetime]=aE_calculatebaselineSD(0:bridgeddata(sweepnum).si:(length(bridgeddata(sweepnum).y)-1)*bridgeddata(sweepnum).si,bridgeddata(sweepnum).y,valtozok,sdval);
+        timespent=toc;
+        disp(['threshold detection - length:',num2str(length(bridgeddata(sweepnum).y)*bridgeddata(sweepnum).si), '  time spent:',num2str(timespent)]);
+        %%
+        
+        threshdys(sweepnum).sdvalue=sdvalue;
+        threshdys(sweepnum).sdvaluetime=sdvaluetime;
+        threshdys(sweepnum).sdvaluerealtime=sdvaluetime+bridgeddata(sweepnum).realtime;
     end
 %     progressbar(sweepnum/length(bridgeddata),[],[],[]);
 end % threshold kalkulálása eddig
-threshdysold=threshdys;
-for sweepnum=1:length(bridgeddata) % küszöbértékek átlagolása, ezzel robosztusabb lesz a módszer
-    idxes=find([bridgeddata.realtime]<bridgeddata(sweepnum).realtime+valtozok.threshholdaveragetime & [bridgeddata.realtime]>bridgeddata(sweepnum).realtime-valtozok.threshholdaveragetime);
-    threshdys(sweepnum)=nanmean(threshdysold(idxes));
-end
-baselinesds=threshdys/valtozok.eventminsdval;
+% % % threshdysold=threshdys;
+% % % for sweepnum=1:length(bridgeddata) % küszöbértékek átlagolása, ezzel robosztusabb lesz a módszer
+% % %     idxes=find([bridgeddata.realtime]<bridgeddata(sweepnum).realtime+valtozok.threshholdaveragetime & [bridgeddata.realtime]>bridgeddata(sweepnum).realtime-valtozok.threshholdaveragetime);
+% % %     threshdys(sweepnum)=nanmean(threshdysold(idxes));
+% % % end
+% % % baselinesds=threshdys/valtozok.eventminsdval;
 
 %
 % itt kezdődik az események keresése
 %%
+threshdysold=[threshdys.sdvalue];
+threshdysoldtimes=[threshdys.sdvaluerealtime];
+%%
+if isempty(fieldnames(eventdata))
+    firstevent=1;
+else
+    firstevent=length(eventdata)+1;
+end
+                
 for sweepnum=1:length(bridgeddata)
     if (strcmp(bridgeddata(sweepnum).channellabel(1:4),'Vmon') | strcmp(bridgeddata(sweepnum).channellabel(1:end-2),'IN')) && strcmp(stimdata(sweepnum).Amplifiermode,'C-Clamp')
         %serkentő események keresése
         
-        
+        tic
         step=round(valtozok.steptime/bridgeddata(sweepnum).si);
         stepback=ceil(step/2);
         diffmovingstep=round(valtozok.diffmovingt/bridgeddata(sweepnum).si);
@@ -45,8 +61,29 @@ for sweepnum=1:length(bridgeddata)
                 dyf(tidx)=0;
             end
         end
-        valtozok.threshdy=threshdys(sweepnum);
-        tempampl=abs(dyf)>valtozok.threshdy;
+        threshdyNOW=zeros(size(dy));
+        %%
+        roundedtime=round(time(1:end-1));
+        timepoints=unique(roundedtime);
+        for idxi=1:length(timepoints)
+            threshdyidx=threshdysoldtimes>=timepoints(idxi)+bridgeddata(sweepnum).realtime-valtozok.threshholdaveragetime & threshdysoldtimes<=timepoints(idxi)+bridgeddata(sweepnum).realtime+valtozok.threshholdaveragetime;
+            threshdyNOW(roundedtime==timepoints(idxi))=nanmean(threshdysold(threshdyidx));
+        end
+        %%
+% %         for idxi=1:length(threshdyNOW)
+% %             
+% %             threshdyidx=threshdysoldtimes>=time(idxi)+bridgeddata(sweepnum).realtime-valtozok.threshholdaveragetime & threshdysoldtimes<=time(idxi)+bridgeddata(sweepnum).realtime+valtozok.threshholdaveragetime;
+% %             threshdyNOW(idxi)=nanmean(threshdysold(threshdyidx));
+% %         end
+        %%
+%         figure(1)
+%         clf
+%         hold on
+%         plot(threshdyNOW)
+%         plot(dyf)
+        %%
+%         valtozok.threshdy=threshdys(sweepnum);
+        tempampl=abs(dyf)>threshdyNOW;%valtozok.threshdy;
         tempampl=bwareaopen(tempampl,3);
         [amplmask,amplnum]=bwlabel(tempampl);
         
@@ -113,7 +150,7 @@ for sweepnum=1:length(bridgeddata)
             end
             amplitude=yfilt(maxh)-yfilt(onseth);
             halfh1=find(yfilt(onseth:maxh)<yfilt(onseth)+amplitude/2,1,'last')+onseth-1; %%% A félszélesség számolása jelenleg SI pontosságú
-            halfh2=find(yfilt(maxh:end)<yfilt(onseth)+amplitude/2,1,'first')+maxh-1;%%% A félszélesség számolása jelenleg SI pontosságú
+            halfh2=find(yfilt(maxh:endh)<yfilt(onseth)+amplitude/2,1,'first')+maxh-1;%%% A félszélesség számolása jelenleg SI pontosságú
             if isempty(halfh2)
                 halfh2=length(yfilt);
             end
@@ -121,7 +158,7 @@ for sweepnum=1:length(bridgeddata)
             tempwave=(yfilt(onseth:maxh)-yfilt(onseth));
             h10=find(tempwave>.1*amplitude,1,'first')+onseth-1;
             h90=find(tempwave>.9*amplitude,1,'first')+onseth-1;
-            tempwave2=(yfilt(maxh:end)-yfilt(onseth));
+            tempwave2=(yfilt(maxh:endh)-yfilt(onseth));
             h10end=find(tempwave2<.1*amplitude,1,'first')+maxh-1;
             h90end=find(tempwave2<.9*amplitude,1,'first')+maxh-1;
             risetime=(h90-h10)*bridgeddata(sweepnum).si;
@@ -143,7 +180,7 @@ for sweepnum=1:length(bridgeddata)
             apwidth=(apendh-threshh)*bridgeddata(sweepnum).si;
             
             ahalfh1=find(y(threshh:apmaxh)<y(threshh)+amplitude/2,1,'last')+threshh-1; %%% A félszélesség számolása jelenleg SI pontosságú
-            ahalfh2=find(y(apmaxh:end)<y(threshh)+amplitude/2,1,'first')+apmaxh-1;%%% A félszélesség számolása jelenleg SI pontosságú
+            ahalfh2=find(y(apmaxh:apendh)<y(threshh)+amplitude/2,1,'first')+apmaxh-1;%%% A félszélesség számolása jelenleg SI pontosságú
             if isempty(ahalfh2)
                 ahalfh2=length(y);
             end
@@ -239,7 +276,9 @@ for sweepnum=1:length(bridgeddata)
                     eventdata(NEXT).onsettime=time(onseth)+eventdata(NEXT).sweeptime;
                 end
                 eventdata(NEXT).maxdvalue=maxdvalue;
-                eventdata(NEXT).baselinesd_of_the_sweep=baselinesds(sweepnum);
+%                 eventdata(NEXT).baselinesd_of_the_sweep=baselinesds(sweepnum);
+                eventdata(NEXT).baselinesd_of_dy=threshdyNOW(min(length(threshdyNOW),maxh))/valtozok.eventminsdval;
+                
                 eventdata(NEXT).baselineval=yfilt(onseth)*eventszorzo;
                 
                 eventdata(NEXT).injectedcurrentatpeak=(stimdata(sweepnum).y(maxh));
@@ -289,12 +328,10 @@ for sweepnum=1:length(bridgeddata)
             
             pause
         end
+        
     end
-%     progressbar(sweepnum/length(bridgeddata),[],[],[]);
-end
-% itt vegzodik az esemenyek keresese
-i=1;
-maradoidxek=1:length(eventdata);
+    i=1;
+maradoidxek=firstevent:length(eventdata);
 while i<length(maradoidxek)-1;
     if eventdata(maradoidxek(i)).maxtime==eventdata(maradoidxek(i+1)).maxtime %eventdata(i).onsettime==eventdata(i+1).onsettime
         if eventdata(maradoidxek(i)).onsettime<eventdata(maradoidxek(i+1)).onsettime
@@ -308,7 +345,18 @@ while i<length(maradoidxek)-1;
     end
 %     progressbar(sweepnum/length(bridgeddata),[],[],i/(length(maradoidxek)-1));
 end
-eventdata=eventdata(maradoidxek);
-save([dirs.eventdir,files(filenum).name],'eventdata','valtozok');
+if firstevent==1
+    eventdata=eventdata(maradoidxek);
+else
+    eventdata=eventdata([[1:firstevent],maradoidxek]);
+end
+%     progressbar(sweepnum/length(bridgeddata),[],[],[]);
+timespent=toc;
+disp(['eventdetection - length: ',num2str((length(bridgeddata(sweepnum).y)-1)*bridgeddata(sweepnum).si),' time spent: ',num2str(timespent),' ALL events:',num2str(length(eventdata))]);
+
+end
+% itt vegzodik az esemenyek keresese
+
+save([dirs.eventdir,files(filenum).name],'eventdata','valtozok','-v7.3');
 disp([files(filenum).name,' eventfinding done.. ', num2str(length(eventdata)),' events found'])
 delete(source)

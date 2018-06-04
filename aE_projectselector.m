@@ -22,7 +22,7 @@ function varargout = aE_projectselector(varargin)
 
 % Edit the above text to modify the response to help aE_projectselector
 
-% Last Modified by GUIDE v2.5 23-Feb-2016 20:28:21
+% Last Modified by GUIDE v2.5 01-Jun-2018 17:44:53
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -142,6 +142,25 @@ handles.outputt.projectnum=get(handles.listbox1,'Value');
 handles.outputt.owexport=get(handles.checkbox1,'Value');
 handles.outputt.owbridge=get(handles.checkbox2,'Value');
 handles.outputt.owevent=get(handles.checkbox3,'Value');
-handles.outputt.owstimepoch=get(handles.checkbox4,'Value');;
+handles.outputt.owstimepoch=get(handles.checkbox4,'Value');
+handles.outputt.inspecttraces=get(handles.checkbox7,'Value');
 assignin('base', 'projectdata', handles.outputt);
 close(handles.figure1);
+
+
+% --- Executes on button press in checkbox7.
+function checkbox7_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox7 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if get(hObject,'Value')
+    val='off';
+else
+    val='on';
+end
+set(handles.checkbox1,'Enable',val)
+set(handles.checkbox2,'Enable',val)
+set(handles.checkbox3,'Enable',val)
+set(handles.checkbox4,'Enable',val)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox7

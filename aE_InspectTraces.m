@@ -87,9 +87,14 @@ function popupmenu1_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu1 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu1
-handles=loadthedata(handles);
-handles=updategui(handles);;
-guidata(hObject, handles);
+%%
+samplenum=get(hObject,'Value');
+%%
+if handles.data.samples(samplenum).selectedID>1
+    handles=loadthedata(handles);
+    handles=updategui(handles);
+    guidata(hObject, handles);
+end
 % handles=updatedatatoplot(handles);
 % plotandupdate(handles)
 

@@ -31,23 +31,32 @@ if isempty(a)|valtozok.overwrite==1
             realfilei=realfilei+1;
         %     txt=load([rawvideodir,files(correspondingtxt).name]);
         %     frametimes=txt(:,3);
+%         %%
+%         fid   = fopen([rawvideodir,files(correspondingtxt).name]);
+%         clear texty
+%         texty = textscan(fid,'%s%s%s%s%s');
+%         fclose(fid);
+        
         %%
         fid   = fopen([rawvideodir,files(correspondingtxt).name]);
-        txt = textscan(fid,'%s%s%s%s%s');
+        clear texty
+        texty = textscan(fid,'%s');
         fclose(fid);
         %%
-        ezaz=0;
-        for i=1:length(txt)
-            a=txt{i}{1};
-            if any(regexp(a,':..:'))
-                ezaz=i;
-            end
-        end
-        txt=txt{ezaz};
+%         ezaz=0;
+%         for i=1:length(texty)
+%             a=texty{i}{1};
+%             if any(regexp(a,':..:'))
+%                 ezaz=i;
+%             end
+%         end
+%         texty=texty{ezaz};
+         a=cellfun(@any, regexp(texty{1},':..:'));
+        texty=texty{1}(a);
             %%
-        frametimes=zeros(size(txt));
-        for i=1:length(txt)
-            numnow=txt{i};
+        frametimes=zeros(size(texty));
+        for i=1:length(texty)
+            numnow=texty{i};
             points=strfind(numnow,':');
             if length(points)==2
                 if any(strfind(numnow,','))
@@ -64,7 +73,7 @@ if isempty(a)|valtozok.overwrite==1
             [~,nextidx]=min(abs(frametimes(neededframes(end)+1:end)-frametimes(neededframes(end))-sampleinterval));
             neededframes=[neededframes,neededframes(end)+nextidx];
         end
-        
+        neededframes(end)=[];
         
         %%
         nFrames = movieobj.NumberOfFrames;

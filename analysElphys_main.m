@@ -94,6 +94,10 @@ elseif projectnum==5
     amplifier='HEKA';
     xlsdata=aE_readxls([dirs.basedir,'blebdata_windows.xls']);
 end
+if projectdata.inspecttraces==1
+    aE_InspectTraces(dirs,xlsdata);
+    return
+end
 %% create neurontaxonomy xls file
 if isfield(dirs,'taxonomydir')
     path=[locations.matlabstuffdir,'NotMine/20130227_xlwrite/'];
@@ -153,8 +157,9 @@ end
 
 % finding events
 valtozok.overwrite=projectdata.owevent;
+valtozok.overwritebefore=datenum(2017,12,29);%;datenum(datetime('today'));%;
 valtozok.plotit=0;
-valtozok.threshholdaveragetime=30;%s
+valtozok.threshholdaveragetime=15;%s
 % valtozok.mindvpdt=1;
 valtozok.minampl=.0001;
 valtozok.apampl=.005;
@@ -168,7 +173,7 @@ valtozok.diffmovingt=.0005;
 valtozok.steptime=.0005; %s
 valtozok.eventminsdval=3;
 valtozok.apthreshval=10;
-parallelcount=2;
+parallelcount=4;
 aE_findevents(valtozok,dirs,parallelcount,xlsdata)
 paralleldata.count=NaN;
 while isnan(paralleldata.count) | ~isempty(paralleldata.files)
@@ -185,7 +190,7 @@ end
 %% extracting movement info from video
 
 valtozok.sampleinterval=.05;
-valtozok.overwrite=1;
+valtozok.overwrite=0;
 for xlsi=1:length(xlsdata)
     if any(strfind(xlsdata(xlsi).anaesthesia,'awake'))
         valtozok.setupname=xlsdata(xlsi).setup;
