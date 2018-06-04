@@ -10,13 +10,17 @@ files([files.isdir])=[];
 progressbar('generating PGF and bridge balancing')
 for fnum=1:length(files)
     fname=files(fnum).name(1:end-4);
-%     load([dirs.rawexporteddir,files(fnum).name],'xlsidx');
-    xlsidx=find(strcmp({xlsdataold.ID},fname));
-    if isempty(xlsidx)
-        disp(['xls file és filenevek közti összetűzés'])
-        pause
+    %     load([dirs.rawexporteddir,files(fnum).name],'xlsidx');
+    if isfield(xlsdataold,'ID')
+        xlsidx=find(strcmp({xlsdataold.ID},fname));
+        if isempty(xlsidx)
+            disp(['xls file és filenevek közti összetűzés'])
+            pause
+        end
+    else
+        xlsidx=[];
     end
-    a=dir([dirs.bridgeddir,xlsdataold(xlsidx).ID,'.mat']);
+    a=dir([dirs.bridgeddir,fname,'.mat']);
     if isempty(a) | overwrite==1
         temp=load([dirs.rawexporteddir,files(fnum).name]);
         rawdata=temp.rawdata;
@@ -69,14 +73,16 @@ for fnum=1:length(files)
             lightdata(sweepnum).Amplifiermode=stimdata(sweepnum).Amplifiermode;
             lightdata(sweepnum).segmenths=stimdata(sweepnum).segmenths;
             lightdata(sweepnum).RS=stimdata(sweepnum).RS;
-            lightdata(sweepnum).ID=xlsdataold(xlsidx).ID;
+            if ~isempty(xlsidx)
+                lightdata(sweepnum).ID=xlsdataold(xlsidx).ID;
+            end
         end
         %bridge balancing
         xlsdata=xlsdataold;
-        save([dirs.bridgeddir,xlsdataold(xlsidx).ID],'lightdata','stimdata','bridgeddata','RSbaselinelength','RSrisetime','poolRStime','xlsdata','xlsidx','-v7.3')
-        disp([xlsdataold(xlsidx).ID,' done (bridge_stim)'])
+        save([dirs.bridgeddir,fname],'lightdata','stimdata','bridgeddata','RSbaselinelength','RSrisetime','poolRStime','xlsdata','xlsidx','-v7.3')
+        disp([fname,' done (bridge_stim)'])
     else
-        disp([xlsdataold(xlsidx).ID,' already done .. skipped (bridge_stim)'])
+        disp([fname,' already done .. skipped (bridge_stim)'])
     end
     progressbar(fnum/length(files))
 end
