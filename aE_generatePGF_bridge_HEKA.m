@@ -3,7 +3,7 @@ xlsdataold=xlsdata;
 plotRSvalues=0;
 plotbridgedsweeps=0;
 RSbaselinelength=.00005; %ennyi időt átlagol össze a feszültség megmérésekor
-RSrisetime=.00005; %ennyi időt hagy ki az áram injekcióját követően
+RSrisetime=.00005;%.00005; %ennyi időt hagy ki az áram injekcióját követően
 poolRStime=30; %ebben az idoablakban atlagolja ossze az RS-t a sweep-ek kozott
 files=dir(dirs.rawexporteddir);
 files([files.isdir])=[];
@@ -13,14 +13,16 @@ for fnum=1:length(files)
     %     load([dirs.rawexporteddir,files(fnum).name],'xlsidx');
     if isfield(xlsdataold,'ID')
         xlsidx=find(strcmp({xlsdataold.ID},fname));
-        if isempty(xlsidx)
-            disp(['xls file és filenevek közti összetűzés'])
-            pause
-        end
+        ID=xlsdataold(xlsidx).ID;
     else
-        xlsidx=[];
+        ID=fname;
+        xlsidx=NaN;
     end
-    a=dir([dirs.bridgeddir,fname,'.mat']);
+    
+    %     if isempty(xlsidx)
+    %         disp(['xls file és filenevek közti összetűzés .. v'])
+    %     end
+    a=dir([dirs.bridgeddir,ID,'.mat']);
     if isempty(a) | overwrite==1
         temp=load([dirs.rawexporteddir,files(fnum).name]);
         rawdata=temp.rawdata;
@@ -73,16 +75,14 @@ for fnum=1:length(files)
             lightdata(sweepnum).Amplifiermode=stimdata(sweepnum).Amplifiermode;
             lightdata(sweepnum).segmenths=stimdata(sweepnum).segmenths;
             lightdata(sweepnum).RS=stimdata(sweepnum).RS;
-            if ~isempty(xlsidx)
-                lightdata(sweepnum).ID=xlsdataold(xlsidx).ID;
-            end
+            lightdata(sweepnum).ID=ID;
         end
         %bridge balancing
         xlsdata=xlsdataold;
-        save([dirs.bridgeddir,fname],'lightdata','stimdata','bridgeddata','RSbaselinelength','RSrisetime','poolRStime','xlsdata','xlsidx','-v7.3')
-        disp([fname,' done (bridge_stim)'])
+        save([dirs.bridgeddir,ID],'lightdata','stimdata','bridgeddata','RSbaselinelength','RSrisetime','poolRStime','xlsdata','xlsidx','-v7.3')
+        disp([ID,' done (bridge_stim)'])
     else
-        disp([fname,' already done .. skipped (bridge_stim)'])
+        disp([ID,' already done .. skipped (bridge_stim)'])
     end
     progressbar(fnum/length(files))
 end

@@ -21,7 +21,7 @@ for xlsidx=1:length(xlsdata)
                 rawdata(sweepi).stimulation=stimulation;
             end
         end
-        save([dirs.rawexporteddir,xlsdata(xlsidx).ID],'rawdata','xlsdata','xlsidx')
+        save([dirs.rawexporteddir,xlsdata(xlsidx).ID],'rawdata','xlsdata','xlsidx','-v7.3')
         disp([xlsdata(xlsidx).ID,' done'])
     else
         disp([xlsdata(xlsidx).ID,' already done.. skipped'])

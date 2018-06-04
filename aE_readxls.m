@@ -14,6 +14,9 @@ for i=1:size(xlsdataraw,2)
             xlsdata(j-1).(varname)=str2num(value);
         else
            xlsdata(j-1).(varname)=value;
+           if ischar(value) & strcmp(value,'NaN')
+               xlsdata(j-1).(varname)=NaN;
+           end
         end
          
     end
