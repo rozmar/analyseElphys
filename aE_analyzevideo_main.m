@@ -23,11 +23,13 @@ if isempty(a)|valtozok.overwrite==1
     neededvideos=find(strcmp({files.filename},filename(1:6))&strcmp({files.ext},'avi'));
     realfilei=0;
     for filei=1:length(neededvideos)
-        disp(['extracting video info from file: ', files(neededvideos(filei)).name]);
+        filedetails=dir([rawvideodir,files(neededvideos(filei)).name]);
+        if filedetails.bytes>0
         movieobj=VideoReader([rawvideodir,files(neededvideos(filei)).name]);
         correspondingtxt=find(strcmp(files(neededvideos(filei)).timestamp,{files.timestamp})&strcmp({files.ext},'txt'));
         nFrames = movieobj.NumberOfFrames;
         if  nFrames>10 & ~any(strfind(files(neededvideos(filei)).name,'eye'))
+            disp(['extracting video info from file: ', files(neededvideos(filei)).name]);
             realfilei=realfilei+1;
         %     txt=load([rawvideodir,files(correspondingtxt).name]);
         %     frametimes=txt(:,3);
@@ -84,7 +86,7 @@ if isempty(a)|valtozok.overwrite==1
         clear mov
         mov=uint8(zeros(vidHeight,vidWidth,length(neededframes)));
         for k = 1:length(neededframes)
-            mov(:,:,k) = imresize(rgb2gray(read(movieobj, neededframes(k))),.1);
+            mov(:,:,k) = imresize(imgaussfilt(rgb2gray(read(movieobj, neededframes(k))),3),.1);
             progressbar(neededframes(k)/nFrames);
         end
         %%
@@ -169,9 +171,44 @@ if isempty(a)|valtozok.overwrite==1
         rawvideo(realfilei).vid=mov;
         end
     end
+    end
     if exist('videodata','var')
         save([dirs.videodir,'movement/',filename],'videodata','rawvideo');
     end
 else
     disp(['video analysis of ', filename,' is already done'])
 end
+
+
+return
+%% játszós
+files=dir([dirs.videodir,'/movement/']);
+files([files.isdir])=[];
+load([dirs.videodir,'/movement/',files(18).name]);
+%%
+downmov=rawvideo(1).vid;
+lineardownmov=reshape(downmov,size(downmov,1)*size(downmov,2),size(downmov,3));
+whattoprincomp=zscore(double(lineardownmov'));
+%%
+
+[coeff,score]=princomp(whattoprincomp);
+%%
+close all
+princompstoshow=600;
+figure(10)
+clf
+for i=1:princompstoshow
+    %                 subplot(princompstoshow,2,(i-1)*2+1)
+    subplot(1,2,1)
+    plot((score(:,i)))
+    %                 subplot(princompstoshow,2,(i-1)*2+2)
+    subplot(1,2,2)
+    scorelayout(:,:,i)=reshape(coeff(:,i),size(downmov,1),size(downmov,2));
+    imagesc(scorelayout(:,:,i))
+    %                 caxis([-.04 .04])
+    pause
+end
+
+%%
+
+

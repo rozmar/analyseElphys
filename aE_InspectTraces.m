@@ -25,7 +25,7 @@ function varargout = aE_InspectTraces(varargin)
 
 % Edit the above text to modify the response to help aE_InspectTraces
 
-% Last Modified by GUIDE v2.5 28-Nov-2017 14:18:10
+% Last Modified by GUIDE v2.5 09-Jun-2018 17:12:59
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -396,7 +396,7 @@ if ischar(melyiket)
     
     %%
     set(handles.popupmenu3,'String',handles.data.fieldnevek);
-    set(handles.popupmenu4,'String',[{'stiumulus'},{handles.data.samples.marker},{'movement and pupil diameter'}]);
+    set(handles.popupmenu4,'String',[{'stiumulus'},{handles.data.samples.marker},{'movement and pupil diameter'},{'PSD of field'}]);
     set(handles.slider1,'Min',0);
     set(handles.slider1,'Max',1);
     set(handles.slider2,'Min',0);
@@ -486,6 +486,12 @@ for samplei=1:length(handles.data.samples)
 %                 plot(handles.data.samples(samplei).pupildata.time,handles.data.samples(samplei).pupildata.diameter,'k-','LineWidth',2)
                 end
             end
+        end
+        if isfield(handles.data.dirs,'PSDdir')
+            xlsnum=handles.data.samples(samplei).selectedID-1;
+            fieldxlsnum=find(strcmp(handles.data.xlsdata(xlsnum).HEKAfname,{handles.data.xlsdata.HEKAfname}) & [handles.data.xlsdata.field]==1);
+            load([handles.data.dirs.PSDdir,handles.data.xlsdata(fieldxlsnum).ID]);
+            handles.data.samples(samplei).PSDdata=PSDdata;
         end
     end
 end
@@ -640,29 +646,52 @@ for samplenum=1:length(handles.data.samples)
         if get(handles.popupmenu4,'Value')-1==0
             for sweepi=1:length(neededwaves)
                 ettol=find(handles.data.samples(samplenum).datatoplot(sweepi).x>starttime,1,'first');
-            eddig=find(handles.data.samples(samplenum).datatoplot(sweepi).x<endtime,1,'last');
+                eddig=find(handles.data.samples(samplenum).datatoplot(sweepi).x<endtime,1,'last');
                 plot(handles.data.samples(samplenum).datatoplot(sweepi).x(ettol:eddig),handles.data.samples(samplenum).datatoplot(sweepi).ycurrent(ettol:eddig),marker(1),'LineWidth',2)
             end
+            xlabel('Time (s)')
+            ylabel('Injected Current (pA)')
         elseif samplenum==get(handles.popupmenu4,'Value')-1
             for sweepi=1:length(neededwaves)
                 ettol=find(handles.data.samples(samplenum).datatoplot(sweepi).x>starttime,1,'first');
-                 eddig=find(handles.data.samples(samplenum).datatoplot(sweepi).x<endtime,1,'last');
+                eddig=find(handles.data.samples(samplenum).datatoplot(sweepi).x<endtime,1,'last');
                 plot(handles.data.samples(samplenum).datatoplot(sweepi).x(ettol:eddig),handles.data.samples(samplenum).datatoplot(sweepi).yvoltage(ettol:eddig),marker(1),'LineWidth',2)
             end
         elseif get(handles.popupmenu4,'Value')==length(handles.data.samples)+2
             %%
             hold on
             if isfield(handles.data.samples(samplenum),'pupildata')
-                 ettol=find(handles.data.samples(samplenum).pupildata.time>starttime,1,'first');
-                 eddig=find(handles.data.samples(samplenum).pupildata.time<endtime,1,'last');
-                 plot(handles.data.samples(samplenum).pupildata.time(ettol:eddig),handles.data.samples(samplenum).pupildata.diameter(ettol:eddig),'b-','LineWidth',2);
+                ettol=find(handles.data.samples(samplenum).pupildata.time>starttime,1,'first');
+                eddig=find(handles.data.samples(samplenum).pupildata.time<endtime,1,'last');
+                plot(handles.data.samples(samplenum).pupildata.time(ettol:eddig),handles.data.samples(samplenum).pupildata.diameter(ettol:eddig),'b-','LineWidth',2);
             end
             if isfield(handles.data.samples(samplenum),'movementdata')
                 ettol=find(handles.data.samples(samplenum).movementdata.time>starttime,1,'first');
-                 eddig=find(handles.data.samples(samplenum).movementdata.time<endtime,1,'last');
-                 plot(handles.data.samples(samplenum).movementdata.time(ettol:eddig),handles.data.samples(samplenum).movementdata.movement(ettol:eddig),'r-','LineWidth',2);
-              
+                eddig=find(handles.data.samples(samplenum).movementdata.time<endtime,1,'last');
+                plot(handles.data.samples(samplenum).movementdata.time(ettol:eddig),handles.data.samples(samplenum).movementdata.movement(ettol:eddig),'r-','LineWidth',2);
+                
             end
+        elseif get(handles.popupmenu4,'Value')==length(handles.data.samples)+3
+            
+            imagesc(handles.data.samples(samplenum).PSDdatatoplot.time,handles.data.samples(samplenum).PSDdatatoplot.frequencyVector,handles.data.samples(samplenum).PSDdatatoplot.powerMatrix)
+            caxis([0 handles.data.samples(samplenum).PSDdatatoplot.intensitypercentiles(99)])
+            set(gca,'YDir','normal');
+            colormap linspecer
+            ylabel('Frequency (Hz)')
+            xlabel('Time (s)')
+            hold on
+            if ~isempty(handles.data.samples(samplenum).PSDdatatoplot.frequencyVector)
+                szorzo=max(handles.data.samples(samplenum).PSDdatatoplot.frequencyVector);
+            else
+                szorzo=1;
+            end
+            for sweepi=1:length(handles.data.samples(samplenum).PSDdatatoplot.trace)
+                ettol=find(handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).x>starttime,1,'first');
+                eddig=find(handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).x<endtime,1,'last');
+                plot(handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).x(ettol:eddig),handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).y(ettol:eddig)*szorzo/3+2*szorzo/3,'Color',[0.5 .5 .5],'LineWidth',.5)
+                
+            end
+            disp('muahah')
         end
         %         plot([handles.data.samples(samplenum).datatoplot.x],[handles.data.samples(samplenum).datatoplot.ycurrent],marker(1),'LineWidth',2)
         handles.axes2=gca;
@@ -671,7 +700,6 @@ for samplenum=1:length(handles.data.samples)
 end
 axes(handles.axes2)
 xlabel('Time (s)')
-ylabel('Injected Current (pA)')
 axis tight
 % xlim([starttime endtime])
 handles.axes2=gca;
@@ -823,49 +851,101 @@ if handles.data.samples(selectedsamplenum).switch>0
     shoulddownsample=get(handles.checkbox2,'Value');
     plotdetails=handles.data.samples(selectedsamplenum).plotdetails;
     if ~isempty(neededwaves)
-    if isempty(fieldnames(plotdetails)) | ~(length(neededwaves)==length(plotdetails.neededwaves)) |~(neededwaves==plotdetails.neededwaves) | ~(neededsamplenum==plotdetails.neededsamplenum) | ~all(cutoffreq==plotdetails.cutoffreq) | ~(filterdeg==plotdetails.filterdeg) | ~(shoulddownsample==plotdetails.shoulddownsample)
-        datatoplot=struct;
-        plotdetails.neededwaves=neededwaves;
-        plotdetails.neededsamplenum=neededsamplenum;
-        plotdetails.cutoffreq=cutoffreq;
-        plotdetails.filterdeg=filterdeg;
-        plotdetails.shoulddownsample=shoulddownsample;
-        for sweepi=1:length(neededwaves)
-            sweepnum=neededwaves(sweepi);
-            datatoplot(sweepi).ycurrent=handles.data.samples(selectedsamplenum).stimdata(sweepnum).y;
-            hossz=length(datatoplot(sweepi).ycurrent);
-            start=handles.data.samples(selectedsamplenum).bridgeddata(sweepnum).realtime;
-            si=handles.data.samples(selectedsamplenum).bridgeddata(sweepnum).si;
-            datatoplot(sweepi).x=[0:si:si*(hossz-1)]+start;
-            if any(cutoffreq>0) & filterdeg>0
-                if length(cutoffreq)==1
-                    [b,a]=butter(handles.data.samples(selectedsamplenum).filterdeg,handles.data.samples(selectedsamplenum).cutoffreq/(1/si)/2,'low');
+        if isempty(fieldnames(plotdetails)) | ~(length(neededwaves)==length(plotdetails.neededwaves)) |~(neededwaves==plotdetails.neededwaves) | ~(neededsamplenum==plotdetails.neededsamplenum) | ~all(cutoffreq==plotdetails.cutoffreq) | ~(filterdeg==plotdetails.filterdeg) | ~(shoulddownsample==plotdetails.shoulddownsample)
+            datatoplot=struct;
+            PSDdatatoplot=struct;
+            PSDdatatoplot.trace=struct;
+            plotdetails.neededwaves=neededwaves;
+            plotdetails.neededsamplenum=neededsamplenum;
+            plotdetails.cutoffreq=cutoffreq;
+            plotdetails.filterdeg=filterdeg;
+            plotdetails.shoulddownsample=shoulddownsample;
+            bigmatrix=[];
+            for sweepi=1:length(neededwaves)
+                sweepnum=neededwaves(sweepi);
+                datatoplot(sweepi).ycurrent=handles.data.samples(selectedsamplenum).stimdata(sweepnum).y;
+                hossz=length(datatoplot(sweepi).ycurrent);
+                start=handles.data.samples(selectedsamplenum).bridgeddata(sweepnum).realtime;
+                si=handles.data.samples(selectedsamplenum).bridgeddata(sweepnum).si;
+                datatoplot(sweepi).x=[0:si:si*(hossz-1)]+start;
+                if any(cutoffreq>0) & filterdeg>0
+                    if length(cutoffreq)==1
+                        [b,a]=butter(handles.data.samples(selectedsamplenum).filterdeg,handles.data.samples(selectedsamplenum).cutoffreq/(1/si)/2,'low');
+                    else
+                        [b,a]=butter(handles.data.samples(selectedsamplenum).filterdeg,handles.data.samples(selectedsamplenum).cutoffreq/(1/si)/2,'bandpass');
+                    end
+                    y=filtfilt(b,a,handles.data.samples(selectedsamplenum).bridgeddata(sweepnum).y);
                 else
-                    [b,a]=butter(handles.data.samples(selectedsamplenum).filterdeg,handles.data.samples(selectedsamplenum).cutoffreq/(1/si)/2,'bandpass');
+                    y=handles.data.samples(selectedsamplenum).bridgeddata(sweepnum).y;
                 end
-                y=filtfilt(b,a,handles.data.samples(selectedsamplenum).bridgeddata(sweepnum).y);
+                datatoplot(sweepi).yvoltage=y;
+            end
+            if ~isempty(fieldnames(datatoplot))
+                samplenumnow=length([datatoplot.yvoltage]);
+                if neededsamplenum<samplenumnow & neededsamplenum>0 & shoulddownsample==1
+                    %                 disp('downsampling started')
+                    ratio=round(samplenumnow/neededsamplenum);
+                    for sweepi=1:length(neededwaves)
+                        datatoplot(sweepi).yvoltage=downsample(datatoplot(sweepi).yvoltage,ratio);
+                        datatoplot(sweepi).ycurrent=downsample(datatoplot(sweepi).ycurrent,ratio);
+                        datatoplot(sweepi).x=downsample(datatoplot(sweepi).x,ratio);
+                    end
+                    %                 disp('downsampling finished')
+                end
+            end
+            handles.data.samples(selectedsamplenum).datatoplot=datatoplot;
+            handles.data.samples(selectedsamplenum).plotdetails=plotdetails;
+            %%
+            
+            timesofPSDwaves=[handles.data.samples(selectedsamplenum).PSDdata.realtime];
+            reallyneededwaves=timesofPSDwaves>=str2num(get(handles.edit4,'String')) & timesofPSDwaves<=str2num(get(handles.edit5,'String'));
+            if reallyneededwaves(1)==0
+                reallyneededwaves(find(timesofPSDwaves<=str2num(get(handles.edit4,'String')),1,'last'))=true;
+            end
+            neededwaves=find(reallyneededwaves);
+            for sweepi=1:length(neededwaves)
+                sweepnum=neededwaves(sweepi);
+                if isempty(bigmatrix)
+                    starttime=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).realtime;
+                    si=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).si_powerMatrix;
+                    bigmatrix=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).powerMatrix;
+                    frequencyVector=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).frequencyVector;
+                else
+                    timeskipped=(handles.data.samples(selectedsamplenum).PSDdata(sweepnum).realtime-(starttime+size(bigmatrix,2)*si));
+                    colstoadd=round(timeskipped/si);
+                    bigmatrix=[bigmatrix,zeros(size(bigmatrix,1),colstoadd),handles.data.samples(selectedsamplenum).PSDdata(sweepnum).powerMatrix];
+                    %             starttime+size(bigmatrix,2)*si
+                    %             return
+                end
+                PSDdatatoplot.trace(sweepi).x=[0:si:si*(length(handles.data.samples(selectedsamplenum).PSDdata(sweepnum).y)-1)]+handles.data.samples(selectedsamplenum).PSDdata(sweepnum).realtime;
+                y=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).y;
+                [b,a]=butter(1,.2/(1/si)/2,'high');
+                y=filtfilt(b,a,y);
+                y=(y-min(y));
+                ysort=sort(y);
+                y=y/ysort(round(length(y)*.99));
+                y(y>1)=1;
+                PSDdatatoplot.trace(sweepi).y=y;
+                PSDdatatoplot.trace(sweepi).realtime=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).realtime;
+                PSDdatatoplot.trace(sweepi).si=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).si_powerMatrix;
+                
+                
+            end
+            PSDdatatoplot.powerMatrix=bigmatrix;
+            PSDdatatoplot.frequencyVector=frequencyVector;
+            PSDdatatoplot.si_powerMatrix=si;
+            PSDdatatoplot.time=(1:size(bigmatrix,2))*si+starttime;
+            if ~isempty(PSDdatatoplot.powerMatrix)
+                values=sort(PSDdatatoplot.powerMatrix(:));
+                PSDdatatoplot.intensitypercentiles=values(ceil([.01:.01:1]*length(values)));
             else
-                y=handles.data.samples(selectedsamplenum).bridgeddata(sweepnum).y;
+                 PSDdatatoplot.intensitypercentiles=ones(size([.01:.01:1]));
             end
-            datatoplot(sweepi).yvoltage=y;
+            handles.data.samples(selectedsamplenum).PSDdatatoplot=PSDdatatoplot;
+            
         end
-        if ~isempty(fieldnames(datatoplot))
-            samplenumnow=length([datatoplot.yvoltage]);
-            if neededsamplenum<samplenumnow & neededsamplenum>0 & shoulddownsample==1
-%                 disp('downsampling started')
-                ratio=round(samplenumnow/neededsamplenum);
-                for sweepi=1:length(neededwaves)
-                    datatoplot(sweepi).yvoltage=downsample(datatoplot(sweepi).yvoltage,ratio);
-                    datatoplot(sweepi).ycurrent=downsample(datatoplot(sweepi).ycurrent,ratio);
-                    datatoplot(sweepi).x=downsample(datatoplot(sweepi).x,ratio);
-                end
-%                 disp('downsampling finished')
-            end
-        end
-        handles.data.samples(selectedsamplenum).datatoplot=datatoplot;
-        handles.data.samples(selectedsamplenum).plotdetails=plotdetails;
     end
-    end
+    
 end
 end
 

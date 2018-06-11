@@ -186,12 +186,32 @@ while isnan(paralleldata.count) | ~isempty(paralleldata.files)
         disp(['waiting for ',num2str(paralleldata.count),' eventfinding scripts to finish'])
     end
 end
+%% extracting PSD
+
+valtozok.overwrite=1;
+
+valtozok.downsamplenum='auto';
+
+parameters=struct;
+parameters.min=.5; %minimal frequency for decomposition
+parameters.max=15;% - maximal frequency for decomposition
+parameters.step=.1; %- frequency stepsize
+parameters.scale=1;% - scale type, can be linear (1) or logarithmic (2)
+parameters.wavenumber=7;% - number of waves in wavelet
+parameters.waveletlength=10;
+parameters.addtaper=1;
+parameters.taperlength=5;
+
+valtozok.parameters=parameters;
+valtozok.analyseonlyfield=1;
+aE_PSD_export(dirs,xlsdata,valtozok);
+
 
 %% extracting movement info from video
 
-valtozok.sampleinterval=.05;
+valtozok.sampleinterval=.01;
 valtozok.overwrite=0;
-for xlsi=1:length(xlsdata)
+for xlsi=length(xlsdata):-1:1
     if any(strfind(xlsdata(xlsi).anaesthesia,'awake'))
         valtozok.setupname=xlsdata(xlsi).setup;
         valtozok.filename=xlsdata(xlsi).HEKAfname;
@@ -605,12 +625,29 @@ for i=1:length(recstats)
     end
     recstats(i).newbaselineSD=(recstats(i).newbaselineSD/nanmedian(recstats(i).newbaselineSD(find(newbaselineSDtimevector>15))))';
 end
+
+% time of the recordings
+for i=1:length(recstats)
+    recdate=recstats(i).ID(1:6);
+    recstats(i).datenumber=datenum(str2num((['20',recdate(1:2)])),str2num(recdate(3:4)),str2num(recdate(5:6)));
+     recstats(i).datestring=datestr(datenum(str2num((['20',recdate(1:2)])),str2num(recdate(3:4)),str2num(recdate(5:6))));
+     datevector=datevec(datenum(str2num((['20',recdate(1:2)])),str2num(recdate(3:4)),str2num(recdate(5:6))));
+     recstats(i).year=datevector(1);
+     recstats(i).month=datevector(2);
+     recstats(i).day=datevector(3);
+end
+
+%
+startdate=datenum(2017,01,01);
+enddate=datenum(2019,01,01);
 figure(1)
 clf
-subplot(4,1,1)
+subplot(3,2,1)
 [nall,xbinn]=hist([recstats.recordinglength]/60,[2.5:5:62.5]);
 [RSall,xbinRS]=hist([recstats.RS]/10^6,[5:10:95]);
+[dateall,xbindate]=hist([recstats.datenumber],[startdate:7:enddate]);
 xbinZ=[5:10:155];
+xbinage=[0:10:366];
 histstruct=struct;
 for groupi=1:length(anaesthgroups)
     [histstruct(groupi).n,~]=hist([recstats(strcmp({recstats.anaesth},anaesthgroups{groupi})).recordinglength]/60,xbinn);
@@ -618,13 +655,21 @@ for groupi=1:length(anaesthgroups)
     [histstruct(groupi).RS,~]=hist([recstats(strcmp({recstats.anaesth},anaesthgroups{groupi})).RS]/10^6,xbinRS);
     histstruct(groupi).RS=histstruct(groupi).RS';
     histstruct(groupi).Z=[];
+    histstruct(groupi).age=[];
+    [histstruct(groupi).date,~]=hist([recstats(strcmp({recstats.anaesth},anaesthgroups{groupi})).datenumber],xbindate);
+    histstruct(groupi).date=histstruct(groupi).date';
+    
     for xlsi=1:length(xlsdata)
         if isnumeric( xlsdata(xlsi).locationz) & strcmp(xlsdata(xlsi).anaesthesia,anaesthgroups{groupi})
             histstruct(groupi).Z=[histstruct(groupi).Z, xlsdata(xlsi).locationz];
+            histstruct(groupi).age=[histstruct(groupi).age, xlsdata(xlsi).age];
+            
         end
     end
     [histstruct(groupi).Zhist,~]=hist(histstruct(groupi).Z,xbinZ);
     histstruct(groupi).Zhist=histstruct(groupi).Zhist';
+    [histstruct(groupi).Agehist,~]=hist(histstruct(groupi).age,xbinage);
+    histstruct(groupi).Agehist=histstruct(groupi).Agehist';
 end
 [hAxes,hBar,hLine] = plotyy(xbinn,[histstruct.n],xbinn,cumsum([histstruct.n]),'bar','plot');
 
@@ -656,7 +701,7 @@ ylabel('# of cells')
 % title('recording length')
 
 
-subplot(4,1,2)
+subplot(3,2,2)
 [hAxes,hBar,hLine] = plotyy(xbinRS,[histstruct.RS],xbinRS,cumsum([histstruct.RS]),'bar','plot');
 set(hBar,'BarLayout','stacked')
 set(gca,'box','off')
@@ -678,7 +723,7 @@ ylabel('# of cells')
 % title('median RS')
 
 
-subplot(4,1,3)
+subplot(3,2,3)
 [hAxes,hBar,hLine] = plotyy(xbinZ,[histstruct.Zhist],xbinZ,cumsum([histstruct.Zhist]),'bar','plot');
 set(hBar,'BarLayout','stacked')
 set(gca,'box','off')
@@ -699,8 +744,58 @@ xlabel('Depth from pia (microns)')
 ylabel('# of cells')
 % title('Depth from the surface of the brain')
 
+subplot(3,2,4)
+cla
+[hAxes,hBar,hLine] = plotyy(xbindate,[histstruct.date],xbindate,cumsum([histstruct.date]),'bar','plot');
+set(hBar,'BarLayout','stacked')
+set(gca,'box','off')
+axis tight
+% ylim([0,max(sum([histstruct.RS]'))]);
+set(hAxes(1), 'YLimMode', 'Auto');
+set(hAxes(1),'Ytickmode','auto');
+set(hAxes(2),'Ytickmode','auto');
+set(hAxes(2), 'YLimMode', 'Auto');
+set(hAxes(2),'XTick',[],'XTickLabel',[]);
+colororder=get(hAxes,'colororder');
+for groupi=2:length(anaesthgroups)
+    set(hBar(groupi),'EdgeColor',[0 0 0],'FaceColor',colororder{1}(groupi,:));
+end
+set(hLine,'LineWidth',2)
+% legend(anaesthgroups)
+% set(gca,'Xtick',[0:10:140])
+xlabel('Week of recording')
+ylabel('# of cells')
+newlabel=datestr(cellfun(@str2num, get(gca,'XtickLabels'))*10^5)
+set(gca,'XtickLabels',newlabel)
+% disp(datestr(cellfun(@str2num, get(gca,'XtickLabels'))))
+% title('Depth from the surface of the brain')
 
-subplot(4,1,4)
+subplot(3,2,5)
+cla
+[hAxes,hBar,hLine] = plotyy(xbinage,[histstruct.Agehist],xbinage,cumsum([histstruct.Agehist]),'bar','plot');
+set(hBar,'BarLayout','stacked')
+set(gca,'box','off')
+axis tight
+% ylim([0,max(sum([histstruct.RS]'))]);
+set(hAxes(1), 'YLimMode', 'Auto');
+set(hAxes(1),'Ytickmode','auto');
+set(hAxes(2),'Ytickmode','auto');
+set(hAxes(2), 'YLimMode', 'Auto');
+set(hAxes(2),'XTick',[],'XTickLabel',[]);
+colororder=get(hAxes,'colororder');
+for groupi=2:length(anaesthgroups)
+    set(hBar(groupi),'EdgeColor',[0 0 0],'FaceColor',colororder{1}(groupi,:));
+end
+set(hLine,'LineWidth',2)
+% legend(anaesthgroups)
+% set(gca,'Xtick',[0:10:140])
+xlabel('Age of animal (days)')
+ylabel('# of cells')
+% disp(datestr(cellfun(@str2num, get(gca,'XtickLabels'))))
+% title('Depth from the surface of the brain')
+
+
+subplot(3,2,6)
 hold on
 for i=1:length(recstats)
     needed=find(~isnan(recstats(i).newbaselineSD));
