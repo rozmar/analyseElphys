@@ -10,18 +10,18 @@ files([files.isdir])=[];
 progressbar('generating PGF and bridge balancing')
 for fnum=1:length(files)
     fname=files(fnum).name(1:end-4);
-%     load([dirs.rawexporteddir,files(fnum).name],'xlsidx');
-if isfield(xlsdataold,'ID')
-    xlsidx=find(strcmp({xlsdataold.ID},fname));
-    ID=xlsdataold(xlsidx).ID;
-else
-    ID=fname;
-    xlsidx=NaN;
-end
+    %     load([dirs.rawexporteddir,files(fnum).name],'xlsidx');
+    if isfield(xlsdataold,'ID')
+        xlsidx=find(strcmp({xlsdataold.ID},fname));
+        ID=xlsdataold(xlsidx).ID;
+    else
+        ID=fname;
+        xlsidx=NaN;
+    end
     
-%     if isempty(xlsidx)
-%         disp(['xls file és filenevek közti összetűzés .. v'])
-%     end
+    %     if isempty(xlsidx)
+    %         disp(['xls file és filenevek közti összetűzés .. v'])
+    %     end
     a=dir([dirs.bridgeddir,ID,'.mat']);
     if isempty(a) | overwrite==1
         temp=load([dirs.rawexporteddir,files(fnum).name]);
