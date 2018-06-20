@@ -25,7 +25,7 @@ function varargout = aE_InspectTraces(varargin)
 
 % Edit the above text to modify the response to help aE_InspectTraces
 
-% Last Modified by GUIDE v2.5 09-Jun-2018 17:12:59
+% Last Modified by GUIDE v2.5 13-Jun-2018 14:03:29
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -60,6 +60,13 @@ handles.output = hObject;
 handles.data.dirs=varargin{1};
 handles.data.xlsdata=varargin{2};
 set(handles.popupmenu6,'String',[{'none'};fieldnames(handles.data.xlsdata)]);
+
+
+BrainStateProps.Statevalues={'Slow wave sleep', 'REM sleep', 'Quiet wakefulness','Alert wakefulness','Delete'};
+BrainStateProps.Statecolors={'blue','cyan','red','green'};
+BrainStateProps.Statecolors_short={'b','c','r','g'};
+handles.data.BrainStateProps=BrainStateProps;
+
 % Update handles structure
 guidata(hObject, handles);
 resetdata(hObject,handles,'all')
@@ -289,51 +296,62 @@ function pushbutton2_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+%%
 selectedsamplenum=get(handles.popupmenu1,'Value');
-selectedvariable=handles.data.samples(selectedsamplenum).selectedvariable;
-selectedID=handles.data.samples(selectedsamplenum).selectedID;
-selectedvariablename=handles.data.fieldnevek{selectedvariable};
+starttime=str2num(get(handles.edit4,'String'));
+endtime=str2num(get(handles.edit5,'String'));
+neededidx=find(handles.data.samples(selectedsamplenum).movementdata.time>=starttime & handles.data.samples(selectedsamplenum).movementdata.time<=endtime);
+movie=handles.data.samples(selectedsamplenum).movementdata.video(:,:,neededidx);
+implay(movie,100);
+        %%
+% disp('a')
 
-if ischar(handles.data.samples(selectedsamplenum).lightdata(1).(selectedvariablename))
-    reducednames=unique({handles.data.samples(selectedsamplenum).lightdata.(selectedvariablename)});
-    ezszoveg=1;
-else
-    reducednames=unique([handles.data.samples(selectedsamplenum).lightdata.(selectedvariablename)]);
-    ezszoveg=0;
-end
-valuesnow=get(handles.listbox1,'Value');
-needed=[];
-szovegmost=['-',selectedvariablename,':'];
-for i=1:length(valuesnow)
-    if ezszoveg==1
-        needed=[needed,find(strcmp({handles.data.samples(selectedsamplenum).lightdata.(selectedvariablename)},reducednames{valuesnow(i)}))];
-        szovegmost=[szovegmost,' ',reducednames{valuesnow(i)},','];
-        if length(valuesnow)>5
-            szovegmost=['-',selectedvariablename,': ',reducednames{valuesnow(1)},' ... ',reducednames{valuesnow(end)}];
-        end
-    else
-        needed=[needed,find([handles.data.samples(selectedsamplenum).lightdata.(selectedvariablename)]==reducednames(valuesnow(i)))];
-        szovegmost=[szovegmost,' ',num2str(reducednames(valuesnow(i))),','];
-        if length(valuesnow)>5
-            szovegmost=['-',selectedvariablename,': ',num2str(reducednames(valuesnow(1))),' ... ',num2str(reducednames(valuesnow(end)))];
-        end
-    end
-    
-end
-needed=sort(unique(needed));
-common=ismember(handles.data.samples(selectedsamplenum).neededwaves,needed);
-handles.data.samples(selectedsamplenum).neededwaves=handles.data.samples(selectedsamplenum).neededwaves(common);
-handles.data.samples(selectedsamplenum).neededwavespervariable{selectedvariable}=handles.data.samples(selectedsamplenum).neededwaves;
-handles.data.samples(selectedsamplenum).changes=[handles.data.samples(selectedsamplenum).changes,' AND ',szovegmost];
-
-% timesofneededwaves=[handles.data.samples(selectedsamplenum).lightdata(handles.data.samples(selectedsamplenum).neededwaves).realtime];
-% reallyneededwaves=timesofneededwaves>=str2num(get(handles.edit4,'String')) & timesofneededwaves<=str2num(get(handles.edit5,'String'));
-% handles.data.samples(selectedsamplenum).neededwaves=handles.data.samples(selectedsamplenum).neededwaves(reallyneededwaves);
-
-handles=loadthedata(handles);
-handles=updatedatatoplot(handles);
-guidata(hObject,handles)
-%plotandupdate(handles)
+%old version of pushbutton2 when it was AND Select
+% % % % % selectedsamplenum=get(handles.popupmenu1,'Value');
+% % % % % selectedvariable=handles.data.samples(selectedsamplenum).selectedvariable;
+% % % % % selectedID=handles.data.samples(selectedsamplenum).selectedID;
+% % % % % selectedvariablename=handles.data.fieldnevek{selectedvariable};
+% % % % % 
+% % % % % if ischar(handles.data.samples(selectedsamplenum).lightdata(1).(selectedvariablename))
+% % % % %     reducednames=unique({handles.data.samples(selectedsamplenum).lightdata.(selectedvariablename)});
+% % % % %     ezszoveg=1;
+% % % % % else
+% % % % %     reducednames=unique([handles.data.samples(selectedsamplenum).lightdata.(selectedvariablename)]);
+% % % % %     ezszoveg=0;
+% % % % % end
+% % % % % valuesnow=get(handles.listbox1,'Value');
+% % % % % needed=[];
+% % % % % szovegmost=['-',selectedvariablename,':'];
+% % % % % for i=1:length(valuesnow)
+% % % % %     if ezszoveg==1
+% % % % %         needed=[needed,find(strcmp({handles.data.samples(selectedsamplenum).lightdata.(selectedvariablename)},reducednames{valuesnow(i)}))];
+% % % % %         szovegmost=[szovegmost,' ',reducednames{valuesnow(i)},','];
+% % % % %         if length(valuesnow)>5
+% % % % %             szovegmost=['-',selectedvariablename,': ',reducednames{valuesnow(1)},' ... ',reducednames{valuesnow(end)}];
+% % % % %         end
+% % % % %     else
+% % % % %         needed=[needed,find([handles.data.samples(selectedsamplenum).lightdata.(selectedvariablename)]==reducednames(valuesnow(i)))];
+% % % % %         szovegmost=[szovegmost,' ',num2str(reducednames(valuesnow(i))),','];
+% % % % %         if length(valuesnow)>5
+% % % % %             szovegmost=['-',selectedvariablename,': ',num2str(reducednames(valuesnow(1))),' ... ',num2str(reducednames(valuesnow(end)))];
+% % % % %         end
+% % % % %     end
+% % % % %     
+% % % % % end
+% % % % % needed=sort(unique(needed));
+% % % % % common=ismember(handles.data.samples(selectedsamplenum).neededwaves,needed);
+% % % % % handles.data.samples(selectedsamplenum).neededwaves=handles.data.samples(selectedsamplenum).neededwaves(common);
+% % % % % handles.data.samples(selectedsamplenum).neededwavespervariable{selectedvariable}=handles.data.samples(selectedsamplenum).neededwaves;
+% % % % % handles.data.samples(selectedsamplenum).changes=[handles.data.samples(selectedsamplenum).changes,' AND ',szovegmost];
+% % % % % 
+% % % % % % timesofneededwaves=[handles.data.samples(selectedsamplenum).lightdata(handles.data.samples(selectedsamplenum).neededwaves).realtime];
+% % % % % % reallyneededwaves=timesofneededwaves>=str2num(get(handles.edit4,'String')) & timesofneededwaves<=str2num(get(handles.edit5,'String'));
+% % % % % % handles.data.samples(selectedsamplenum).neededwaves=handles.data.samples(selectedsamplenum).neededwaves(reallyneededwaves);
+% % % % % 
+% % % % % handles=loadthedata(handles);
+% % % % % handles=updatedatatoplot(handles);
+% % % % % guidata(hObject,handles)
+% % % % % %plotandupdate(handles)
 
 
 % --- Executes on button press in pushbutton3.
@@ -397,6 +415,7 @@ if ischar(melyiket)
     %%
     set(handles.popupmenu3,'String',handles.data.fieldnevek);
     set(handles.popupmenu4,'String',[{'stiumulus'},{handles.data.samples.marker},{'movement and pupil diameter'},{'PSD of field'}]);
+    set(handles.popupmenu7,'String',[{'stiumulus'},{handles.data.samples.marker},{'movement and pupil diameter'},{'PSD of field'}]);
     set(handles.slider1,'Min',0);
     set(handles.slider1,'Max',1);
     set(handles.slider2,'Min',0);
@@ -444,54 +463,99 @@ for samplei=1:length(handles.data.samples)
                 handles.data.samples(samplei).pupildata=pupildata;
                 diameter=handles.data.samples(samplei).pupildata.diameter;
                 si=mode(diff(pupildata.time));
+                if si==0
+                    si=1/15;
+                end
                 diameter=moving(diameter,2);
                 diameter=medfilt1(diameter,round(10/si));
-                pupildatasorted=sort(diameter);
-                minval=pupildatasorted(round(length(pupildatasorted)*.05));
-                maxval=pupildatasorted(round(length(pupildatasorted)*.95));
+                
+                a=dir([handles.data.dirs.videodir,'percentiles.mat']);
+                if ~isempty(a)
+                    load([handles.data.dirs.videodir,'percentiles.mat'])
+                    minval=videopercentiles.pupilpercentiles(5);
+                    maxval=videopercentiles.pupilpercentiles(95);
+                else
+                    pupildatasorted=sort(diameter);
+                    minval=pupildatasorted(round(length(pupildatasorted)*.05));
+                    maxval=pupildatasorted(round(length(pupildatasorted)*.95));
+                end
                 diameter=(handles.data.samples(samplei).pupildata.diameter-minval)/(maxval-minval);
                 diameter(diameter>1)=1;
                 diameter(diameter<0)=0;
-               
+                
                 handles.data.samples(samplei).pupildata.diameter=diameter;
             end
             %movementdata
             a=dir([handles.data.dirs.videodir,'movement/',fname,'.mat']);
             if ~isempty(a)
                 load([handles.data.dirs.videodir,'movement/',fname,'.mat']);
+                %%
                 movement=[];
                 time=[];
+                video=[];
                 for i=1:length(videodata)
+                    video=cat(3,video,rawvideo(i).vid);
                     movement=[movement;videodata(i).movement_selected];
                     time=[time;videodata(i).time];
                     [time,ix]=sort(time);
                     movement=movement(ix);
-                       si=mode(diff(time));
-                       movement=moving(movement,2);
-                movement=medfilt1(movement,round(3/si));    
-                     movementsorted=sort(movement);
-                minval=movementsorted(round(length(movementsorted)*.05));
-                maxval=movementsorted(round(length(movementsorted)*.95));
-                movement=(movement-minval)/(maxval-minval);
-                movement(movement>1)=1;
-                movement(movement<0)=0;
-                
-                handles.data.samples(samplei).movementdata.movement=movement+1;
-                handles.data.samples(samplei).movementdata.time=time;
-%                 figure(33)
-%                 clf
-%                 hold on
-%                 
-%                 plot(handles.data.samples(samplei).movementdata.time,handles.data.samples(samplei).movementdata.movement,'r-','LineWidth',2)
-%                 plot(handles.data.samples(samplei).pupildata.time,handles.data.samples(samplei).pupildata.diameter,'k-','LineWidth',2)
+                    video=video(:,:,ix);
+                    si=mode(diff(time));
+                    movement=moving(movement,2);
+                    movement=medfilt1(movement,round(.5/si));
+                    a=dir([handles.data.dirs.videodir,'percentiles.mat']);
+                    if ~isempty(a)
+                        load([handles.data.dirs.videodir,'percentiles.mat'])
+                        minval=videopercentiles.movementpercentiles(5);
+                        maxval=videopercentiles.movementpercentiles(95);
+                    else
+                        movementsorted=sort(movement);
+                        minval=movementsorted(round(length(movementsorted)*.05));
+                        maxval=movementsorted(round(length(movementsorted)*.95));
+                    end
+                    movement=(movement-minval)/(maxval-minval);
+                    movement(movement>1)=1;
+                    movement(movement<0)=0;
+                    
+                    handles.data.samples(samplei).movementdata.movement=movement+1;
+                    handles.data.samples(samplei).movementdata.time=time;
+                    handles.data.samples(samplei).movementdata.video=video;
+                    %                 figure(33)
+                    %                 clf
+                    %                 hold on
+                    %
+                    %                 plot(handles.data.samples(samplei).movementdata.time,handles.data.samples(samplei).movementdata.movement,'r-','LineWidth',2)
+                    %                 plot(handles.data.samples(samplei).pupildata.time,handles.data.samples(samplei).pupildata.diameter,'k-','LineWidth',2)
                 end
             end
         end
         if isfield(handles.data.dirs,'PSDdir')
             xlsnum=handles.data.samples(samplei).selectedID-1;
             fieldxlsnum=find(strcmp(handles.data.xlsdata(xlsnum).HEKAfname,{handles.data.xlsdata.HEKAfname}) & [handles.data.xlsdata.field]==1);
-            load([handles.data.dirs.PSDdir,handles.data.xlsdata(fieldxlsnum).ID]);
-            handles.data.samples(samplei).PSDdata=PSDdata;
+            if ~isempty(fieldxlsnum)
+                load([handles.data.dirs.PSDdir,handles.data.xlsdata(fieldxlsnum).ID]);
+                handles.data.samples(samplei).PSDdata=PSDdata;
+                
+                set(handles.edit9,'String',max(PSDdata(1).powerMatrix(:)));
+                set(handles.edit10,'String',max(PSDdata(1).frequencyVector(:)));
+                set(handles.edit11,'String',min(PSDdata(1).frequencyVector(:)));
+            else
+                handles.data.samples(samplei).PSDdata=[];
+            end
+
+                
+        end
+        
+        if isfield(handles.data.dirs,'brainstatedir')
+            %%
+            ID=handles.data.IDs{handles.data.samples(samplei).loadedID};
+            a=dir([handles.data.dirs.brainstatedir,ID,'.mat']);
+            if isempty(a)
+                handles.data.samples(samplei).BrainStateData=struct;
+            else
+                load([handles.data.dirs.brainstatedir,ID],'BrainStateData');
+                handles.data.samples(samplei).BrainStateData=BrainStateData;
+            end
         end
     end
 end
@@ -534,6 +598,12 @@ axes(handles.axes2)
 cla 
 hold on
 handles.axes2=gca;
+
+axes(handles.axes3)
+cla 
+hold on
+handles.axes3=gca;
+
 for samplenum=1:length(handles.data.samples)
     y0=0;
     if handles.data.samples(samplenum).switch==1 & handles.data.samples(samplenum).selectedID>1 & ~isempty(handles.data.samples(samplenum).neededwaves)
@@ -614,6 +684,21 @@ for samplenum=1:length(handles.data.samples)
                  end
             end
        end
+       markbrainstates=get(handles.checkbox8,'Value');
+       if markbrainstates==1 & isfield(handles.data.dirs,'brainstatedir') 
+           %%
+           BrainStateProps=handles.data.BrainStateProps;
+           BrainStateData=handles.data.samples(samplenum).BrainStateData;
+           if ~isempty(fieldnames(BrainStateData))
+           ylimits=[min([handles.data.samples(samplenum).datatoplot.yvoltage]),max([handles.data.samples(samplenum).datatoplot.yvoltage])];
+           for statei=1:length(BrainStateData)
+               color=BrainStateProps.Statecolors_short{find(strcmp(BrainStateData(statei).name,BrainStateProps.Statevalues))};
+               rectangle('Position',[BrainStateData(statei).starttime,ylimits(1),BrainStateData(statei).endtime-BrainStateData(statei).starttime,diff(ylimits)],'EdgeColor',color,'LineWidth',2);
+               text(BrainStateData(statei).starttime,ylimits(1)+.95*diff(ylimits),BrainStateData(statei).name,'Color',color)
+           end
+           end
+       end
+       
 %         plot([handles.data.samples(samplenum).datatoplot.x],[handles.data.samples(samplenum).datatoplot.yvoltage],marker(1),'LineWidth',2)
         y0=max([y0,max([handles.data.samples(samplenum).datatoplot.yvoltage])]);
         if length(neededwaves)>0
@@ -642,66 +727,25 @@ for samplenum=1:length(handles.data.samples)
             end
         end
         handles.axes1=gca;
-        axes(handles.axes2)
-        if get(handles.popupmenu4,'Value')-1==0
-            for sweepi=1:length(neededwaves)
-                ettol=find(handles.data.samples(samplenum).datatoplot(sweepi).x>starttime,1,'first');
-                eddig=find(handles.data.samples(samplenum).datatoplot(sweepi).x<endtime,1,'last');
-                plot(handles.data.samples(samplenum).datatoplot(sweepi).x(ettol:eddig),handles.data.samples(samplenum).datatoplot(sweepi).ycurrent(ettol:eddig),marker(1),'LineWidth',2)
-            end
-            xlabel('Time (s)')
-            ylabel('Injected Current (pA)')
-        elseif samplenum==get(handles.popupmenu4,'Value')-1
-            for sweepi=1:length(neededwaves)
-                ettol=find(handles.data.samples(samplenum).datatoplot(sweepi).x>starttime,1,'first');
-                eddig=find(handles.data.samples(samplenum).datatoplot(sweepi).x<endtime,1,'last');
-                plot(handles.data.samples(samplenum).datatoplot(sweepi).x(ettol:eddig),handles.data.samples(samplenum).datatoplot(sweepi).yvoltage(ettol:eddig),marker(1),'LineWidth',2)
-            end
-        elseif get(handles.popupmenu4,'Value')==length(handles.data.samples)+2
-            %%
-            hold on
-            if isfield(handles.data.samples(samplenum),'pupildata')
-                ettol=find(handles.data.samples(samplenum).pupildata.time>starttime,1,'first');
-                eddig=find(handles.data.samples(samplenum).pupildata.time<endtime,1,'last');
-                plot(handles.data.samples(samplenum).pupildata.time(ettol:eddig),handles.data.samples(samplenum).pupildata.diameter(ettol:eddig),'b-','LineWidth',2);
-            end
-            if isfield(handles.data.samples(samplenum),'movementdata')
-                ettol=find(handles.data.samples(samplenum).movementdata.time>starttime,1,'first');
-                eddig=find(handles.data.samples(samplenum).movementdata.time<endtime,1,'last');
-                plot(handles.data.samples(samplenum).movementdata.time(ettol:eddig),handles.data.samples(samplenum).movementdata.movement(ettol:eddig),'r-','LineWidth',2);
-                
-            end
-        elseif get(handles.popupmenu4,'Value')==length(handles.data.samples)+3
-            
-            imagesc(handles.data.samples(samplenum).PSDdatatoplot.time,handles.data.samples(samplenum).PSDdatatoplot.frequencyVector,handles.data.samples(samplenum).PSDdatatoplot.powerMatrix)
-            caxis([0 handles.data.samples(samplenum).PSDdatatoplot.intensitypercentiles(99)])
-            set(gca,'YDir','normal');
-            colormap linspecer
-            ylabel('Frequency (Hz)')
-            xlabel('Time (s)')
-            hold on
-            if ~isempty(handles.data.samples(samplenum).PSDdatatoplot.frequencyVector)
-                szorzo=max(handles.data.samples(samplenum).PSDdatatoplot.frequencyVector);
-            else
-                szorzo=1;
-            end
-            for sweepi=1:length(handles.data.samples(samplenum).PSDdatatoplot.trace)
-                ettol=find(handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).x>starttime,1,'first');
-                eddig=find(handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).x<endtime,1,'last');
-                plot(handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).x(ettol:eddig),handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).y(ettol:eddig)*szorzo/3+2*szorzo/3,'Color',[0.5 .5 .5],'LineWidth',.5)
-                
-            end
-            disp('muahah')
-        end
-        %         plot([handles.data.samples(samplenum).datatoplot.x],[handles.data.samples(samplenum).datatoplot.ycurrent],marker(1),'LineWidth',2)
-        handles.axes2=gca;
+        axesname='axes2';
+        popupname='popupmenu4';
+        plotlowerpanels(marker,samplenum,starttime,endtime,neededwaves,axesname,popupname,handles);
+        axesname='axes3';
+        popupname='popupmenu7';
+        plotlowerpanels(marker,samplenum,starttime,endtime,neededwaves,axesname,popupname,handles);
     end
-    
 end
-axes(handles.axes2)
+axes(handles.axes3)
 xlabel('Time (s)')
-axis tight
+% axis tight
 % xlim([starttime endtime])
+handles.axes3=gca;
+
+axes(handles.axes2)
+% axis tight
+xlabel([]);
+set(gca,'xtick',[]);
+
 handles.axes2=gca;
 
 axes(handles.axes1)
@@ -712,11 +756,75 @@ end
 xlabel([]);
 set(gca,'xtick',[]);
 ylabel('Voltage (V)')
-handles.axes1=gca;
+handles.axes1=gca; 
 
 
-linkaxes([handles.axes1,handles.axes2],'x');
+linkaxes([handles.axes1,handles.axes2, handles.axes3],'x');
 java.lang.System.gc()
+
+function plotlowerpanels(marker,samplenum,starttime,endtime,neededwaves,axesname,popupname,handles)
+axes(handles.(axesname))
+if get(handles.(popupname),'Value')-1==0
+    for sweepi=1:length(neededwaves)
+        ettol=find(handles.data.samples(samplenum).datatoplot(sweepi).x>starttime,1,'first');
+        eddig=find(handles.data.samples(samplenum).datatoplot(sweepi).x<endtime,1,'last');
+        plot(handles.data.samples(samplenum).datatoplot(sweepi).x(ettol:eddig),handles.data.samples(samplenum).datatoplot(sweepi).ycurrent(ettol:eddig),marker(1),'LineWidth',2)
+    end
+%     xlabel('Time (s)')
+    ylabel('Injected Current (pA)')
+    axis tight
+elseif samplenum==get(handles.(popupname),'Value')-1
+    for sweepi=1:length(neededwaves)
+        ettol=find(handles.data.samples(samplenum).datatoplot(sweepi).x>starttime,1,'first');
+        eddig=find(handles.data.samples(samplenum).datatoplot(sweepi).x<endtime,1,'last');
+        plot(handles.data.samples(samplenum).datatoplot(sweepi).x(ettol:eddig),handles.data.samples(samplenum).datatoplot(sweepi).yvoltage(ettol:eddig),marker(1),'LineWidth',2)
+    end
+    axis tight
+    ylabel('Voltage (mV)')
+elseif get(handles.(popupname),'Value')==length(handles.data.samples)+2
+    %%
+    hold on
+    if isfield(handles.data.samples(samplenum),'pupildata')
+        ettol=find(handles.data.samples(samplenum).pupildata.time>starttime,1,'first');
+        eddig=find(handles.data.samples(samplenum).pupildata.time<endtime,1,'last');
+        plot(handles.data.samples(samplenum).pupildata.time(ettol:eddig),handles.data.samples(samplenum).pupildata.diameter(ettol:eddig),'b-','LineWidth',2);
+    end
+    if isfield(handles.data.samples(samplenum),'movementdata')
+        ettol=find(handles.data.samples(samplenum).movementdata.time>starttime,1,'first');
+        eddig=find(handles.data.samples(samplenum).movementdata.time<endtime,1,'last');
+        plot(handles.data.samples(samplenum).movementdata.time(ettol:eddig),handles.data.samples(samplenum).movementdata.movement(ettol:eddig),'r-','LineWidth',2);
+        
+    end
+    ylabel('\color{red}Movement \color{black}and \color{blue}pupil size \color{black}(AU)')
+    ylim([0 2])
+elseif get(handles.(popupname),'Value')==length(handles.data.samples)+3 & ~isempty(handles.data.samples(samplenum).PSDdatatoplot)
+    
+    imagesc(handles.data.samples(samplenum).PSDdatatoplot.time,handles.data.samples(samplenum).PSDdatatoplot.frequencyVector,handles.data.samples(samplenum).PSDdatatoplot.powerMatrix)
+    
+    
+    caxis([0 str2num(get(handles.edit9,'String'))])
+    set(gca,'YDir','normal');
+    colormap linspecer
+    ylabel('Frequency (Hz)')
+    xlabel('Time (s)')
+    hold on
+    if ~isempty(handles.data.samples(samplenum).PSDdatatoplot.frequencyVector)
+        szorzo=max(handles.data.samples(samplenum).PSDdatatoplot.frequencyVector);
+    else
+        szorzo=1;
+    end
+    for sweepi=1:length(handles.data.samples(samplenum).PSDdatatoplot.trace)
+        ettol=find(handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).x>starttime,1,'first');
+        eddig=find(handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).x<endtime,1,'last');
+        plot(handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).x(ettol:eddig),handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).y(ettol:eddig)*szorzo/3+2*szorzo/3,'Color',[0.5 .5 .5],'LineWidth',.5)
+        
+    end
+%     disp('muahah')
+    axis tight
+end
+%         plot([handles.data.samples(samplenum).datatoplot.x],[handles.data.samples(samplenum).datatoplot.ycurrent],marker(1),'LineWidth',2)
+handles.(axesname)=gca;
+
 
 function handles=updategui(handles)
 selectedsamplenum=get(handles.popupmenu1,'Value');
@@ -849,9 +957,12 @@ if handles.data.samples(selectedsamplenum).switch>0
     cutoffreq=handles.data.samples(selectedsamplenum).cutoffreq;
     filterdeg=handles.data.samples(selectedsamplenum).filterdeg;
     shoulddownsample=get(handles.checkbox2,'Value');
+    minfreq=str2num(get(handles.edit11,'string'));
+    maxfreq=str2num(get(handles.edit10,'string'));
+    
     plotdetails=handles.data.samples(selectedsamplenum).plotdetails;
     if ~isempty(neededwaves)
-        if isempty(fieldnames(plotdetails)) | ~(length(neededwaves)==length(plotdetails.neededwaves)) |~(neededwaves==plotdetails.neededwaves) | ~(neededsamplenum==plotdetails.neededsamplenum) | ~all(cutoffreq==plotdetails.cutoffreq) | ~(filterdeg==plotdetails.filterdeg) | ~(shoulddownsample==plotdetails.shoulddownsample)
+        if isempty(fieldnames(plotdetails)) | ~(length(neededwaves)==length(plotdetails.neededwaves)) | ~any(neededwaves==plotdetails.neededwaves) | ~(neededsamplenum==plotdetails.neededsamplenum) | ~all(cutoffreq==plotdetails.cutoffreq) | ~(filterdeg==plotdetails.filterdeg) | ~(shoulddownsample==plotdetails.shoulddownsample) | ~(minfreq==plotdetails.minfreq) | ~(maxfreq==plotdetails.maxfreq)
             datatoplot=struct;
             PSDdatatoplot=struct;
             PSDdatatoplot.trace=struct;
@@ -860,6 +971,8 @@ if handles.data.samples(selectedsamplenum).switch>0
             plotdetails.cutoffreq=cutoffreq;
             plotdetails.filterdeg=filterdeg;
             plotdetails.shoulddownsample=shoulddownsample;
+            plotdetails.minfreq=minfreq;
+            plotdetails.maxfreq=maxfreq;
             bigmatrix=[];
             for sweepi=1:length(neededwaves)
                 sweepnum=neededwaves(sweepi);
@@ -896,53 +1009,100 @@ if handles.data.samples(selectedsamplenum).switch>0
             handles.data.samples(selectedsamplenum).datatoplot=datatoplot;
             handles.data.samples(selectedsamplenum).plotdetails=plotdetails;
             %%
-            
-            timesofPSDwaves=[handles.data.samples(selectedsamplenum).PSDdata.realtime];
-            reallyneededwaves=timesofPSDwaves>=str2num(get(handles.edit4,'String')) & timesofPSDwaves<=str2num(get(handles.edit5,'String'));
-            if reallyneededwaves(1)==0
-                reallyneededwaves(find(timesofPSDwaves<=str2num(get(handles.edit4,'String')),1,'last'))=true;
-            end
-            neededwaves=find(reallyneededwaves);
-            for sweepi=1:length(neededwaves)
-                sweepnum=neededwaves(sweepi);
-                if isempty(bigmatrix)
-                    starttime=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).realtime;
-                    si=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).si_powerMatrix;
-                    bigmatrix=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).powerMatrix;
-                    frequencyVector=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).frequencyVector;
-                else
-                    timeskipped=(handles.data.samples(selectedsamplenum).PSDdata(sweepnum).realtime-(starttime+size(bigmatrix,2)*si));
-                    colstoadd=round(timeskipped/si);
-                    bigmatrix=[bigmatrix,zeros(size(bigmatrix,1),colstoadd),handles.data.samples(selectedsamplenum).PSDdata(sweepnum).powerMatrix];
-                    %             starttime+size(bigmatrix,2)*si
-                    %             return
+            if ~isempty(handles.data.samples(selectedsamplenum).PSDdata)
+                timesofPSDwaves=[handles.data.samples(selectedsamplenum).PSDdata.realtime];
+                reallyneededwaves=timesofPSDwaves>=str2num(get(handles.edit4,'String')) & timesofPSDwaves<=str2num(get(handles.edit5,'String'));
+                if reallyneededwaves(1)==0
+                    reallyneededwaves(find(timesofPSDwaves<=str2num(get(handles.edit4,'String')),1,'last'))=true;
                 end
-                PSDdatatoplot.trace(sweepi).x=[0:si:si*(length(handles.data.samples(selectedsamplenum).PSDdata(sweepnum).y)-1)]+handles.data.samples(selectedsamplenum).PSDdata(sweepnum).realtime;
-                y=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).y;
-                [b,a]=butter(1,.2/(1/si)/2,'high');
-                y=filtfilt(b,a,y);
-                y=(y-min(y));
-                ysort=sort(y);
-                y=y/ysort(round(length(y)*.99));
-                y(y>1)=1;
-                PSDdatatoplot.trace(sweepi).y=y;
-                PSDdatatoplot.trace(sweepi).realtime=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).realtime;
-                PSDdatatoplot.trace(sweepi).si=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).si_powerMatrix;
+                neededwaves=find(reallyneededwaves);
+                minfreq=str2num(get(handles.edit11,'string'));
+                maxfreq=str2num(get(handles.edit10,'string'));
                 
                 
-            end
-            PSDdatatoplot.powerMatrix=bigmatrix;
-            PSDdatatoplot.frequencyVector=frequencyVector;
-            PSDdatatoplot.si_powerMatrix=si;
-            PSDdatatoplot.time=(1:size(bigmatrix,2))*si+starttime;
-            if ~isempty(PSDdatatoplot.powerMatrix)
-                values=sort(PSDdatatoplot.powerMatrix(:));
-                PSDdatatoplot.intensitypercentiles=values(ceil([.01:.01:1]*length(values)));
+                for sweepi=1:length(neededwaves)
+                    sweepnum=neededwaves(sweepi);
+                    if isempty(bigmatrix)
+                        frequencyVector=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).frequencyVector;
+                        neededfrequencies=frequencyVector>=minfreq & frequencyVector<=maxfreq;
+                        frequencyVector=frequencyVector(neededfrequencies);
+                        starttime=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).realtime;
+                        si=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).si_powerMatrix;
+                        bigmatrix=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).powerMatrix(neededfrequencies,:);
+                        
+                    else
+                        timeskipped=(handles.data.samples(selectedsamplenum).PSDdata(sweepnum).realtime-(starttime+size(bigmatrix,2)*si));
+                        colstoadd=round(timeskipped/si);
+                        if ~isempty(handles.data.samples(selectedsamplenum).PSDdata(sweepnum).powerMatrix)
+                            bigmatrix=[bigmatrix,zeros(size(bigmatrix,1),colstoadd),handles.data.samples(selectedsamplenum).PSDdata(sweepnum).powerMatrix(neededfrequencies,:)];
+                        end
+                        %             starttime+size(bigmatrix,2)*si
+                        %             return
+                    end
+                    
+                    PSDdatatoplot.trace(sweepi).x=[0:si:si*(length(handles.data.samples(selectedsamplenum).PSDdata(sweepnum).y)-1)]+handles.data.samples(selectedsamplenum).PSDdata(sweepnum).realtime;
+                    y=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).y;
+                    if ~isempty(handles.data.samples(selectedsamplenum).PSDdata(sweepnum).y)
+                        [b,a]=butter(1,.2/(1/si)/2,'high');
+                        y=filtfilt(b,a,y);
+                        y=(y-min(y));
+                        ysort=sort(y);
+                        y=y/ysort(round(length(y)*.95));
+                        y(y>1)=1;
+                        PSDdatatoplot.trace(sweepi).y=y;
+                        PSDdatatoplot.trace(sweepi).realtime=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).realtime;
+                        PSDdatatoplot.trace(sweepi).si=handles.data.samples(selectedsamplenum).PSDdata(sweepnum).si_powerMatrix;
+                    end
+                end
+                
+                
+                
+                %%
+                if ~isempty(fieldnames(PSDdatatoplot.trace))
+                    samplenumnow=length([PSDdatatoplot.trace.y]);
+                    if neededsamplenum<samplenumnow & neededsamplenum>0 & shoulddownsample==1
+                        %                 disp('downsampling started')
+                        ratio=round(samplenumnow/neededsamplenum);
+                        for sweepi=1:length(neededwaves)
+                            PSDdatatoplot.trace(sweepi).x=downsample(PSDdatatoplot.trace(sweepi).x,ratio);
+                            PSDdatatoplot.trace(sweepi).y=downsample(PSDdatatoplot.trace(sweepi).y,ratio);
+                        end
+                        %                 disp('downsampling finished')
+                    end
+                end
+               %%     
+               
+               
+               
+               
+               bigtime=(1:size(bigmatrix,2))*si+starttime;
+                if ~isempty(bigtime)
+                    samplenumnow=length(bigtime);
+                    if neededsamplenum<samplenumnow & neededsamplenum>0 & shoulddownsample==1
+                        %                 disp('downsampling started')
+                        ratio=round(samplenumnow/neededsamplenum);
+                        bigmatrix=downsample(bigmatrix',ratio)';
+                        bigtime=downsample(bigtime,ratio);
+                      %                 disp('downsampling finished')
+                    end
+                end
+                
+               %% 
+                PSDdatatoplot.powerMatrix=bigmatrix;
+                PSDdatatoplot.frequencyVector=frequencyVector;
+                PSDdatatoplot.si_powerMatrix=si;
+                PSDdatatoplot.time=bigtime;
+                if ~isempty(PSDdatatoplot.powerMatrix)
+                    values=sort(PSDdatatoplot.powerMatrix(:));
+                    PSDdatatoplot.intensitypercentiles=values(ceil([.01:.01:1]*length(values)));
+                else
+                    PSDdatatoplot.intensitypercentiles=ones(size([.01:.01:1]));
+                end
+                handles.data.samples(selectedsamplenum).PSDdatatoplot=PSDdatatoplot;
+%                 set(handles.edit9,'String',handles.data.samples(selectedsamplenum).PSDdatatoplot.intensitypercentiles(99));
             else
-                 PSDdatatoplot.intensitypercentiles=ones(size([.01:.01:1]));
+                handles.data.samples(selectedsamplenum).PSDdatatoplot=[];
             end
-            handles.data.samples(selectedsamplenum).PSDdatatoplot=PSDdatatoplot;
-            
         end
     end
     
@@ -1060,6 +1220,8 @@ if get(hObject,'Value')>get(handles.slider2,'Value')
     set(hObject,'Value',get(handles.slider2,'Value'))
 end
 handles=updategui(handles);
+handles=updatedatatoplot(handles);
+plotandupdate(handles)
 guidata(hObject, handles)
 
 % --- Executes during object creation, after setting all properties.
@@ -1086,6 +1248,8 @@ if get(hObject,'Value')<get(handles.slider1,'Value')
     set(hObject,'Value',get(handles.slider1,'Value'))
 end
 handles=updategui(handles);
+handles=updatedatatoplot(handles);
+plotandupdate(handles)
 guidata(hObject, handles)
 
 % --- Executes during object creation, after setting all properties.
@@ -1117,6 +1281,7 @@ maxval=min([1,maxval+difi]);
 set(handles.slider1,'Value',minval)
 set(handles.slider2,'Value',maxval)
 handles=updategui(handles);
+handles=updatedatatoplot(handles);
 plotandupdate(handles)
 guidata(hObject, handles)
 
@@ -1289,12 +1454,12 @@ function checkbox3_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 if get(hObject,'Value')==true
     samplenum=get(handles.popupmenu1,'Value');
-    button=2;
+    button='No';
     if isfield(handles.data.samples(samplenum).eventdata,'axonalAP')
-        button = questdlg('Do you want to rerun the aAP detection','aAP detection','Yes','No','Yes');
+        button = questdlg('Do you want to rerun the aAP detection','aAP detection','Yes','No','Yes')
     end
     
-    if ~isfield(handles.data.samples(samplenum).eventdata,'axonalAP') | button==1
+    if ~isfield(handles.data.samples(samplenum).eventdata,'axonalAP') | strcmp(button,'Yes')
         
         timeborders=[str2num(get(handles.edit4,'String')),str2num(get(handles.edit5,'String'))];
         %     for samplenum=1:length(handles.data.samples)
@@ -1447,6 +1612,8 @@ icxlsnum=find(strcmp(ID,{xlsdata.ID}));
 timeborders=[str2num(get(handles.edit4,'String')),str2num(get(handles.edit5,'String'))];
 additionaldata=struct;
 additionaldata.eventdata=handles.data.samples(selectedsamplenum).eventdata;
+additionaldata.BrainStateData=handles.data.samples(selectedsamplenum).BrainStateData;
+
 dataout=aE_ic_field_analysis(dirs,xlsdata,icxlsnum,timeborders,'trough',additionaldata);
 valtozok_fieldplot.timebefore=.5;
 valtozok_fieldplot.timestep=.02;
@@ -1539,5 +1706,190 @@ function pushbutton8_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton8 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+% set(handles.d)
+%%
+selectedsamplenum=get(handles.popupmenu1,'Value');
+set(handles.edit9,'String',handles.data.samples(selectedsamplenum).PSDdatatoplot.intensitypercentiles(99));
+%%
+plotandupdate(handles)
+% assignin('base', 'data_InspectTraces', handles.data);
 
-assignin('base', 'data_InspectTraces', handles.data);
+
+% --- Executes on selection change in popupmenu7.
+function popupmenu7_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu7 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu7 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu7
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu7_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu7 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit9_Callback(hObject, eventdata, handles)
+% hObject    handle to edit9 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+plotandupdate(handles)
+% Hints: get(hObject,'String') returns contents of edit9 as text
+%        str2double(get(hObject,'String')) returns contents of edit9 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit9_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit9 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit10_Callback(hObject, eventdata, handles)
+% hObject    handle to edit10 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit10 as text
+%        str2double(get(hObject,'String')) returns contents of edit10 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit10_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit10 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit11_Callback(hObject, eventdata, handles)
+% hObject    handle to edit11 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit11 as text
+%        str2double(get(hObject,'String')) returns contents of edit11 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit11_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit11 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in checkbox8.
+function checkbox8_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox8
+
+
+% --- Executes on button press in pushbutton9.
+function pushbutton9_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton9 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+selectedsamplenum=get(handles.popupmenu1,'Value');
+
+Statevalues=handles.data.BrainStateProps.Statevalues;
+
+[selection,ok]=listdlg('ListString',Statevalues);
+if ok==1
+    rect=getrect(handles.axes1);
+    %%
+    starttime=rect(1);
+    endtime=rect(1)+rect(3);
+    
+    BrainStateData=handles.data.samples(selectedsamplenum).BrainStateData;
+    if isempty(fieldnames(BrainStateData))
+        NEXT=1;
+    else
+        NEXT=length(BrainStateData)+1;
+    end
+    BrainStateData(NEXT).name=Statevalues{selection};
+    BrainStateData(NEXT).starttime=starttime;
+    BrainStateData(NEXT).endtime=endtime;
+    % Ide olyan kell még, hogy ha ugyanabban az időben van más is,
+    % akkor abból ki kell vágni ezt a részt.
+    %%
+    statestodel=zeros(size(BrainStateData));
+    if NEXT>1
+        for statei=1:NEXT-1
+            if (BrainStateData(NEXT).starttime>BrainStateData(statei).starttime && BrainStateData(NEXT).starttime<BrainStateData(statei).endtime) || (BrainStateData(NEXT).endtime>BrainStateData(statei).starttime && BrainStateData(NEXT).endtime<BrainStateData(statei).endtime) || (BrainStateData(NEXT).endtime>BrainStateData(statei).endtime && BrainStateData(NEXT).starttime<BrainStateData(statei).starttime)
+                %there is an intersect
+                if strcmp(BrainStateData(NEXT).name,BrainStateData(statei).name);
+                    % same state - merging them
+                    BrainStateData(NEXT).starttime=min(BrainStateData(NEXT).starttime,BrainStateData(statei).starttime) ;
+                    BrainStateData(NEXT).endtime=max(BrainStateData(NEXT).endtime,BrainStateData(statei).endtime) ;
+                    statestodel(statei)=1;
+                else
+                    % different state
+                    if BrainStateData(NEXT).starttime>BrainStateData(statei).starttime && BrainStateData(NEXT).starttime<BrainStateData(statei).endtime && BrainStateData(NEXT).starttime<BrainStateData(statei).endtime && BrainStateData(NEXT).endtime<BrainStateData(statei).endtime
+                        % new state is completely within an old state
+                        BrainStateData(NEXT+1)=BrainStateData(statei);
+                        BrainStateData(NEXT+1).starttime=BrainStateData(NEXT).endtime;
+                        BrainStateData(statei).endtime=BrainStateData(NEXT).starttime;
+                    elseif BrainStateData(NEXT).starttime>BrainStateData(statei).starttime && BrainStateData(NEXT).starttime<BrainStateData(statei).endtime
+                        % new state starts later
+                        BrainStateData(statei).endtime=BrainStateData(NEXT).starttime;
+                    elseif BrainStateData(NEXT).endtime>BrainStateData(statei).starttime && BrainStateData(NEXT).endtime<BrainStateData(statei).endtime
+                        % new state starts earlier
+                        BrainStateData(statei).starttime=BrainStateData(NEXT).endtime;
+                    else
+                        statestodel(statei)=1;
+                        % old state is within the new state
+                    end
+                    if BrainStateData(statei).endtime <= BrainStateData(statei).starttime
+                        statestodel(statei)=1;
+                    end
+                end
+            end
+        end
+        if strcmp(Statevalues{selection},'Delete')
+            statestodel(NEXT)=1;
+        end
+        BrainStateData(find(statestodel))=[];
+    end
+    %%
+    
+    
+    %%
+    
+    handles.data.samples(selectedsamplenum).BrainStateData=BrainStateData;
+end
+plotandupdate(handles);
+
+save([handles.data.dirs.brainstatedir,handles.data.IDs{handles.data.samples(selectedsamplenum).selectedID}],'BrainStateData');
+guidata(hObject,handles);

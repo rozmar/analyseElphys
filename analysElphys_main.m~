@@ -296,7 +296,7 @@ for filei=2:length(files)
             end
         end
         %%
-        ennyiPCkell=3;
+        ennyiPCkell=5;
         PCs=struct;
         for ROIi=1:length(ROIdata)
             PCs(ROIi).pc=ROIdata(ROIi).PCA(videoi).PC(:,1:ennyiPCkell);
@@ -323,7 +323,7 @@ for filei=2:length(files)
             
             %%% itt kiválasztom azt a principális komponenst, ami egy adott
             %%% ROI-ra jellemző, de a háttérre nem
-%             return
+            return
         end
         
         %%

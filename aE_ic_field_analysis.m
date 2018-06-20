@@ -22,7 +22,7 @@ plotthestuff=0;
 % %rhythmic persisntent - dsfc - no field
 % fieldxlsnum=find(strcmp({xlsdata.ID},'1702101tm_2_33_3'));
 % fieldxlsnum=NaN;
-% icxlsnum=find(strcmp({xlsdata.ID},'1702101tm_2_1,2_4'));
+% icxlsnum=find(strcmp({xlsdata.ID},'1702101tm_2_1,2_2'));
 % timeborders=[53800, 55500];
 % 
 % %rhythmic persisntent - dsfc - no field - NBQX-GBZ

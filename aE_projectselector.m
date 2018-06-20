@@ -22,7 +22,7 @@ function varargout = aE_projectselector(varargin)
 
 % Edit the above text to modify the response to help aE_projectselector
 
-% Last Modified by GUIDE v2.5 01-Jun-2018 17:44:53
+% Last Modified by GUIDE v2.5 20-Jun-2018 10:01:41
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -144,6 +144,7 @@ handles.outputt.owbridge=get(handles.checkbox2,'Value');
 handles.outputt.owevent=get(handles.checkbox3,'Value');
 handles.outputt.owstimepoch=get(handles.checkbox4,'Value');
 handles.outputt.inspecttraces=get(handles.checkbox7,'Value');
+handles.outputt.selectvideoROIs=get(handles.checkbox8,'Value');
 assignin('base', 'projectdata', handles.outputt);
 close(handles.figure1);
 
@@ -162,5 +163,24 @@ set(handles.checkbox1,'Enable',val)
 set(handles.checkbox2,'Enable',val)
 set(handles.checkbox3,'Enable',val)
 set(handles.checkbox4,'Enable',val)
+set(handles.checkbox8,'Enable',val)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox7
+
+
+% --- Executes on button press in checkbox8.
+function checkbox8_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if get(hObject,'Value')
+    val='off';
+else
+    val='on';
+end
+set(handles.checkbox1,'Enable',val)
+set(handles.checkbox2,'Enable',val)
+set(handles.checkbox3,'Enable',val)
+set(handles.checkbox4,'Enable',val)
+set(handles.checkbox7,'Enable',val)
+% Hint: get(hObject,'Value') returns toggle state of checkbox8
