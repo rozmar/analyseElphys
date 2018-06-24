@@ -356,7 +356,7 @@ if isfield(handles.data.ROIdata,'PCA')
     axes(handles.axes2);
     cla
     if selectedPC==0
-         plot(handles.data.ROIdata(selectedROI).PCA(selectedvideo).bestPC)
+         plot(handles.data.ROIdata(selectedROI).PCA(selectedvideo).uniquePC)
 %         disp('a')
     else
         plot(handles.data.ROIdata(selectedROI).PCA(selectedvideo).PC(:,selectedPC))

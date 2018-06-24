@@ -38,10 +38,6 @@ if xlsnum>0
     close(5)
     figure(6)
     close(6)
-    figure(7)
-    close(7)
-    figure(8)
-    close(8)
     figure(33)
     close(33)
     
@@ -205,39 +201,39 @@ if xlsnum>0
         NOISEk=needed(NOISEk);
         
         APidxes=zeros(size(eventdata));
-        APidxes(APk)=1;
+        APidxes(APk)
         %%
 %         pause
 %         [~,mindvperdt]=ginput(2);
 %         valtozok.dvmaxborders=sort(mindvperdt);
     else
         mindvperdt=valtozok.dvmaxborders;
-        APidxes=[eventdata.maxdv]>min(mindvperdt) &[eventdata.maxdv]<max(mindvperdt);
+        
     end
-    figure(7)
+    figure(3)
     clf
     hold on
     % hist([apdata.threshv],100)
     %             needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & [eventdata.axonalAP] );
     %             plot([eventdata(needed).APamplitude],[eventdata(needed).threshv],'ro')
     
-    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & APidxes);
+    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & [eventdata.maxdv]>min(mindvperdt) &[eventdata.maxdv]<max(mindvperdt));
     
     plot([eventdata(needed).APamplitude],[eventdata(needed).threshv]*1000,'ko')
-    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & [eventdata.stimulated]==1 & APidxes);
+    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & [eventdata.stimulated]==1 & [eventdata.maxdv]>min(mindvperdt) &[eventdata.maxdv]<max(mindvperdt));
     plot([eventdata(needed).APamplitude],[eventdata(needed).threshv]*1000,'bo')
     ylabel('AP threshold (V)')
     xlabel('AP amplitude (mV)')
     
-    figure(8)
+    figure(4)
     clf
     hold on
     % hist([apdata.threshv],100)
     %             needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & [eventdata.axonalAP] );
     %             plot([eventdata(needed).baselineV],[eventdata(needed).threshv],'ro')
-    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2)&APidxes);
+    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2)& [eventdata.maxdv]>min(mindvperdt) &[eventdata.maxdv]<max(mindvperdt));
     plot([eventdata(needed).baselineV]*1000,[eventdata(needed).threshv]*1000,'ko')
-    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & [eventdata.stimulated]==1& APidxes);
+    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & [eventdata.stimulated]==1& [eventdata.maxdv]>min(mindvperdt) &[eventdata.maxdv]<max(mindvperdt));
     plot([eventdata(needed).baselineV]*1000,[eventdata(needed).threshv]*1000,'bo')
     ylabel('AP threshold (mV)')
     xlabel('baseline V0 (mV)')
@@ -248,10 +244,10 @@ if xlsnum>0
     % hist([apdata.threshv],100)
     %             needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & [eventdata.axonalAP] );
     %             plot([eventdata(needed).depolrate],[eventdata(needed).threshv],'ro')
-    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & APidxes);
+    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & [eventdata.maxdv]>min(mindvperdt) &[eventdata.maxdv]<max(mindvperdt));
     plot([eventdata(needed).depolrate],[eventdata(needed).threshv]*1000,'ko','LineWidth',3,'MarkerFaceColor',[0 0 0])
     
-    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2)& [eventdata.stimulated]==1 & APidxes);
+    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & [eventdata.stimulated]==1& [eventdata.maxdv]>min(mindvperdt) &[eventdata.maxdv]<max(mindvperdt));
     plot([eventdata(needed).depolrate],[eventdata(needed).threshv]*1000,'bo','LineWidth',3,'MarkerFaceColor',[0 0 1])
     ylabel('AP threshold (mV)')
     xlabel('rate of depolarization (mV/ms)')
@@ -266,7 +262,7 @@ if xlsnum>0
         y=valtozok.threshold_border;
     end
 end
-needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & APidxes);
+needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) &[eventdata.maxdv]>min(mindvperdt) &[eventdata.maxdv]<max(mindvperdt));
     plot([x,x],[min([eventdata(needed).threshv]),max([eventdata(needed).threshv])]*1000,'k-','LineWidth',2)
     plot([min([eventdata(needed).depolrate]),max([eventdata(needed).depolrate])],[y,y],'k-','LineWidth',2)
     for api=1:length(eventdata)
@@ -279,31 +275,23 @@ needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=v
                         eventdata(api).somaticAP=false;
                         APwaves(apii).axonalAP=true;
                         APwaves(apii).somaticAP=false;
-                        APwaves(apii).noise=false;
-                        APwaves(apii).ep=false;
                     else
                         eventdata(api).axonalAP=false;
                         eventdata(api).somaticAP=true;
                         APwaves(apii).axonalAP=false;
                         APwaves(apii).somaticAP=true;
-                        APwaves(apii).noise=false;
-                        APwaves(apii).ep=false;
                     end
                 elseif any(api==EPk)
                     eventdata(api).axonalAP=false;
                     eventdata(api).somaticAP=false;
                     APwaves(apii).axonalAP=false;
                     APwaves(apii).somaticAP=false;
-                    APwaves(apii).noise=false;
-                    APwaves(apii).ep=true;
                     eventdata(api).type='ep';
                 else
                     eventdata(api).axonalAP=false;
                     eventdata(api).somaticAP=false;
                     APwaves(apii).axonalAP=false;
                     APwaves(apii).somaticAP=false;
-                    APwaves(apii).noise=true;
-                    APwaves(apii).ep=false;
                     eventdata(api).type='noise';
                 end
             else
@@ -312,31 +300,23 @@ needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=v
                     eventdata(api).somaticAP=false;
                     APwaves(apii).axonalAP=false;
                     APwaves(apii).somaticAP=false;
-                    APwaves(apii).noise=false;
-                    APwaves(apii).ep=true;
                     eventdata(api).type='ep';
                 elseif  [eventdata(api).maxdv]>max(mindvperdt)
                     eventdata(api).axonalAP=false;
                     eventdata(api).somaticAP=false;
                     APwaves(apii).axonalAP=false;
                     APwaves(apii).somaticAP=false;
-                    APwaves(apii).noise=true;
-                    APwaves(apii).ep=false;
                     eventdata(api).type='noise';
                 elseif eventdata(api).depolrate<=x | eventdata(api).threshv<=y/1000
                     eventdata(api).axonalAP=true;
                     eventdata(api).somaticAP=false;
                     APwaves(apii).axonalAP=true;
                     APwaves(apii).somaticAP=false;
-                    APwaves(apii).noise=false;
-                        APwaves(apii).ep=false;
                 else
                     eventdata(api).axonalAP=false;
                     eventdata(api).somaticAP=true;
                     APwaves(apii).axonalAP=false;
                     APwaves(apii).somaticAP=true;
-                    APwaves(apii).noise=false;
-                        APwaves(apii).ep=false;
                 end
             end
         else
@@ -345,27 +325,15 @@ needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=v
         end
     end
     
-    for ii=1:4
+    for ii=1:2
         figure(ii)
         clf
         sis=unique([APwaves.si]);
         for i=1:length(sis)
             if ii==1
-                subplot(2,2,1)
-                title('aAPs')
                 needed=find([APwaves.si]==sis(i) & [APwaves.axonalAP]==true & [APwaves.maxtime]>=valtozok.timeborders(1) &[APwaves.maxtime]<=valtozok.timeborders(2) &[APwaves.stimulated]==false);
-            elseif ii==2
-                subplot(2,2,1)
-                title('sAPs')
+            else
                 needed=find([APwaves.si]==sis(i) & [APwaves.somaticAP]==true & [APwaves.maxtime]>=valtozok.timeborders(1) &[APwaves.maxtime]<=valtozok.timeborders(2) &[APwaves.stimulated]==false);
-            elseif ii==3
-                subplot(2,2,1)
-                title('EPSPs')
-                needed=find([APwaves.si]==sis(i) & [APwaves.ep]==true & [APwaves.maxtime]>=valtozok.timeborders(1) &[APwaves.maxtime]<=valtozok.timeborders(2) &[APwaves.stimulated]==false);
-            elseif ii==4
-                subplot(2,2,1)
-                title('noise')
-                needed=find([APwaves.si]==sis(i) & [APwaves.noise]==true & [APwaves.maxtime]>=valtozok.timeborders(1) &[APwaves.maxtime]<=valtozok.timeborders(2) &[APwaves.stimulated]==false);
             end
             subplot(2,2,1)
             hold on
