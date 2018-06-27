@@ -179,7 +179,11 @@ if xlsnum>0
     figure(6)
     clf
     needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) &strcmp({eventdata.type},'AP'));
-    plot([eventdata(needed).APamplitude],[eventdata(needed).maxdv],'ko')
+    neededstim=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) &strcmp({eventdata.type},'AP') & [eventdata.stimulated]==1);
+    neededspont=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) &strcmp({eventdata.type},'AP') & [eventdata.stimulated]==0);
+    hold on
+    plot([eventdata(neededstim).APamplitude],[eventdata(neededstim).maxdv],'bo')
+    plot([eventdata(neededspont).APamplitude],[eventdata(neededspont).maxdv],'ko','LineWidth',2)
     ylabel('maxdV/dt (mv/ms)')
     xlabel('amplitude');
     if diff(valtozok.dvmaxborders)==0
@@ -242,21 +246,54 @@ if xlsnum>0
     ylabel('AP threshold (mV)')
     xlabel('baseline V0 (mV)')
     
+    
+    %%
+    binnum=100;
     figure(5)
     clf
+    spontAPidx=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & [eventdata.stimulated]==0 & APidxes) ;
+    stimAPidx=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2)& [eventdata.stimulated]==1 & APidxes);
+    allAPidx=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2)& APidxes);
+    %%
+     h(1)=subplot('Position',[0.1,0.1,.7,.7]);
+    h(2)=subplot('Position',[0.1,0.85,.7,.15]);
+    h(3)=subplot('Position',[0.85,0.1,.15,.7]);
+    %%
+   
+    
+
+    axes(h(1))
     hold on
     % hist([apdata.threshv],100)
     %             needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & [eventdata.axonalAP] );
     %             plot([eventdata(needed).depolrate],[eventdata(needed).threshv],'ro')
-    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & APidxes);
-    plot([eventdata(needed).depolrate],[eventdata(needed).threshv]*1000,'ko','LineWidth',3,'MarkerFaceColor',[0 0 0])
+    plot([eventdata(spontAPidx).depolrate],[eventdata(spontAPidx).threshv]*1000,'ko','LineWidth',3,'MarkerFaceColor',[0 0 0])
     
-    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2)& [eventdata.stimulated]==1 & APidxes);
-    plot([eventdata(needed).depolrate],[eventdata(needed).threshv]*1000,'bo','LineWidth',3,'MarkerFaceColor',[0 0 1])
+    plot([eventdata(stimAPidx).depolrate],[eventdata(stimAPidx).threshv]*1000,'bo','LineWidth',3,'MarkerFaceColor',[0 0 1])
     ylabel('AP threshold (mV)')
     xlabel('rate of depolarization (mV/ms)')
+    
+    [~,depolratebins]=hist([eventdata(allAPidx).depolrate],binnum);
+    [~,threshvbins]=hist([eventdata(allAPidx).threshv],binnum);
+    [ndepolrate_spont,~]=hist([eventdata(spontAPidx).depolrate],depolratebins);
+    [ndepolrate_stim,~]=hist([eventdata(stimAPidx).depolrate],depolratebins);
+    [nthreshv_spont,~]=hist([eventdata(spontAPidx).threshv],threshvbins);
+    [nthreshv_stim,~]=hist([eventdata(stimAPidx).threshv],threshvbins);
+    
+    axes(h(2))
+    bar(depolratebins,ndepolrate_spont/max(ndepolrate_spont),'k')
+    hold on
+    bar(depolratebins,ndepolrate_stim/max(ndepolrate_stim),'b')
+    
+    axes(h(3))
+    barh(threshvbins*1000,nthreshv_spont/max(nthreshv_spont),'k')
+    hold on
+    barh(threshvbins*1000,nthreshv_stim/max(nthreshv_stim),'b')
+    %%
+    axes(h(1))
     if isnan(valtozok.ratedeofdepol_border) | isnan(valtozok.threshold_border)
         pause
+        axes(h(1))
         [x,y]=ginput(1);
     end
     if ~isnan(valtozok.ratedeofdepol_border)
@@ -266,9 +303,13 @@ if xlsnum>0
         y=valtozok.threshold_border;
     end
 end
-needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & APidxes);
+    needed=find([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2) & APidxes);
     plot([x,x],[min([eventdata(needed).threshv]),max([eventdata(needed).threshv])]*1000,'k-','LineWidth',2)
     plot([min([eventdata(needed).depolrate]),max([eventdata(needed).depolrate])],[y,y],'k-','LineWidth',2)
+    xlimits=get(h(1),'Xlim');
+    ylimits=get(h(1),'Ylim');
+    set(h(2),'Xlim',xlimits);
+    set(h(3),'Ylim',ylimits);
     for api=1:length(eventdata)
         if any(api==apidxes);
             apii=find(api==apidxes);

@@ -156,6 +156,8 @@ if handles.data.samples(selectedsamplenum).selectedID>1
         load([handles.data.dirs.eventdir,'sorted/',handles.data.IDs{handles.data.samples(selectedsamplenum).selectedID}],'eventdata');
     elseif ~isempty(dir([handles.data.dirs.eventdir,handles.data.IDs{handles.data.samples(selectedsamplenum).selectedID},'.mat']))
         load([handles.data.dirs.eventdir,handles.data.IDs{handles.data.samples(selectedsamplenum).selectedID}],'eventdata');
+        set(handles.checkbox3,'Value',0);
+        set(handles.checkbox5,'Value',0);
     else
         eventdata=[];
     end
@@ -780,17 +782,21 @@ for samplenum=1:length(handles.data.samples)
             end
        end
        markbrainstates=get(handles.checkbox8,'Value');
-       if markbrainstates==1 & isfield(handles.data.dirs,'brainstatedir') 
+       if markbrainstates==1 & isfield(handles.data.dirs,'brainstatedir')
            %%
            BrainStateProps=handles.data.BrainStateProps;
            BrainStateData=handles.data.samples(samplenum).BrainStateData;
            if ~isempty(fieldnames(BrainStateData))
-           ylimits=[min([handles.data.samples(samplenum).datatoplot.yvoltage]),max([handles.data.samples(samplenum).datatoplot.yvoltage])];
-           for statei=1:length(BrainStateData)
-               color=BrainStateProps.Statecolors_short{find(strcmp(BrainStateData(statei).name,BrainStateProps.Statevalues))};
-               rectangle('Position',[BrainStateData(statei).starttime,ylimits(1),BrainStateData(statei).endtime-BrainStateData(statei).starttime,diff(ylimits)],'EdgeColor',color,'LineWidth',2);
-               text(BrainStateData(statei).starttime,ylimits(1)+.95*diff(ylimits),BrainStateData(statei).name,'Color',color)
-           end
+               ylimits=[min([handles.data.samples(samplenum).datatoplot.yvoltage]),max([handles.data.samples(samplenum).datatoplot.yvoltage])];
+               for statei=1:length(BrainStateData)
+                   if isempty(find(strcmp(BrainStateData(statei).name,BrainStateProps.Statevalues)))
+                       color='k';
+                   else
+                       color=BrainStateProps.Statecolors_short{find(strcmp(BrainStateData(statei).name,BrainStateProps.Statevalues))};
+                   end
+                   rectangle('Position',[BrainStateData(statei).starttime,ylimits(1),BrainStateData(statei).endtime-BrainStateData(statei).starttime,diff(ylimits)],'EdgeColor',color,'LineWidth',2);
+                   text(BrainStateData(statei).starttime,ylimits(1)+.95*diff(ylimits),BrainStateData(statei).name,'Color',color)
+               end
            end
        end
        
@@ -970,10 +976,16 @@ set(handles.text1,'String',handles.data.samples(selectedsamplenum).changes)
 
     if ~isempty(handles.data.samples(selectedsamplenum).eventdata)
         stimapnum=length(find(strcmp({handles.data.samples(selectedsamplenum).eventdata.type},'AP') & [handles.data.samples(selectedsamplenum).eventdata.stimulated]));
-        persapnum=length(find(strcmp({handles.data.samples(selectedsamplenum).eventdata.type},'AP') & ~[handles.data.samples(selectedsamplenum).eventdata.stimulated]));
+        spontapnum=length(find(strcmp({handles.data.samples(selectedsamplenum).eventdata.type},'AP') & ~[handles.data.samples(selectedsamplenum).eventdata.stimulated]));
+        if isfield(handles.data.samples(selectedsamplenum).eventdata,'axonalAP')
+           stimaAPnum=length(find([handles.data.samples(selectedsamplenum).eventdata.axonalAP] & [handles.data.samples(selectedsamplenum).eventdata.stimulated]));
+           stimsAPnum=length(find([handles.data.samples(selectedsamplenum).eventdata.somaticAP] & [handles.data.samples(selectedsamplenum).eventdata.stimulated]));
+           spontaAPnum=length(find([handles.data.samples(selectedsamplenum).eventdata.axonalAP] & ~[handles.data.samples(selectedsamplenum).eventdata.stimulated]));
+           spontsAPnum=length(find([handles.data.samples(selectedsamplenum).eventdata.somaticAP] & ~[handles.data.samples(selectedsamplenum).eventdata.stimulated]));
+        end
     else
         stimapnum=0;
-        persapnum=0;
+        spontapnum=0;
     end
     
     if handles.data.samples(selectedsamplenum).selectedID-1 > 0 & isfield(handles.data.xlsdata,'drugdata') & ~isempty(handles.data.xlsdata(handles.data.samples(selectedsamplenum).selectedID-1).drugdata)
@@ -986,9 +998,12 @@ set(handles.text1,'String',handles.data.samples(selectedsamplenum).changes)
     else
         drugstring='   no drugs';
     end
-    set(handles.text5,'String',[handles.data.IDs{handles.data.samples(selectedsamplenum).selectedID},'  -  stimulated AP: ', num2str(stimapnum),'  spontaneous AP: ', num2str(persapnum),'       ',drugstring]);
-
-        xlsdata=handles.data.xlsdata;
+    if isfield(handles.data.samples(selectedsamplenum).eventdata,'axonalAP')
+        set(handles.text5,'String',[handles.data.IDs{handles.data.samples(selectedsamplenum).selectedID},'  -  stimulated: ',num2str(stimaAPnum),' aAP and ',num2str(stimsAPnum),' sAP','  spontaneous: ',num2str(spontaAPnum),' aAP and ',num2str(spontsAPnum),' sAP','       ',drugstring]);
+    else
+        set(handles.text5,'String',[handles.data.IDs{handles.data.samples(selectedsamplenum).selectedID},'  -  stimulated AP: ', num2str(stimapnum),'  spontaneous AP: ', num2str(spontapnum),'       ',drugstring]);
+    end
+    xlsdata=handles.data.xlsdata;
     fieldek=get(handles.popupmenu6,'String');
     neededfield=fieldek{get(handles.popupmenu6,'Value')};
     actualIDs=handles.data.actualIDs;
@@ -1560,31 +1575,8 @@ function checkbox3_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 if get(hObject,'Value')==true
-    samplenum=get(handles.popupmenu1,'Value');
-    button='No';
-    if isfield(handles.data.samples(samplenum).eventdata,'axonalAP')
-        button = questdlg('Do you want to rerun the aAP detection','aAP detection','Yes','No','Yes')
-    end
-    
-    if ~isfield(handles.data.samples(samplenum).eventdata,'axonalAP') | strcmp(button,'Yes')
-        
-        timeborders=[str2num(get(handles.edit4,'String')),str2num(get(handles.edit5,'String'))];
-        %     for samplenum=1:length(handles.data.samples)
-        if handles.data.samples(samplenum).loadedID-1>0 & samplenum==get(handles.popupmenu1,'Value');
-            valtozok.timeborders=timeborders;
-            [dataout]=aE_sort_sAP_aAP(handles.data.dirs,handles.data.xlsdata,handles.data.samples(samplenum).loadedID-1,valtozok);
-            %%
-            eventdata_GUI=eventdata;
-            eventdata=dataout.eventdata;
-            APwaves=dataout.APwaves;
-            save([handles.data.dirs.eventdir,'sorted/',handles.data.xlsdata(handles.data.samples(samplenum).loadedID-1).ID],'eventdata','APwaves');
-            eventdata=eventdata_GUI;
-            handles.data.samples(samplenum).eventdata=dataout.eventdata;
-        end
-        %     end
-        guidata(hObject, handles)
-    end
-    
+    handles=checkforaAPs(handles);
+    guidata(hObject, handles)
 end
 % Hint: get(hObject,'Value') returns toggle state of checkbox3
 
@@ -1736,7 +1728,34 @@ valtozok_fieldplot.timeafter=.5;
 valtozok_fieldplot.highlightaAP=1;
 valtozok_fieldplot.highlightaAP_timeback=.001;
 valtozok_fieldplot.highlightaAP_timeforward=.01;
-persistent_generatefigures_2017_fieldanal(dataout.FieldData,valtozok_fieldplot)
+
+if isfield(additionaldata,'BrainStateData')
+    statestodo=[unique({additionaldata.BrainStateData.name}),'All'];
+else
+    statestodo={'All'};
+end
+for statei=1:length(statestodo)
+    statename=statestodo{statei};
+    %%
+    FieldData=dataout.FieldData;
+    for i=1:length(FieldData)
+        FieldData(i).medicV=median(FieldData(i).ic);
+        idx=find(FieldData(i).troughtime>[additionaldata.BrainStateData.starttime] & FieldData(i).troughtime<[additionaldata.BrainStateData.endtime]);
+        if ~isempty(idx)
+            FieldData(i).brainstatename=additionaldata.BrainStateData(idx).name;
+        else
+            FieldData(i).brainstatename='none';
+        end
+    end
+    if ~strcmp(statename,'All')
+        FieldData=FieldData(strcmp({FieldData.brainstatename},statename));
+    end
+    valtozok_fieldplot.figurenum=10+statei;
+    persistent_generatefigures_2017_fieldanal(dataout.FieldData,valtozok_fieldplot)
+    subplot(4,1,1);
+    title(statename)
+end
+
 
 
 
@@ -1775,26 +1794,62 @@ function checkbox5_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox5
 if get(hObject,'Value')==true
-    samplenum=get(handles.popupmenu1,'Value');
-    button=2;
+    handles=checkforaAPs(handles);
+    guidata(hObject, handles)
+end
+
+
+
+% 
+% if get(hObject,'Value')==true
+%     samplenum=get(handles.popupmenu1,'Value');
+%     button=2;
+%     if isfield(handles.data.samples(samplenum).eventdata,'axonalAP')
+%         button = questdlg('Do you want to rerun the aAP detection','aAP detection','Yes','No','Yes');
+%     end
+%     
+%     if ~isfield(handles.data.samples(samplenum).eventdata,'axonalAP') | button==1
+%         
+%         timeborders=[str2num(get(handles.edit4,'String')),str2num(get(handles.edit5,'String'))];
+%         %     for samplenum=1:length(handles.data.samples)
+%         if handles.data.samples(samplenum).loadedID-1>0 & samplenum==get(handles.popupmenu1,'Value');
+%             valtozok.timeborders=timeborders;
+%             [dataout]=aE_sort_sAP_aAP(handles.data.dirs,handles.data.xlsdata,handles.data.samples(samplenum).loadedID-1,valtozok);
+%             handles.data.samples(samplenum).eventdata=dataout.eventdata;
+%         end
+%         %     end
+%         guidata(hObject, handles)
+%     end
+%     
+% end
+
+function handles=checkforaAPs(handles)
+samplenum=get(handles.popupmenu1,'Value');
+    button='No';
     if isfield(handles.data.samples(samplenum).eventdata,'axonalAP')
         button = questdlg('Do you want to rerun the aAP detection','aAP detection','Yes','No','Yes');
     end
     
-    if ~isfield(handles.data.samples(samplenum).eventdata,'axonalAP') | button==1
+    if ~isfield(handles.data.samples(samplenum).eventdata,'axonalAP') | strcmp(button,'Yes')
         
         timeborders=[str2num(get(handles.edit4,'String')),str2num(get(handles.edit5,'String'))];
         %     for samplenum=1:length(handles.data.samples)
         if handles.data.samples(samplenum).loadedID-1>0 & samplenum==get(handles.popupmenu1,'Value');
             valtozok.timeborders=timeborders;
             [dataout]=aE_sort_sAP_aAP(handles.data.dirs,handles.data.xlsdata,handles.data.samples(samplenum).loadedID-1,valtozok);
+            %%
+%             eventdata_GUI=eventdata;
+            eventdata=dataout.eventdata;
+            APwaves=dataout.APwaves;
+            save([handles.data.dirs.eventdir,'sorted/',handles.data.xlsdata(handles.data.samples(samplenum).loadedID-1).ID],'eventdata','APwaves');
+%             eventdata=eventdata_GUI;
             handles.data.samples(samplenum).eventdata=dataout.eventdata;
         end
         %     end
-        guidata(hObject, handles)
+        
     end
-    
-end
+
+
 
 % --- Executes on button press in checkbox6.
 function checkbox6_Callback(hObject, eventdata, handles)

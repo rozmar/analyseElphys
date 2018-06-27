@@ -353,15 +353,17 @@ if isfield(handles.data.ROIdata,'PCA')
     selectedROI=get(handles.popupmenu1,'Value');
     selectedvideo=get(handles.popupmenu3,'Value');
     selectedPC=get(handles.listbox1,'Value')-1;
+    if isfield(handles.data.ROIdata(selectedROI).PCA,'uniquePC')
     axes(handles.axes2);
     cla
-    if selectedPC==0
+    if selectedPC==0 
          plot(handles.data.ROIdata(selectedROI).PCA(selectedvideo).uniquePC)
 %         disp('a')
     else
         plot(handles.data.ROIdata(selectedROI).PCA(selectedvideo).PC(:,selectedPC))
     end
     handles.axes2=gca;
+    end
 end
 
 

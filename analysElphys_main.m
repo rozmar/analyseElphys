@@ -475,14 +475,17 @@ files=dir([dirs.videodir,'eye/']);
 files([files.isdir])=[];
 for filei=1:length(files)
     
-    load([dirs.videodir,'ROIs/',files(filei).name]);
-    neededroi=find(strcmp({ROIdata.ROIname},'Eye'));
-    stats=regionprops(ROIdata(neededroi).mask,'MajorAxisLength','MinorAxisLength');
-    alldata(filei).MajorAxisLength=stats.MajorAxisLength;
-    alldata(filei).MinorAxisLength=stats.MinorAxisLength;
+%     load([dirs.videodir,'ROIs/',files(filei).name]);
+%     neededroi=find(strcmp({ROIdata.ROIname},'Eye'));
+%     stats=regionprops(ROIdata(neededroi).mask,'MajorAxisLength','MinorAxisLength');
+%     alldata(filei).MajorAxisLength=stats.MajorAxisLength;
+%     alldata(filei).MinorAxisLength=stats.MinorAxisLength;
     
     load([dirs.videodir,'eye/',files(filei).name]);
-    alldata(filei).pupildiameter=pupildata.diameter'/alldata(filei).MajorAxisLength;
+    
+%     alldata(filei).pupildiameter=pupildata.diameter'/alldata(filei).MajorAxisLength;
+    
+    alldata(filei).pupildiameter=pupildata.diameter';
     alldata(filei).pupildiameter=moving(alldata(filei).pupildiameter,2)';
 end
 sorteddiameter=sort([alldata.pupildiameter]);
