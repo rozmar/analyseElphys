@@ -342,11 +342,11 @@ vlcmatlabratio=info(2)/maxframenum;
 vlc_wrapper('frame', vp,round(framenum*vlcmatlabratio));
 %%
 vlc_wrapper('play', vp, 1);
-% while ~isempty(vlc_wrapper('frame', vp))& vlc_wrapper('frame', vp)>0 &  vlc_wrapper('frame', vp)<=framenumend*vlcmatlabratio 
-%     pause(1)
-%     disp(['VLC frame: ' num2str(vlc_wrapper('frame', vp)), ' real frame:',num2str(vlc_wrapper('frame', vp)/vlcmatlabratio)])
-% end
-% vlc_wrapper cleanup
+while ~isempty(vlc_wrapper('frame', vp))& vlc_wrapper('frame', vp)>0 &  vlc_wrapper('frame', vp)<=framenumend*vlcmatlabratio 
+    pause(1)
+    disp(['VLC frame: ' num2str(vlc_wrapper('frame', vp)), ' real frame:',num2str(vlc_wrapper('frame', vp)/vlcmatlabratio)])
+end
+vlc_wrapper cleanup
 %%
 %%
 % disp('a')
