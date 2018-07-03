@@ -126,7 +126,11 @@ EventTimesRelative=struct;
 progressbar('analyzing field data')
 for fieldsweepnum= 1: length(field.bridgeddata)
     progressbar(fieldsweepnum/ length(field.bridgeddata));
-    if isempty(timeborders) | (field.bridgeddata(fieldsweepnum).realtime>=timeborders(1) & field.bridgeddata(fieldsweepnum).realtime<=timeborders(2))
+    hossz=length(field.bridgeddata(fieldsweepnum).y);
+    si=field.bridgeddata(fieldsweepnum).si;
+    sweepstart=field.bridgeddata(fieldsweepnum).realtime;
+    sweepend=field.bridgeddata(fieldsweepnum).realtime+hossz*si;
+    if isempty(timeborders) | (sweepstart>=timeborders(1) & sweepstart<=timeborders(2)) | (sweepend>=timeborders(1) & sweepend<=timeborders(2)) | (sweepstart<=timeborders(1) & sweepend>=timeborders(2))
     si=field.bridgeddata(fieldsweepnum).si;
     [b,a]=butter(1,cutofffreq/(1/field.bridgeddata(fieldsweepnum).si)/2,'bandpass');
     [bb,aa]=butter(1,500/(1/field.bridgeddata(fieldsweepnum).si)/2,'low');
@@ -322,8 +326,10 @@ FieldDataoriginal=FieldData;
 
 dataout.FieldData=FieldData;
 dataout.bridgeddata=ic.bridgeddata;
+
 %% plotting
 %%
+
 if isfield(additionaldata,'BrainStateData')
     statestodo=[unique({additionaldata.BrainStateData.name}),'All'];
 else
@@ -336,18 +342,26 @@ for statei=1:length(statestodo)
     FieldData=FieldDataoriginal;
     for i=1:length(FieldData)
         FieldData(i).medicV=median(FieldData(i).ic);
-        idx=find(FieldData(i).troughtime>[additionaldata.BrainStateData.starttime] & FieldData(i).troughtime<[additionaldata.BrainStateData.endtime]);
-        if ~isempty(idx)
-            FieldData(i).brainstatename=additionaldata.BrainStateData(idx).name;
-        else
-            FieldData(i).brainstatename='none';
+        if isfield(additionaldata,'BrainStateData')
+            idx=find(FieldData(i).troughtime>[additionaldata.BrainStateData.starttime] & FieldData(i).troughtime<[additionaldata.BrainStateData.endtime]);
+            if ~isempty(idx)
+                FieldData(i).brainstatename=additionaldata.BrainStateData(idx).name;
+            else
+                FieldData(i).brainstatename='none';
+            end
         end
     end
     if ~strcmp(statename,'All')
-        FieldData=FieldData(strcmp({FieldData.brainstatename},statename));
+        idxnow=strcmp({FieldData.brainstatename},statename);
+    elseif length(statestodo)==1
+        idxnow=ones(size(FieldData));
+    else
+        idxnow=zeros(size(FieldData));
     end
     %%
-    FieldData([FieldData.eventnum]==0)=[];
+    FieldData=FieldData(find(idxnow));
+    %%
+    %     FieldData([FieldData.eventnum]==0)=[];
     timestep=.05;
     bins=[-timebefore:timestep:timeafter];
     bins_corr=[-timebefore_corr:timestep:timeafter_corr];
@@ -358,17 +372,27 @@ for statei=1:length(statestodo)
         needed=FieldData(i).troughtime-timewindowforfieldamplitude/2<=[FieldData.troughtime] & FieldData(i).troughtime+timewindowforfieldamplitude/2>=[FieldData.troughtime];
         FieldData(i).medianamplitude=median([FieldData(needed).maxamplitude]);
     end
-    dataout.FieldData=FieldData;
-    needed=[FieldData.maxamplitude]>=[FieldData.medianamplitude]/3;%&[FieldData.maxamplitude]<=[FieldData.medianamplitude]*5;% & [FieldData.apnum]>0 ;
-    FieldData=FieldData(needed);
-    periodlength=nanmean([NaN,diff([FieldData.troughtime]);diff([FieldData.troughtime,NaN])]);
-    needed=periodlength>.2 & periodlength<2;
-    FieldData=FieldData(needed);
+    if length(FieldData)>0
+        if statei==1
+            dataout=rmfield(dataout,'FieldData');
+            dataout.FieldData(find(idxnow))=FieldData;
+        else
+            dataout.FieldData(find(idxnow))=FieldData;
+        end
+    end
+    
     % needed=[FieldData.medicV]<-.055;
     % FieldData=FieldData(needed);
     % ido=[FieldData.time];%bsxfun(@(A,B) A+B,[FieldData.time],[FieldData.troughtime]);
     %%
     if plotthestuff==1
+        
+        needed=[FieldData.maxamplitude]>=[FieldData.medianamplitude]/3;%&[FieldData.maxamplitude]<=[FieldData.medianamplitude]*5;% & [FieldData.apnum]>0 ;
+        FieldData=FieldData(needed);
+        periodlength=nanmean([NaN,diff([FieldData.troughtime]);diff([FieldData.troughtime,NaN])]);
+        needed=periodlength>.2 & periodlength<2;
+        FieldData=FieldData(needed);
+        
         figure(1)
         clf
         plot([FieldData.troughtime],[FieldData.maxamplitude],'k-')

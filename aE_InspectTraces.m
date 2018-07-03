@@ -25,7 +25,7 @@ function varargout = aE_InspectTraces(varargin)
 
 % Edit the above text to modify the response to help aE_InspectTraces
 
-% Last Modified by GUIDE v2.5 21-Jun-2018 11:07:56
+% Last Modified by GUIDE v2.5 01-Jul-2018 17:04:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -306,23 +306,48 @@ starttime=str2num(get(handles.edit4,'String'));
 endtime=str2num(get(handles.edit5,'String'));
 neededidx=find(handles.data.samples(selectedsamplenum).movementdata.time>=starttime & handles.data.samples(selectedsamplenum).movementdata.time<=endtime);
 movie=handles.data.samples(selectedsamplenum).movementdata.video(:,:,neededidx);
-implay(movie,100);
+% implay(movie,100);
 
-%%
+%
 vlc_wrapper cleanup
 
 movieidx=handles.data.samples(selectedsamplenum).movementdata.videoidx(neededidx(1));
 moviename=handles.data.samples(selectedsamplenum).movementdata.videofname{movieidx};
 framenum=handles.data.samples(selectedsamplenum).movementdata.framenumber(neededidx(1));
+endmovieidx=handles.data.samples(selectedsamplenum).movementdata.videoidx(neededidx(end));
+%%
+nextmoviestart=find(handles.data.samples(selectedsamplenum).movementdata.videoidx>movieidx,1,'first');
+if isempty(nextmoviestart)
+    maxframenum=handles.data.samples(selectedsamplenum).movementdata.framenumber(end);
+else
+    maxframenum=handles.data.samples(selectedsamplenum).movementdata.framenumber(nextmoviestart-1);
+end
+if movieidx==endmovieidx
+    framenumend=handles.data.samples(selectedsamplenum).movementdata.framenumber(neededidx(end));
+else
+    framenumend=maxframenum;
+end
+
+%%
 setupname=handles.data.xlsdata(handles.data.samples(selectedsamplenum).selectedID-1).setup;
 locations=marcicucca_locations;
 moviefiletoplay=[locations.tgtardir,'VIDEOdata/',setupname,'/',moviename];
 a=dir(moviefiletoplay);
 vh = vlc_wrapper('init');
 vp = vlc_wrapper('open', vh, moviefiletoplay);
-vlc_wrapper('frame', vp,framenum);
-vlc_wrapper('play', vp, 1.0);
+info=vlc_wrapper('info', vp);
+vlcmatlabratio=info(2)/maxframenum;
 
+%%
+vlc_wrapper('frame', vp,round(framenum*vlcmatlabratio));
+%%
+vlc_wrapper('play', vp, 1);
+while ~isempty(vlc_wrapper('frame', vp))& vlc_wrapper('frame', vp)>0 &  vlc_wrapper('frame', vp)<=framenumend*vlcmatlabratio 
+    pause(1)
+    disp(['VLC frame: ' num2str(vlc_wrapper('frame', vp)), ' real frame:',num2str(vlc_wrapper('frame', vp)/vlcmatlabratio)])
+end
+vlc_wrapper cleanup
+%%
 %%
 % disp('a')
 
@@ -412,7 +437,7 @@ for i=1:length(markers)
         data.samples(i).loadedID=1;
         data.samples(i).lightdata=[];
         data.samples(i).cutoffreq=0;
-        data.samples(i).filterdeg=3;
+        data.samples(i).filterdeg=1;
         data.samples(i).plotdetails=struct;
 %         for j=1:length(data.fieldnevek)
 %             data.samples(i).neededwavespervariable{j}=1:length(data.WAVES);
@@ -476,37 +501,9 @@ for samplei=1:length(handles.data.samples)
         if isfield(handles.data.dirs,'videodir')
             fname=handles.data.xlsdata(handles.data.samples(samplei).selectedID-1).HEKAfname;
             %%
-           medfiltlength=5;
+%            medfiltlength=5;
            
-            % pupildata
-            a=dir([handles.data.dirs.videodir,'eye/',fname,'.mat']);
-            if ~isempty(a)
-                load([handles.data.dirs.videodir,'eye/',fname]);
-                handles.data.samples(samplei).pupildata=pupildata;
-                diameter=handles.data.samples(samplei).pupildata.diameter;
-                si=mode(diff(pupildata.time));
-                if si==0
-                    si=1/15;
-                end
-                diameter=moving(diameter,2);
-                diameter=medfilt1(diameter,round(10/si));
-                
-                a=dir([handles.data.dirs.videodir,'percentiles.mat']);
-                if ~isempty(a)
-                    load([handles.data.dirs.videodir,'percentiles.mat'])
-                    minval=videopercentiles.pupilpercentiles(5);
-                    maxval=videopercentiles.pupilpercentiles(95);
-                else
-                    pupildatasorted=sort(diameter);
-                    minval=pupildatasorted(round(length(pupildatasorted)*.05));
-                    maxval=pupildatasorted(round(length(pupildatasorted)*.95));
-                end
-                diameter=(handles.data.samples(samplei).pupildata.diameter-minval)/(maxval-minval);
-                diameter(diameter>1)=1;
-                diameter(diameter<0)=0;
-                
-                handles.data.samples(samplei).pupildata.diameter=diameter;
-            end
+            
             %movementdata
             a=dir([handles.data.dirs.videodir,'movement/',fname,'.mat']);
             handles.data.samples(samplei).movementnames={};
@@ -559,7 +556,7 @@ for samplei=1:length(handles.data.samples)
             if ~isempty(a)
                 load([handles.data.dirs.videodir,'ROIs/',fname,'.mat']);
                 for ROIi=1:length(ROIdata)
-                    if isfield(ROIdata(ROIi).PCA,'bestPC')
+                    if isfield(ROIdata,'PCA') & isfield(ROIdata(ROIi).PCA,'bestPC')
                         ROIname=ROIdata(ROIi).ROIname;
                         movement=[];
                         time=[];
@@ -605,6 +602,42 @@ for samplei=1:length(handles.data.samples)
                         end
                     end
                 end
+                
+                % pupildata
+            a=dir([handles.data.dirs.videodir,'eye/',fname,'.mat']);
+            if ~isempty(a)
+                load([handles.data.dirs.videodir,'eye/',fname]);
+                handles.data.samples(samplei).pupildata=pupildata;
+                diameter=handles.data.samples(samplei).pupildata.diameter;
+                si=mode(diff(pupildata.time));
+                if si==0
+                    si=1/15;
+                end
+                diameter=moving(diameter,2);
+                diameter=medfilt1(diameter,round(10/si));
+                
+                a=dir([handles.data.dirs.videodir,'percentiles.mat']);
+                if ~isempty(a)
+                    load([handles.data.dirs.videodir,'percentiles.mat'])
+                    if exist('ROIdata','var') & any(strcmp({ROIdata.ROIname},'Eye'))
+                        stats=regionprops(ROIdata(find(strcmp({ROIdata.ROIname},'Eye'))).mask,'MajorAxisLength');
+                        minval=videopercentiles.pupilpercentiles(5)*stats.MajorAxisLength;
+                        maxval=videopercentiles.pupilpercentiles(95)*stats.MajorAxisLength;
+                    else
+                        minval=videopercentiles.pupilpercentiles(5);
+                        maxval=videopercentiles.pupilpercentiles(95);
+                    end
+                else
+                    pupildatasorted=sort(diameter);
+                    minval=pupildatasorted(round(length(pupildatasorted)*.05));
+                    maxval=pupildatasorted(round(length(pupildatasorted)*.95));
+                end
+                diameter=(handles.data.samples(samplei).pupildata.diameter-minval)/(maxval-minval);
+                diameter(diameter>1)=1;
+                diameter(diameter<0)=0;
+                
+                handles.data.samples(samplei).pupildata.diameter=diameter;
+            end
 
             end
             set(handles.popupmenu8,'Value',1);
@@ -925,6 +958,27 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+3 & ~isemp
 %     disp('muahah')
     axis tight
 end
+
+markbrainstates=get(handles.checkbox8,'Value');
+if markbrainstates==1 & isfield(handles.data.dirs,'brainstatedir')
+    %%
+    BrainStateProps=handles.data.BrainStateProps;
+    BrainStateData=handles.data.samples(samplenum).BrainStateData;
+    if ~isempty(fieldnames(BrainStateData))
+%         ylimits=[min([handles.data.samples(samplenum).datatoplot.yvoltage]),max([handles.data.samples(samplenum).datatoplot.yvoltage])];
+        ylimits=get(gca,'Ylim');
+        for statei=1:length(BrainStateData)
+            if isempty(find(strcmp(BrainStateData(statei).name,BrainStateProps.Statevalues)))
+                color='k';
+            else
+                color=BrainStateProps.Statecolors_short{find(strcmp(BrainStateData(statei).name,BrainStateProps.Statevalues))};
+            end
+            rectangle('Position',[BrainStateData(statei).starttime,ylimits(1),BrainStateData(statei).endtime-BrainStateData(statei).starttime,diff(ylimits)],'EdgeColor',color,'LineWidth',2);
+            text(BrainStateData(statei).starttime,ylimits(1)+.95*diff(ylimits),BrainStateData(statei).name,'Color',color)
+        end
+    end
+end
+
 %         plot([handles.data.samples(samplenum).datatoplot.x],[handles.data.samples(samplenum).datatoplot.ycurrent],marker(1),'LineWidth',2)
 handles.(axesname)=gca;
 
@@ -1717,17 +1771,19 @@ icxlsnum=find(strcmp(ID,{xlsdata.ID}));
 timeborders=[str2num(get(handles.edit4,'String')),str2num(get(handles.edit5,'String'))];
 additionaldata=struct;
 additionaldata.eventdata=handles.data.samples(selectedsamplenum).eventdata;
-additionaldata.BrainStateData=handles.data.samples(selectedsamplenum).BrainStateData;
+if isfield(handles.data.samples,'BrainStateData')
+    additionaldata.BrainStateData=handles.data.samples(selectedsamplenum).BrainStateData;
+end
 
-dataout=aE_ic_field_analysis(dirs,xlsdata,icxlsnum,timeborders,'trough',additionaldata);
+dataout=aE_ic_field_analysis(dirs,xlsdata,icxlsnum,timeborders,'trough',additionaldata); %peak
 valtozok_fieldplot.timebefore=.5;
-valtozok_fieldplot.timestep=.02;
+valtozok_fieldplot.timestep=.05;
 valtozok_fieldplot.timeafter=.5;
 % valtozok_fieldplot.ICylim
 % valtozok_fieldplot.Fieldylim
 valtozok_fieldplot.highlightaAP=1;
-valtozok_fieldplot.highlightaAP_timeback=.001;
-valtozok_fieldplot.highlightaAP_timeforward=.01;
+valtozok_fieldplot.highlightaAP_timeback=.002;
+valtozok_fieldplot.highlightaAP_timeforward=.02;
 
 if isfield(additionaldata,'BrainStateData')
     statestodo=[unique({additionaldata.BrainStateData.name}),'All'];
@@ -1738,20 +1794,11 @@ for statei=1:length(statestodo)
     statename=statestodo{statei};
     %%
     FieldData=dataout.FieldData;
-    for i=1:length(FieldData)
-        FieldData(i).medicV=median(FieldData(i).ic);
-        idx=find(FieldData(i).troughtime>[additionaldata.BrainStateData.starttime] & FieldData(i).troughtime<[additionaldata.BrainStateData.endtime]);
-        if ~isempty(idx)
-            FieldData(i).brainstatename=additionaldata.BrainStateData(idx).name;
-        else
-            FieldData(i).brainstatename='none';
-        end
-    end
     if ~strcmp(statename,'All')
         FieldData=FieldData(strcmp({FieldData.brainstatename},statename));
     end
     valtozok_fieldplot.figurenum=10+statei;
-    persistent_generatefigures_2017_fieldanal(dataout.FieldData,valtozok_fieldplot)
+    persistent_generatefigures_2017_fieldanal(FieldData,valtozok_fieldplot)
     subplot(4,1,1);
     title(statename)
 end
@@ -2114,3 +2161,21 @@ function popupmenu8_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in pushbutton11.
+function pushbutton11_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton11 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+valtozok=struct;
+valtozok.movingvindowsize=5;
+valtozok.movingvindowstep=.5; %seconds for downsampling and median filtering
+valtozok.timeborders=[str2num(get(handles.edit4,'String')),str2num(get(handles.edit5,'String'))];
+valtozok.frequencyrange=[1 4];
+valtozok.PSDonfield=true;
+valtozok.minsweeplength=valtozok.movingvindowsize/2;
+
+selectedsamplenum=get(handles.popupmenu1,'Value');
+
+aE_V0_vs_PSD(handles.data.dirs,handles.data.xlsdata,handles.data.samples(selectedsamplenum).selectedID-1,valtozok)

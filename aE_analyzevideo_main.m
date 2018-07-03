@@ -79,6 +79,7 @@ if isempty(a)|valtozok.overwrite==1
         
         %%
         nFrames = movieobj.NumberOfFrames;
+        neededframes(neededframes>nFrames)=[];
         dummypic=rgb2gray(read(movieobj, 1));
         dummypic=imresize(dummypic,.1);
         vidHeight=size(dummypic,1);
