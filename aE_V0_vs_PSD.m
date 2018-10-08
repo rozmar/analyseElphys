@@ -50,7 +50,8 @@ for sweepi=1:length(bridgeddata)
     si=bridgeddata(sweepi).si;
     sweepstart=bridgeddata(sweepi).realtime;
     sweepend=bridgeddata(sweepi).realtime+hossz*si;
-    if si*hossz>valtozok.minsweeplength & (isempty(valtozok.timeborders) | (sweepstart>=valtozok.timeborders(1) & sweepstart<=valtozok.timeborders(2)) | (sweepend>=valtozok.timeborders(1) & sweepend<=valtozok.timeborders(2)) | (sweepstart<=valtozok.timeborders(1) & sweepend>=valtozok.timeborders(2)))
+%     fieldsweepnum=find([PSDdata.realtime]==bridgeddata(sweepi).realtime);
+    if si*hossz>valtozok.minsweeplength & (isempty(valtozok.timeborders) | (sweepstart>=valtozok.timeborders(1) & sweepstart<=valtozok.timeborders(2)) | (sweepend>=valtozok.timeborders(1) & sweepend<=valtozok.timeborders(2)) | (sweepstart<=valtozok.timeborders(1) & sweepend>=valtozok.timeborders(2)))% &~isempty(fieldsweepnum)
         %%
         movingvindowstep=round(valtozok.movingvindowstep/si);
         movingvindowsize=round(valtozok.movingvindowsize/si);

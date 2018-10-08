@@ -25,7 +25,7 @@ function varargout = aE_InspectTraces(varargin)
 
 % Edit the above text to modify the response to help aE_InspectTraces
 
-% Last Modified by GUIDE v2.5 01-Jul-2018 17:04:25
+% Last Modified by GUIDE v2.5 03-Oct-2018 14:05:26
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -461,8 +461,8 @@ if ischar(melyiket)
     
     %%
     set(handles.popupmenu3,'String',handles.data.fieldnevek);
-    set(handles.popupmenu4,'String',[{'stiumulus'},{handles.data.samples.marker},{'movement and pupil diameter'},{'PSD of field'}]);
-    set(handles.popupmenu7,'String',[{'stiumulus'},{handles.data.samples.marker},{'movement and pupil diameter'},{'PSD of field'}]);
+    set(handles.popupmenu4,'String',[{'stiumulus'},{handles.data.samples.marker},{'movement and pupil diameter'},{'PSD of field'},{'Behaviour'},{'Breathing'}]);
+    set(handles.popupmenu7,'String',[{'stiumulus'},{handles.data.samples.marker},{'movement and pupil diameter'},{'PSD of field'},{'Behaviour'},{'Breathing'}]);
     set(handles.slider1,'Min',0);
     set(handles.slider1,'Max',1);
     set(handles.slider2,'Min',0);
@@ -498,17 +498,33 @@ for samplei=1:length(handles.data.samples)
         load([handles.data.dirs.bridgeddir,handles.data.IDs{handles.data.samples(samplei).selectedID}],'bridgeddata');
         handles.data.samples(samplei).bridgeddata=bridgeddata;
         handles.data.samples(samplei).loadedID=handles.data.samples(samplei).selectedID;
+        xlsnum=handles.data.samples(samplei).selectedID-1;
+        videotimeoffset=handles.data.xlsdata(xlsnum).Video_time_offset;
+        %%
+        if ischar(videotimeoffset)
+            videotimeoffset=0;
+            calculatetimeoffset=true;
+        else
+            calculatetimeoffset=false;
+        end
+        %%
         if isfield(handles.data.dirs,'videodir')
             fname=handles.data.xlsdata(handles.data.samples(samplei).selectedID-1).HEKAfname;
-            %%
+
 %            medfiltlength=5;
            
             
             %movementdata
             a=dir([handles.data.dirs.videodir,'movement/',fname,'.mat']);
             handles.data.samples(samplei).movementnames={};
+            %%
             if ~isempty(a)
                 load([handles.data.dirs.videodir,'movement/',fname,'.mat']);
+                if isfield(videodata,'time_behaviour')
+                    exportbehaviour=true;
+                else
+                    exportbehaviour=false;
+                end
                 %%
                 movement=[];
                 time=[];
@@ -516,6 +532,13 @@ for samplei=1:length(handles.data.samples)
                 videofname={};
                 framenumber=[];
                 videoidx=[];
+                
+                time_behaviour=[];
+                tonetype=[];
+                sound=[];
+                lick=[];
+                water=[];
+                trigger=[];
                 for i=1:length(videodata)
                     video=cat(3,video,rawvideo(i).vid);
                     framenumber=[framenumber;[1:length(videodata(i).movement_selected)]'];
@@ -526,7 +549,39 @@ for samplei=1:length(handles.data.samples)
                     movement=movement(ix);
                     video=video(:,:,ix);
                     videofname{i}=[videodata(i).timestamp,'.avi'];
+                    if exportbehaviour==true
+                        time_behaviour=[time_behaviour;videodata(i).time_behaviour];
+                        tonetype=[tonetype;videodata(i).tonetype];
+                        sound=[sound;videodata(i).sound];
+                        lick=[lick;videodata(i).lick];
+                        water=[water;videodata(i).water];
+                        trigger=[trigger;videodata(i).trigger];
+                        [time_behaviour,ix]=sort(time_behaviour);
+                        tonetype=tonetype(ix);
+                        sound=sound(ix);
+                        lick=lick(ix);
+                        water=water(ix);
+                        trigger=trigger(ix);
+                    end
+                    
                 end
+                
+                if calculatetimeoffset == true
+                    %%
+                    trigtimes=time_behaviour(find(diff(trigger)>0));
+                    sweeptimes=[handles.data.samples(samplei).bridgeddata.realtime];
+                    alldistances=[];
+                    for trigi = 1:length(trigtimes)
+                        distances=sweeptimes-trigtimes(trigi);
+                        alldistances=[alldistances,distances];
+                    end
+                    alldistances=sort(alldistances);
+                    [values,bins]=hist(alldistances,[-600:.1:600]);
+                    [~,maxidx]=max(values(2:length(values)-1));
+                    videotimeoffset=bins(maxidx+1);
+                end
+                
+                
                 si=mode(diff(time));
                 movement=moving(movement,2);
                 movement=medfilt1(movement,round(.5/si));
@@ -544,12 +599,24 @@ for samplei=1:length(handles.data.samples)
                 movement(movement>1)=1;
                 movement(movement<0)=0;
                 handles.data.samples(samplei).movementdata.movement=movement+1;
-                handles.data.samples(samplei).movementdata.time=time;
+                handles.data.samples(samplei).movementdata.time=time+videotimeoffset;
+                
+                if exportbehaviour==true
+                    handles.data.samples(samplei).movementdata.time_behaviour=time_behaviour+videotimeoffset;
+                    handles.data.samples(samplei).movementdata.tonetype=tonetype;
+                    handles.data.samples(samplei).movementdata.sound=sound;
+                    handles.data.samples(samplei).movementdata.lick=lick;
+                    handles.data.samples(samplei).movementdata.water=water;
+                    handles.data.samples(samplei).movementdata.trigger=trigger;
+                end
                 handles.data.samples(samplei).movementdata.video=video;
                 handles.data.samples(samplei).movementdata.videofname=videofname;
                 handles.data.samples(samplei).movementdata.videoidx=videoidx;
                 handles.data.samples(samplei).movementdata.framenumber=framenumber;
                 handles.data.samples(samplei).movementnames={'movement'};
+                
+                
+                    
             end
             %%
             a=dir([handles.data.dirs.videodir,'ROIs/',fname,'.mat']);
@@ -607,6 +674,7 @@ for samplei=1:length(handles.data.samples)
             a=dir([handles.data.dirs.videodir,'eye/',fname,'.mat']);
             if ~isempty(a)
                 load([handles.data.dirs.videodir,'eye/',fname]);
+                pupildata.time=pupildata.time+videotimeoffset;
                 handles.data.samples(samplei).pupildata=pupildata;
                 diameter=handles.data.samples(samplei).pupildata.diameter;
                 si=mode(diff(pupildata.time));
@@ -683,8 +751,44 @@ for samplei=1:length(handles.data.samples)
             if isempty(a)
                 handles.data.samples(samplei).BrainStateData=struct;
             else
-                load([handles.data.dirs.brainstatedir,ID],'BrainStateData');
-                handles.data.samples(samplei).BrainStateData=BrainStateData;
+                temp=load([handles.data.dirs.brainstatedir,ID],'BrainStateData');
+                handles.data.samples(samplei).BrainStateData=temp.BrainStateData;
+                if isfield(temp,'BrainStateRules')
+                    handles.data.samples(samplei).BrainStateRules=temp.BrainStateRules;
+                else
+                    handles.data.samples(samplei).BrainStateRules=struct;
+                end
+                
+            end
+        end
+        %%
+        if isfield(handles.data.dirs,'breathingdir')
+            xlsnum=handles.data.samples(samplei).selectedID-1;
+            fieldxlsnum=find(strcmp(handles.data.xlsdata(xlsnum).HEKAfname,{handles.data.xlsdata.HEKAfname}) & [handles.data.xlsdata.field]==1);
+            if ~isempty(fieldxlsnum)
+                a=dir([handles.data.dirs.breathingdir,handles.data.xlsdata(fieldxlsnum).ID,'.mat']);
+                if ~isempty(a)
+                    load([handles.data.dirs.breathingdir,handles.data.xlsdata(fieldxlsnum).ID,'.mat']);
+                    %% filter and downsample breathing
+                    breathing=struct;
+                    breathing.y=[];
+                    breathing.time=[];
+                    for sweepi=1:length(rawdata)
+                        y=rawdata(sweepi).y;
+                        si=rawdata(sweepi).si;
+                        [b,a]=butter(1,[.5,8]/(1/si)/2,'bandpass'); % data is filtered between 0.5 and 8 Hz
+                        y=filtfilt(b,a,y);
+                        time=[si:si:si*length(y)]-si+rawdata(sweepi).realtime;
+                        downsamplenum=round(.001/si); %1kHz sampling rate is enough
+                        y=downsample(y,downsamplenum);
+                        time=downsample(time,downsamplenum);
+                        breathing.y=[breathing.y,y];
+                        breathing.time=[breathing.time,time];
+
+                    end
+                    handles.data.samples(samplei).BreathingData=breathing;
+                end
+                
             end
         end
     end
@@ -720,10 +824,11 @@ set(handles.listbox1,'String',reducednames);
 set(handles.text1,'String',handles.data.samples(selectedsamplenum).changes)
 
 axes(handles.axes1)
+%%
 cla 
 hold on
 handles.axes1=gca;
-
+%%
 axes(handles.axes2)
 cla 
 hold on
@@ -895,9 +1000,12 @@ handles.axes1=gca;
 
 linkaxes([handles.axes1,handles.axes2, handles.axes3],'x');
 java.lang.System.gc()
+hObject=findall(gcf,'Name','aE_InspectTraces');
+guidata(hObject,handles);
 
 function plotlowerpanels(marker,samplenum,starttime,endtime,neededwaves,axesname,popupname,handles)
 axes(handles.(axesname))
+cla
 if get(handles.(popupname),'Value')-1==0
     for sweepi=1:length(neededwaves)
         ettol=find(handles.data.samples(samplenum).datatoplot(sweepi).x>starttime,1,'first');
@@ -955,8 +1063,31 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+3 & ~isemp
         plot(handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).x(ettol:eddig),handles.data.samples(samplenum).PSDdatatoplot.trace(sweepi).y(ettol:eddig)*szorzo/3+2*szorzo/3,'Color',[0.5 .5 .5],'LineWidth',.5)
         
     end
-%     disp('muahah')
+    %     disp('muahah')
     axis tight
+elseif get(handles.(popupname),'Value')==length(handles.data.samples)+4 & isfield(handles.data.samples(samplenum).movementdata,'time_behaviour')
+    %%
+    hold on
+    ettol=find(handles.data.samples(samplenum).movementdata.time_behaviour>starttime,1,'first');
+    eddig=find(handles.data.samples(samplenum).movementdata.time_behaviour<endtime,1,'last');
+    
+    plot(handles.data.samples(samplenum).movementdata.time_behaviour(ettol:eddig),(handles.data.samples(samplenum).movementdata.tonetype(ettol:eddig)+1).*handles.data.samples(samplenum).movementdata.sound(ettol:eddig),'k-','LineWidth',1)
+    plot(handles.data.samples(samplenum).movementdata.time_behaviour(ettol:eddig),handles.data.samples(samplenum).movementdata.lick(ettol:eddig),'r-','LineWidth',1)
+    plot(handles.data.samples(samplenum).movementdata.time_behaviour(ettol:eddig),handles.data.samples(samplenum).movementdata.water(ettol:eddig),'b-','LineWidth',1)
+%     plot(handles.data.samples(samplenum).movementdata.time(ettol:eddig),handles.data.samples(samplenum).movementdata.(movementfield)(ettol:eddig),'r-','LineWidth',2);
+elseif get(handles.(popupname),'Value')==length(handles.data.samples)+5 & isfield(handles.data.samples(samplenum),'BreathingData')
+    %%
+    ettol=find(handles.data.samples(samplenum).BreathingData.time>=starttime,1,'first');
+    if isempty(ettol)
+        ettol=1;
+    end
+    eddig=find(handles.data.samples(samplenum).BreathingData.time<=endtime,1,'last');
+    if isempty(eddig)
+        eddig=length(handles.data.samples(samplenum).BreathingData.time);
+    end
+    plot(handles.data.samples(samplenum).BreathingData.time(ettol:eddig),handles.data.samples(samplenum).BreathingData.y(ettol:eddig),'k-','LineWidth',1)
+    ylim([min(handles.data.samples(samplenum).BreathingData.y(ettol:eddig)), max(handles.data.samples(samplenum).BreathingData.y(ettol:eddig))])
+    disp('lol')
 end
 
 markbrainstates=get(handles.checkbox8,'Value');
@@ -1776,9 +1907,9 @@ if isfield(handles.data.samples,'BrainStateData')
 end
 
 dataout=aE_ic_field_analysis(dirs,xlsdata,icxlsnum,timeborders,'trough',additionaldata); %peak
-valtozok_fieldplot.timebefore=.5;
-valtozok_fieldplot.timestep=.05;
-valtozok_fieldplot.timeafter=.5;
+valtozok_fieldplot.timebefore=.5;%1;%.5;
+valtozok_fieldplot.timestep=.025;
+valtozok_fieldplot.timeafter=.5;%;1;%.5;
 % valtozok_fieldplot.ICylim
 % valtozok_fieldplot.Fieldylim
 valtozok_fieldplot.highlightaAP=1;
@@ -2105,8 +2236,8 @@ if ok==1
     handles.data.samples(selectedsamplenum).BrainStateData=BrainStateData;
 end
 plotandupdate(handles);
-
-save([handles.data.dirs.brainstatedir,handles.data.IDs{handles.data.samples(selectedsamplenum).selectedID}],'BrainStateData');
+BrainStateRules=handles.data.samples(selectedsamplenum).BrainStateRules;
+save([handles.data.dirs.brainstatedir,handles.data.IDs{handles.data.samples(selectedsamplenum).selectedID}],'BrainStateData','BrainStateRules');
 guidata(hObject,handles);
 
 
@@ -2179,3 +2310,17 @@ valtozok.minsweeplength=valtozok.movingvindowsize/2;
 selectedsamplenum=get(handles.popupmenu1,'Value');
 
 aE_V0_vs_PSD(handles.data.dirs,handles.data.xlsdata,handles.data.samples(selectedsamplenum).selectedID-1,valtozok)
+
+
+% --- Executes on button press in pushbutton12.
+function pushbutton12_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton12 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+%%
+selectedsamplenum=get(handles.popupmenu1,'Value');
+handles.data.selectedsamplenum=selectedsamplenum;
+aE_BrainState_annotator(handles.data.samples(selectedsamplenum),handles.data.BrainStateProps);
+% pupildata=handles.data.samples(selectedsamplenum).pupildata;
+% movementdata=handles.data.samples(selectedsamplenum).movementdata;
+guidata(hObject,handles)

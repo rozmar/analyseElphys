@@ -52,6 +52,7 @@ plotthestuff=0;
 
 %% loading
 fieldxlsnum=find(strcmp(xlsdata(icxlsnum).HEKAfname,{xlsdata.HEKAfname}) & [xlsdata.field]==1);
+% fieldxlsnum=[];
 if isempty(fieldxlsnum)
     fieldxlsnum=(NaN);
 end
@@ -99,8 +100,8 @@ ipdata=eventdata(strcmp({eventdata.type},'ip'));
 % close all
 localextremumwin=.1;
 cutofffreq=[1 5];
-timebefore=.5;
-timeafter=.5;
+timebefore=.5;%1;%.5;
+timeafter=.5;%1;%.5;
 timebefore_corr=1;
 timeafter_corr=1;
 NEXT=0;
@@ -335,7 +336,7 @@ if isfield(additionaldata,'BrainStateData')
 else
     statestodo={'All'};
 end
-
+firstfielddata=1;
 for statei=1:length(statestodo)
     statename=statestodo{statei};
     %%
@@ -373,9 +374,10 @@ for statei=1:length(statestodo)
         FieldData(i).medianamplitude=median([FieldData(needed).maxamplitude]);
     end
     if length(FieldData)>0
-        if statei==1
+        if firstfielddata==1
             dataout=rmfield(dataout,'FieldData');
             dataout.FieldData(find(idxnow))=FieldData;
+            firstfielddata=0;
         else
             dataout.FieldData(find(idxnow))=FieldData;
         end

@@ -48,6 +48,7 @@ elseif projectnum==2;
     % dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
     % dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
     dirs.figuresdir=[dirs.basedir,'Figures/'];
+    dirs.breathingdir=[dirs.basedir,'Breathing/'];
     xlsdata=aE_readxls([dirs.basedir,'invivodata.xls']);
     amplifier='HEKA';
 elseif projectnum==3;
@@ -96,6 +97,7 @@ elseif projectnum==5
     amplifier='HEKA';
     xlsdata=aE_readxls([dirs.basedir,'blebdata_windows.xls']);
 end
+
 if projectdata.inspecttraces==1
     aE_InspectTraces(dirs,xlsdata);
     return
@@ -156,11 +158,21 @@ else
     %% export Raw data from HEKA
     aE_exportrawHEKAdata(dirs,xlsdata,projectdata.owexport)
     %% generate PGF data, bridge balancing
-    overwrite=1;
     aE_generatePGF_bridge_HEKA(dirs,xlsdata,projectdata.owbridge)
 end
+%% exporting breathing
+if isfield(dirs,'breathingdir') & isfield(xlsdata,'Thermosensor_channel')
+    for xlsidx=1:length(xlsdata)
+        a=dir([dirs.breathingdir,xlsdata(xlsidx).ID,'.mat']);
+        if xlsdata(xlsidx).field == 1 & ~isnan(xlsdata(xlsidx).Thermosensor_channel) & (isempty(a) | overwrite==1)
+            rawdata=HEKAexportbytime_main(xlsdata(xlsidx).HEKAfname,xlsdata(xlsidx).setup,xlsdata(xlsidx).Thermosensor_channel,xlsdata(xlsidx).startT,xlsdata(xlsidx).endT);
+            save([dirs.breathingdir,xlsdata(xlsidx).ID],'rawdata','xlsdata','xlsidx','-v7.3')
+            disp([xlsdata(xlsidx).ID,'breathing exported'])
+        end
+    end
+end
 
-% finding events
+%% finding events
 valtozok.overwrite=projectdata.owevent;
 valtozok.overwritebefore=datenum(2017,12,29);%;datenum(datetime('today'));%;
 valtozok.plotit=0;
@@ -178,7 +190,7 @@ valtozok.diffmovingt=.0005;
 valtozok.steptime=.0005; %s
 valtozok.eventminsdval=3;
 valtozok.apthreshval=10;
-parallelcount=4;
+parallelcount=1;
 aE_findevents(valtozok,dirs,parallelcount,xlsdata)
 paralleldata.count=NaN;
 while isnan(paralleldata.count) | ~isempty(paralleldata.files)
