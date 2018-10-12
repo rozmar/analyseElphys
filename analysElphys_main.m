@@ -427,7 +427,7 @@ for xlsi=1:length(xlsdata)
     pupilsizedir=[locations.tgtardir,'VIDEOdata/',setupname,'/pupilsize/'];
     files=dir(pupilsizedir);
     files([files.isdir])=[];
-    a=dir([savedir,xlsdata(xlsi).HEKAfname]);
+    a=dir([savedir,xlsdata(xlsi).HEKAfname,'.mat']);
     if isempty(a)
         if length(files)>0
             for i=1:length(files)
@@ -523,8 +523,9 @@ for filei=1:length(files)
         else
             NEXT=length(allmovdata)+1;
         end
-        
-        allmovdata(NEXT).movementall=moving(videodata(fieldi).movement_all,2)';
+        if length(videodata(fieldi).movement_all)>2
+            allmovdata(NEXT).movementall=moving(videodata(fieldi).movement_all,2)';
+        end
     end
 end
 sortedmovdata=sort([allmovdata.movementall]);
@@ -535,10 +536,6 @@ end
 videopercentiles.movementpercentiles=movementpercentiles;
 save([dirs.videodir,'percentiles'],'videopercentiles');
 return
-
-
-
-
 
 %%
 

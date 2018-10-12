@@ -61,10 +61,13 @@ set(handles.popupmenu2,'String',[handles.data.movementnames,{'pupilsize','durati
 set(handles.popupmenu3,'String',{'<','>','='});
 set(handles.edit1,'String','0')
 set(handles.listbox2,'String',[handles.data.movementnames,{'pupilsize'}]);
-if isempty(fieldnames(handles.data.BrainStateRules))
+if ~isfield(handles.data,'BrainStateRules')
+    handles.data.BrainStateRules=struct;
+    set(handles.listbox1,'String','none');
+elseif isempty(fieldnames(handles.data.BrainStateRules))
     set(handles.listbox1,'String','none');
 else
-    set(handles.listbox1,'String',{BrainStateRules.string2display});
+    set(handles.listbox1,'String',{handles.data.BrainStateRules.string2display});
 end
 set(handles.listbox2,'Max',20,'Min',1);
 
@@ -75,7 +78,10 @@ si=.1;
 BrainStateTime=floor(handles.data.starttime):si:ceil(handles.data.endtime);
 BrainStateVariables=struct;
 BrainStateVariables.BrainStateTime=BrainStateTime;
-varnames=[handles.data.movementnames,{'pupilsize'}];
+varnames=handles.data.movementnames;
+if isfield(handles.data,'pupildata')
+    varnames=[varnames,{'pupilsize'}];
+end
 starttime=handles.data.starttime;
 endtime=handles.data.endtime;
 for vari=1:length(varnames)
