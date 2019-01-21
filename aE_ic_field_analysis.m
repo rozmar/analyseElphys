@@ -125,7 +125,7 @@ EventTimesRelative=struct;
 
 % analysis relative to the Field
 progressbar('analyzing field data')
-for fieldsweepnum= 1: length(field.bridgeddata)
+for fieldsweepnum= 1:length(field.bridgeddata)
     progressbar(fieldsweepnum/ length(field.bridgeddata));
     hossz=length(field.bridgeddata(fieldsweepnum).y);
     si=field.bridgeddata(fieldsweepnum).si;

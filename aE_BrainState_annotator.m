@@ -74,7 +74,7 @@ set(handles.listbox2,'Max',20,'Min',1);
 
 %BEFEJEZNI%!!! - új sampling ratere mindent..
 %%
-si=.1;
+si=.2;
 BrainStateTime=floor(handles.data.starttime):si:ceil(handles.data.endtime);
 BrainStateVariables=struct;
 BrainStateVariables.BrainStateTime=BrainStateTime;

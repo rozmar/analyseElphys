@@ -8,6 +8,7 @@ valtozok_def.timeborders=[0,inf];
 valtozok_def.dvmaxborders=[0,0];
 valtozok_def.ratedeofdepol_border=NaN;
 valtozok_def.threshold_border=NaN;
+valtozok_def.subtractoffset=0;
 if nargin<4
     valtozok=valtozok_def;
 else
@@ -24,6 +25,18 @@ if xlsnum>0
     ID=xlsdata(xlsnum).ID;
     load([dirs.eventdir,ID],'eventdata');
     load([dirs.bridgeddir,ID],'bridgeddata','stimdata');
+    if isfield(valtozok,'subtractoffset') & valtozok.subtractoffset==1
+        load([dirs.offsetdir,ID]);
+        for sweep=1:length(bridgeddata)
+            bridgeddata(sweep).y=bridgeddata(sweep).y-offsetdata(sweep).y;
+        end
+        for eventi=1:length(eventdata)
+            sweep=eventdata(eventi).sweepnum;
+            eventdata(eventi).maxval=eventdata(eventi).maxval-offsetdata(sweep).y(eventdata(eventi).maxh);
+            eventdata(eventi).baselineval=eventdata(eventi).baselineval-offsetdata(sweep).y(eventdata(eventi).onseth);
+            
+        end
+    end
     % stimdata=
     
     figure(1)

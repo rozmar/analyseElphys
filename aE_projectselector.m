@@ -22,7 +22,7 @@ function varargout = aE_projectselector(varargin)
 
 % Edit the above text to modify the response to help aE_projectselector
 
-% Last Modified by GUIDE v2.5 20-Jun-2018 10:01:41
+% Last Modified by GUIDE v2.5 15-Dec-2018 14:47:32
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -145,6 +145,7 @@ handles.outputt.owevent=get(handles.checkbox3,'Value');
 handles.outputt.owstimepoch=get(handles.checkbox4,'Value');
 handles.outputt.inspecttraces=get(handles.checkbox7,'Value');
 handles.outputt.selectvideoROIs=get(handles.checkbox8,'Value');
+handles.outputt.doaAPstatistics=get(handles.checkbox9,'Value');
 assignin('base', 'projectdata', handles.outputt);
 close(handles.figure1);
 
@@ -184,3 +185,12 @@ set(handles.checkbox3,'Enable',val)
 set(handles.checkbox4,'Enable',val)
 set(handles.checkbox7,'Enable',val)
 % Hint: get(hObject,'Value') returns toggle state of checkbox8
+
+
+% --- Executes on button press in checkbox9.
+function checkbox9_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox9 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox9
