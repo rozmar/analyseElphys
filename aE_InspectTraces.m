@@ -25,7 +25,7 @@ function varargout = aE_InspectTraces(varargin)
 
 % Edit the above text to modify the response to help aE_InspectTraces
 
-% Last Modified by GUIDE v2.5 12-Jan-2019 11:03:37
+% Last Modified by GUIDE v2.5 21-Jan-2019 14:24:10
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -2828,6 +2828,30 @@ function pushbutton13_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 selectedsamplenum=get(handles.popupmenu1,'Value');
 bridgeddata=handles.data.samples(selectedsamplenum).bridgeddata;
+eventdata=handles.data.samples(selectedsamplenum).eventdata;
+stimdata=handles.data.samples(selectedsamplenum).stimdata;
+
+[MembPot, countPersistentStim]=persistentDiffMPFunction(eventdata,stimdata,bridgeddata);
+sucStim=size(MembPot,2);
+if MembPot(1).Before==0
+    sucStim=0;
+end
+if MembPot(1).Before~=0 && MembPot(2).Before==0
+   sucStim=1; 
+end    
+
+figure('Name', 'Membrane Potential Before And After Of Peristent Stimulation')
+scatter(1:size(MembPot,2),[MembPot.Before])
+hold on
+scatter(1:size(MembPot,2),[MembPot.After], 'filled')
+str=sprintf('Count Of Persistent Stim= %d \n Successful stim= %d',countPersistentStim, sucStim);
+title(str)
+xlabel('Number Of Events, Where were Evoked Spikes')
+ylabel('Membrane Potential mV*10^(-2)')
+legend({'Before','After'},'Location','northwest')
+%legend(strcat('Count Of Persistent Stim=', num2str(countPersistentStim)))
+hold off
+
 
 % disp('lol')
 
@@ -3095,3 +3119,99 @@ function popupmenu10_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in AxSomLDA.
+function AxSomLDA_Callback(hObject, eventdata, handles)
+% hObject    handle to AxSomLDA (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+   %Initialize set of axonal and somatic spikes
+selectedsamplenum=get(handles.popupmenu1,'Value');
+eventdata=handles.data.samples(selectedsamplenum).eventdata;
+
+%call ax_somClassifier function, return: sorted spikes, classes: axonal,somatic
+[aAPsMatrix,sAPsMatrix]=ax_somClassifier(eventdata);
+
+%Lda Viewer
+figure;
+  %Plot classified points
+ X=[aAPsMatrix;sAPsMatrix];
+ 
+plot(X(1:length(X)/2, 1), X(1:length(X)/2, 2),'rx', X((length(X)/2)+1:end, 1), X((length(X)/2)+1:end, 2),'bo');
+title('Axonal-Somatic LDA')
+hold on;
+
+minVal = min(min(X)) - 1;
+maxVal = max(max(X)) + 1;
+axis([minVal maxVal minVal maxVal]);
+axis square;
+
+fprintf('Program paused. Press enter to continue.\n');
+pause;
+
+ %=============== Part 2: Performing Linear Discriminant Analysis ===============
+fprintf('\nRunning LDA on example dataset.\n\n');
+X1=X(1:length(X)/2,:);
+X2=X((length(X)/2)+1:end,:);
+m1 = mean(X1);
+m2 = mean(X2);
+%fprintf('Centroid of class 1 is at [%f %f] \n', m1(1), m1(2), m1(3), m1(4));
+%fprintf('Centroid of class 2 is at [%f %f] \n', m2(1), m2(2), m1(3), m1(4));
+
+Sb = (m1-m2)'*(m1-m2); % this is the rank-1 between-class covariance matrix
+
+% these are the class-specific centralized data matrices
+Xc1 = bsxfun(@minus, X1, m1);
+Xc2 = bsxfun(@minus, X2, m2);
+
+S1 = Xc1'*Xc1; S2=Xc2'*Xc2; % these are the class-specific within-class covariance matrices
+Sw = S1+S2; % this is the aggregated within-class covariance matrix
+
+% Performing LDA
+[U, S] = eig(inv(Sw)*Sb);
+
+[v, k] = max(diag(S));
+w = U(:, k);
+% an equivalent form would be w = inv(Sw)*(m1-m2)'; for maximizing the fraction and w = (m1-m2)'; for maximizing the nominator
+
+drawLine = @(p1, p2, varargin) plot([p1(1) p2(1)], [p1(2) p2(2)], varargin{:});
+% Draw the direction of the optimal projection w.
+multipier = max(maxVal/abs(w(1)), maxVal/abs(w(1))); % this is just a stretching factor for w to be drawn
+drawLine(-multipier * w, multipier * w, '-k', 'LineWidth', 2);
+
+fprintf('w = [%f %f] \n', w(1), w(2));
+
+fprintf('Program paused. Press enter to continue.\n');
+pause;
+
+% =================== Part 3: Dimension Reduction ===================
+%  The code here plots the data points into the reduced-dimensional subspace.
+%
+fprintf('\nDimension reduction on example dataset.\n\n');
+fprintf('The original first example: [%f %f]\n', X(1, 1), X(1, 2));
+Z = X * w;
+fprintf('Projection of the first example: %f\n', Z(1));
+
+X_rec = Z * w';
+fprintf('Approximation of the first example: [%f %f]\n', X_rec(1, 1), X_rec(1, 2));
+rm1 = mean(X_rec(1:length(X)/2,:));
+rm2 = mean(X_rec((length(X)/2)+1:end,:));
+rm3 = m1*w*w';
+rm4 = m2*w*w';
+fprintf('\nThe reconstructed centroid of class 1 at = [%f %f] \n', rm3(1), rm3(2));
+fprintf('The reconstructed centroid of class 2 at = [%f %f] \n\n', rm4(1), rm4(2));
+
+%  Draw lines connecting the projected points to the original points
+plot(X_rec(1:length(X)/2, 1), X_rec(1:length(X)/2, 2),'rx', X_rec((length(X)/2)+1:end, 1), X_rec((length(X)/2)+1:end, 2),'bo');
+
+
+for i = 1:size(X, 1)
+  drawLine(X(i,:), X_rec(i,:), '--k', 'LineWidth', 1);
+end
+fprintf('The optimal value of w^T*S_B*w is %f\n', (w'*Sb*w)); % this equals the squared l2-distance of the projected class means
+fprintf('The optimal value of w^T*S_W*w is %f\n', (w'*Sw*w));
+fprintf('The optimal value of w^T*S_B*w/w^T*S_W*w is %f\n', (w'*Sb*w)/(w'*Sw*w));
+%distance,similarity to spike vector
+axsomdistancesimilarity(aAPsMatrix,sAPsMatrix);
