@@ -7,7 +7,7 @@ RSrisetime=.00005;%.00005; %ennyi időt hagy ki az áram injekcióját követőe
 poolRStime=30; %ebben az idoablakban atlagolja ossze az RS-t a sweep-ek kozott
 files=dir(dirs.rawexporteddir);
 files([files.isdir])=[];
-progressbar('generating PGF and bridge balancing')
+%progressbar('generating PGF and bridge balancing')
 for fnum=1:length(files)
     fname=files(fnum).name(1:end-4);
     %     load([dirs.rawexporteddir,files(fnum).name],'xlsidx');
