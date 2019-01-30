@@ -88,8 +88,8 @@ for xlsi=1:length(xlsdata)
             else
                 pfstarttime=endtime;
             end
-            sporadicaAPidx=[eventdata.axonalAP] & [eventdata.aAPfreq_in_window]>=[eventdata.sAPfreq_in_window] & [eventdata.aAPfreq_in_window]<max_sporadicAP_freq & [eventdata.maxtime]<pfstarttime;
-            persistentaAPidx=[eventdata.axonalAP] & ([eventdata.aAPfreq_in_window]<[eventdata.sAPfreq_in_window] | [eventdata.aAPfreq_in_window]>max_sporadicAP_freq | [eventdata.maxtime]>=pfstarttime);
+            sporadicaAPidx=[eventdata.axonalAP] &~[eventdata.stimulated] & [eventdata.aAPfreq_in_window]>=[eventdata.sAPfreq_in_window] & [eventdata.aAPfreq_in_window]<max_sporadicAP_freq & [eventdata.maxtime]<pfstarttime;
+            persistentaAPidx=[eventdata.axonalAP] &~[eventdata.stimulated] & ([eventdata.aAPfreq_in_window]<[eventdata.sAPfreq_in_window] | [eventdata.aAPfreq_in_window]>max_sporadicAP_freq | [eventdata.maxtime]>=pfstarttime);
             APdata(NEXT).aAPnum=sum([eventdata.axonalAP]&~[eventdata.stimulated]);
             APdata(NEXT).sAPnum=sum([eventdata.somaticAP]&~[eventdata.stimulated]);
             xlsdata(xlsi).axonalAPnum=APdata(NEXT).aAPnum;

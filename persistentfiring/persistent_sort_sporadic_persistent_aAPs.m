@@ -1,6 +1,6 @@
 function eventdata=persistent_sort_sporadic_persistent_aAPs(eventdata,valtozok)
-window_def=2;
-max_sporadicAP_freq_def=2;
+window_def=3;
+max_sporadicAP_freq_def=1;
 persistent_firing_minaAP_freq_def=10;
 valtozok.sAPnumszorzo=2; 
 if nargin==1

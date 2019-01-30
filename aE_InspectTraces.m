@@ -704,42 +704,52 @@ for samplei=1:length(handles.data.samples)
                 diameter=moving(diameter,2);
                 diameter=medfilt1(diameter,round(10/si));
                 
-%                 a=dir([handles.data.dirs.videodir,'percentiles.mat']);
-%                 if ~isempty(a)
-%                     load([handles.data.dirs.videodir,'percentiles.mat'])
-%                     if exist('ROIdata','var') & any(strcmp({ROIdata.ROIname},'Eye'))
-%                         stats=regionprops(ROIdata(find(strcmp({ROIdata.ROIname},'Eye'))).mask,'MajorAxisLength');
-%                         minval=videopercentiles.pupilpercentiles(5)*stats.MajorAxisLength;
-%                         maxval=videopercentiles.pupilpercentiles(95)*stats.MajorAxisLength;
-%                     else
-%                         minval=videopercentiles.pupilpercentiles(5);
-%                         maxval=videopercentiles.pupilpercentiles(95);
-%                     end
-%                 else
-%                     pupildatasorted=sort(diameter);
-%                     minval=pupildatasorted(round(length(pupildatasorted)*.05));
-%                     maxval=pupildatasorted(round(length(pupildatasorted)*.95));
-%                 end
-
-
+                %                 a=dir([handles.data.dirs.videodir,'percentiles.mat']);
+                %                 if ~isempty(a)
+                %                     load([handles.data.dirs.videodir,'percentiles.mat'])
+                %                     if exist('ROIdata','var') & any(strcmp({ROIdata.ROIname},'Eye'))
+                %                         stats=regionprops(ROIdata(find(strcmp({ROIdata.ROIname},'Eye'))).mask,'MajorAxisLength');
+                %                         minval=videopercentiles.pupilpercentiles(5)*stats.MajorAxisLength;
+                %                         maxval=videopercentiles.pupilpercentiles(95)*stats.MajorAxisLength;
+                %                     else
+                %                         minval=videopercentiles.pupilpercentiles(5);
+                %                         maxval=videopercentiles.pupilpercentiles(95);
+                %                     end
+                %                 else
+                %                     pupildatasorted=sort(diameter);
+                %                     minval=pupildatasorted(round(length(pupildatasorted)*.05));
+                %                     maxval=pupildatasorted(round(length(pupildatasorted)*.95));
+                %                 end
+                %                 diameter=(handles.data.samples(samplei).pupildata.diameter-minval)/(maxval-minval);
+                
+                
                 %% pontosabb módszer
                 moviename=handles.data.samples(samplei).movementdata.videofname{1};
                 setupname=handles.data.xlsdata(handles.data.samples(samplei).selectedID-1).setup;
-
-    locations=marcicucca_locations;
-    moviefiletoplay=[locations.tgtardir,'VIDEOdata/',setupname,'/',moviename];
-    movieobj=VideoReader([moviefiletoplay]);
-    szorzo=movieobj.Height/size(videodata(1).originalpic_all,1);
-    if exist('ROIdata','var') & any(strcmp({ROIdata.ROIname},'Eye'))
-                         stats=regionprops(ROIdata(find(strcmp({ROIdata.ROIname},'Eye'))).mask,'MajorAxisLength','MinorAxisLength');
-    else
-        disp('No eye ROI!!!')
-        stats.MajorAxisLength=1;
-        stats.MinorAxisLength=1;
-    end
+                
+                locations=marcicucca_locations;
+                moviefiletoplay=[locations.tgtardir,'VIDEOdata/',setupname,'/',moviename];
+                movieobj=VideoReader([moviefiletoplay]);
+                szorzo=movieobj.Height/size(videodata(1).originalpic_all,1);
+                if exist('ROIdata','var') & any(strcmp({ROIdata.ROIname},'Eye'))
+                    stats=regionprops(ROIdata(find(strcmp({ROIdata.ROIname},'Eye'))).mask,'MajorAxisLength','MinorAxisLength');
+                else
+                    disp('No eye ROI!!!')
+                    stats.MajorAxisLength=1;
+                    stats.MinorAxisLength=1;
+                end
                 %%
-                diameter=(handles.data.samples(samplei).pupildata.diameter-minval)/(maxval-minval);
-                diameter=handles.data.samples(samplei).pupildata.diameter/szorzo/stats.MinorAxisLength;
+
+                diameter=handles.data.samples(samplei).pupildata.diameter/szorzo/stats.MinorAxisLength*2;
+                
+                pupildiametersnow=sort(diameter);
+                percentile95=pupildiametersnow(round(.95*length(pupildiametersnow)));
+                if percentile95>1
+                    diameter=diameter/percentile95;
+                end
+                
+                
+                
                 diameter(diameter>1)=1;
                 diameter(diameter<0)=0;
                 
@@ -757,13 +767,32 @@ for samplei=1:length(handles.data.samples)
             xlsnum=handles.data.samples(samplei).selectedID-1;
 %             fieldxlsnum=find(strcmp(handles.data.xlsdata(xlsnum).HEKAfname,{handles.data.xlsdata.HEKAfname}) & [handles.data.xlsdata.field]==1);
             if ~isempty(xlsnum)
-                if isfield(handles.data.dirs,'PSDdir_high')
-                    answer = questdlg('Low or high frequency PSD should be loaded (IC)','Low or high PSD','Low PSD (0.5-4 Hz)','High PSD (1-220 Hz)','Low PSD (0.5-4 Hz)');
+                if isfield(handles.data.dirs,'PSDdir_high') | isfield(handles.data.dirs,'PSDdir_log')
+                    
+                    answerstring=[',''Low PSD (0.5-4 Hz)'''];
+                    
+                    if isfield(handles.data.dirs,'PSDdir_high')
+                        directory=handles.data.dirs.PSDdir_high;
+                        a=dir([directory,handles.data.xlsdata(xlsnum).ID,'.mat']);
+                        if ~isempty(a)
+                            answerstring=[answerstring,',''High PSD (1-220 Hz)'''];
+                        end
+                    end
+                    if isfield(handles.data.dirs,'PSDdir_log')
+                        directory=handles.data.dirs.PSDdir_log;
+                        a=dir([directory,handles.data.xlsdata(xlsnum).ID,'.mat']);
+                        if ~isempty(a)
+                            answerstring=[answerstring,',''LOG PSD (0.5-300 Hz)'''];
+                        end
+                    end
+                    eval(['answer = questdlg(''Low or high frequency PSD should be loaded (IC)'',''Low or high PSD''',answerstring,',''Low PSD (0.5-4 Hz)'');']);
                     switch answer
                         case 'Low PSD (0.5-4 Hz)'
                             directory=handles.data.dirs.PSDdir;
                         case 'High PSD (1-220 Hz)'
                             directory=handles.data.dirs.PSDdir_high;
+                        case 'LOG PSD (0.5-300 Hz)'
+                            directory=handles.data.dirs.PSDdir_log;    
                     end
                 else
                     directory=handles.data.dirs.PSDdir;
@@ -796,7 +825,7 @@ for samplei=1:length(handles.data.samples)
                 set(handles.edit10,'String',8); %max(PSDdata(1).frequencyVector(:))
                 set(handles.edit11,'String',min(PSDdata(1).frequencyVector(:)));
             else
-                handles.data.samples(samplei).PSDdata_field=[];
+                handles.data.samples(samplei).PSDdata_ic=[];
             end                
         end
         
@@ -806,14 +835,39 @@ for samplei=1:length(handles.data.samples)
             xlsnum=handles.data.samples(samplei).selectedID-1;
             fieldxlsnum=find(strcmp(handles.data.xlsdata(xlsnum).HEKAfname,{handles.data.xlsdata.HEKAfname}) & [handles.data.xlsdata.field]==1);
             if ~isempty(fieldxlsnum)
-                if isfield(handles.data.dirs,'PSDdir_high')
-                    answer = questdlg('Low or high frequency PSD should be loaded','Low or high PSD','Low PSD (0.5-4 Hz)','High PSD (1-220 Hz)','Low PSD (0.5-4 Hz)');
+                if isfield(handles.data.dirs,'PSDdir_high') | isfield(handles.data.dirs,'PSDdir_log')
+                    
+                    answerstring=[',''Low PSD (0.5-4 Hz)'''];
+                    if isfield(handles.data.dirs,'PSDdir_high')
+                        directory=handles.data.dirs.PSDdir_high;
+                        a=dir([directory,handles.data.xlsdata(fieldxlsnum).ID,'.mat']);
+                        if ~isempty(a)
+                            answerstring=[answerstring,',''High PSD (1-220 Hz)'''];
+                        end
+                    end
+                    if isfield(handles.data.dirs,'PSDdir_log')
+                        directory=handles.data.dirs.PSDdir_log;
+                        a=dir([directory,handles.data.xlsdata(fieldxlsnum).ID,'.mat']);
+                        if ~isempty(a)
+                            answerstring=[answerstring,',''LOG PSD (0.5-300 Hz)'''];
+                        end
+                    end
+                    eval(['answer = questdlg(''Low or high frequency PSD should be loaded (field)'',''Low or high PSD''',answerstring,',''Low PSD (0.5-4 Hz)'');']);
                     switch answer
                         case 'Low PSD (0.5-4 Hz)'
                             directory=handles.data.dirs.PSDdir;
                         case 'High PSD (1-220 Hz)'
                             directory=handles.data.dirs.PSDdir_high;
+                        case 'LOG PSD (0.5-300 Hz)'
+                            directory=handles.data.dirs.PSDdir_log;
                     end
+                    %                     answer = questdlg('Low or high frequency PSD should be loaded','Low or high PSD','Low PSD (0.5-4 Hz)','High PSD (1-220 Hz)','Low PSD (0.5-4 Hz)');
+                    %                     switch answer
+                    %                         case 'Low PSD (0.5-4 Hz)'
+                    %                             directory=handles.data.dirs.PSDdir;
+                    %                         case 'High PSD (1-220 Hz)'
+                    %                             directory=handles.data.dirs.PSDdir_high;
+                    
                 else
                     directory=handles.data.dirs.PSDdir;
                 end
@@ -941,6 +995,21 @@ for samplei=1:length(handles.data.samples)
 %                 
 %             end
 %         end
+    end
+    %%
+    if exist('xlsnum','var') & isfield(handles.data.xlsdata,'Cranio_Lat')
+    cellcoord_lat=[handles.data.xlsdata(xlsnum).Cranio_Lat]+(([handles.data.xlsdata(xlsnum).locationX]-[handles.data.xlsdata(xlsnum).Cranio_center_X])/1000).*[handles.data.xlsdata(xlsnum).Lateral_dir_X];
+cellcoord_AP=[handles.data.xlsdata(xlsnum).Cranio_AP]+(([handles.data.xlsdata(xlsnum).locationy]-[handles.data.xlsdata(xlsnum).Cranio_center_Y])/1000).*[handles.data.xlsdata(xlsnum).Rostral_dir_Y];
+cellcoord_z=handles.data.xlsdata(xlsnum).locationz;
+    fieldcoord_lat=[handles.data.xlsdata(fieldxlsnum).Cranio_Lat]+(([handles.data.xlsdata(fieldxlsnum).locationX]-[handles.data.xlsdata(fieldxlsnum).Cranio_center_X])/1000).*[handles.data.xlsdata(fieldxlsnum).Lateral_dir_X];
+fieldcoord_AP=[handles.data.xlsdata(fieldxlsnum).Cranio_AP]+(([handles.data.xlsdata(fieldxlsnum).locationy]-[handles.data.xlsdata(fieldxlsnum).Cranio_center_Y])/1000).*[handles.data.xlsdata(fieldxlsnum).Rostral_dir_Y];
+fieldcoord_z=handles.data.xlsdata(fieldxlsnum).locationz;
+craniocoord=[handles.data.xlsdata(xlsnum).Cranio_AP,handles.data.xlsdata(xlsnum).Cranio_Lat];
+cellcoord=[cellcoord_AP,cellcoord_lat,cellcoord_z];
+fieldcoord=[fieldcoord_AP,fieldcoord_lat,fieldcoord_z];
+    disp(['cranio coord: AP - ',num2str(craniocoord(1)),'   Lateral - ',num2str(craniocoord(2))])
+    disp(['cell coord: AP - ',num2str(cellcoord(1)),'   Lateral - ',num2str(cellcoord(2)),'   depth - ',num2str(cellcoord(3))])
+    disp(['field coord: AP - ',num2str(fieldcoord(1)),'   Lateral - ',num2str(fieldcoord(2)),'   depth - ',num2str(fieldcoord(3))])
     end
 end
 
@@ -1206,7 +1275,7 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+2
 elseif get(handles.(popupname),'Value')==length(handles.data.samples)+3 & ~isempty(handles.data.samples(samplenum).PSDdata_fieldtoplot)
     
     imagesc(handles.data.samples(samplenum).PSDdata_fieldtoplot.time,handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector,handles.data.samples(samplenum).PSDdata_fieldtoplot.powerMatrix)
-    
+%     contourf(handles.data.samples(samplenum).PSDdata_fieldtoplot.time,handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector,handles.data.samples(samplenum).PSDdata_fieldtoplot.powerMatrix)
     
     if strcmp(axesname,'axes2')
         cmaxval=handles.data.samples(samplenum).plotdetails.PSD.cmax(1);
@@ -1220,6 +1289,7 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+3 & ~isemp
     colormap linspecer
     ylabel('Frequency (Hz)')
     xlabel('Time (s)')
+    set(gca,'YTick',round(handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector))
     hold on
     if ~isempty(handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector)
         szorzo=max(handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector);
@@ -1606,7 +1676,7 @@ for selectedsamplenum=1:5
                 handles.data.samples(selectedsamplenum).plotdetails=plotdetails;
                 %%
                 
-                 if ~isempty(handles.data.samples(selectedsamplenum).PSDdata_ic) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+3 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+3)
+                 if ~isempty(handles.data.samples(selectedsamplenum).PSDdata_ic) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+8 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+8)
                     PSDdatatoplot=preparePSDdataforplotting(handles.data.samples(selectedsamplenum).PSDdata_ic,handles,neededsamplenum,shoulddownsample);
                     handles.data.samples(selectedsamplenum).PSDdata_ictoplot=PSDdatatoplot;
                     %                 set(handles.edit9,'String',handles.data.samples(selectedsamplenum).PSDdata_ictoplot.intensitypercentiles(99));
