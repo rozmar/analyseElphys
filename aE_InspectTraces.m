@@ -942,6 +942,10 @@ for samplei=1:length(handles.data.samples)
 %             end
 %         end
     end
+    load([handles.data.dirs.basedir, 'AxonalSpikesTrainingData.mat']);
+    load([handles.data.dirs.basedir, 'SomaticSpikesTrainingData.mat']);
+    handles.data.spikeSortAxonal=axonalSpike_Train;
+    handles.data.spikeSortSomatic=somaticSpike_Train;
 end
 
 function plotandupdate(handles)
@@ -3130,6 +3134,9 @@ function AxSomLDA_Callback(hObject, eventdata, handles)
    %Initialize set of axonal and somatic spikes
 selectedsamplenum=get(handles.popupmenu1,'Value');
 eventdata=handles.data.samples(selectedsamplenum).eventdata;
+
+axonalSpike_Train=handles.data.spikeSortAxonal;
+somaticSpike_Train=handles.data.spikeSortSomatic;
 
 %call ax_somClassifier function, return: sorted spikes, classes: axonal,somatic
 [aAPsMatrix,sAPsMatrix]=ax_somClassifier(eventdata);
