@@ -2,7 +2,7 @@
 
 close all
 clear all
-reloadxls=0;
+reloadxls=1;
 projectnames={'CB1elphys','InVivo','Persistent-ChRstim','persistent firing','bleb recording'};
 % projectnum=3;
 
