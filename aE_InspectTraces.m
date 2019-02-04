@@ -834,6 +834,15 @@ for samplei=1:length(handles.data.samples)
             disp('loading PSD of field')
             xlsnum=handles.data.samples(samplei).selectedID-1;
             fieldxlsnum=find(strcmp(handles.data.xlsdata(xlsnum).HEKAfname,{handles.data.xlsdata.HEKAfname}) & [handles.data.xlsdata.field]==1);
+            if length(fieldxlsnum)>1
+                disp('error, more than 1 field files found.. user should select..')
+                ok=0;
+                Selection=1;
+                while ok==0 | length(Selection)~=1
+                    [Selection,ok] = listdlg('PromptString','Select the corresponding field file:','ListString',{handles.data.xlsdata(fieldxlsnum).ID});
+                end
+                fieldxlsnum=fieldxlsnum(Selection);
+            end
             if ~isempty(fieldxlsnum)
                 if isfield(handles.data.dirs,'PSDdir_high') | isfield(handles.data.dirs,'PSDdir_log')
                     
@@ -1289,7 +1298,20 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+3 & ~isemp
     colormap linspecer
     ylabel('Frequency (Hz)')
     xlabel('Time (s)')
-    set(gca,'YTick',round(handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector))
+    %%
+    set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
+    ytickidxs=[];
+    yticknow=get(gca,'YTick');
+    ylimnow=get(gca,'Ylim');
+   
+    linearyticks = linspace(ylimnow(1),ylimnow(end),length(handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector));
+    for ticki=1:length(yticknow)
+        [~,ytickidxs(ticki)]=min(abs(linearyticks-yticknow(ticki)));
+    end
+    yticklabelnow=handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector(ytickidxs);
+    set(gca,'Yticklabel',round(yticklabelnow*100)/100)
+    %%
+%     set(gca,'YTick',round(handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector))
     hold on
     if ~isempty(handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector)
         szorzo=max(handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector);
@@ -2364,12 +2386,13 @@ if ~isempty(searchstr')
                 ezaz(i)=false;
             end
         end
-        ezaz=find(ezaz);
         
-        handles.data.actualIDs=[{'no cell selected'},{xlsdata(ezaz).ID}];
 %         else
 %             set(handles.popupmenu2,'String',[{'no cell selected'},{xlsdata.ID}]);
     end
+    ezaz=find(ezaz);
+        
+    handles.data.actualIDs=[{'no cell selected'},{xlsdata(ezaz).ID}];
     set(handles.text10,'String',searchtext);
 end
 set(handles.popupmenu2,'Value',1);

@@ -703,39 +703,52 @@ return
 %% looking for slow oscillations on the field
 window=5;%s
 windowstep=2.5;
-for xlsidx=length(xlsdata):-1:1
+freqrange=[.6 4];
+for xlsidx=length(xlsdata)-0:-1:1
     ID=xlsdata(xlsidx).ID;
     load([dirs.PSDdir,ID])
     peakdata=struct;
     for sweep=1:length(PSDdata)
         sweephossz=length(PSDdata(sweep).y)*PSDdata(sweep).si_powerMatrix;
-        if sweephossz>=window
+        if sweephossz>=window*1.5
             time=[1:length(PSDdata(sweep).y)]*PSDdata(sweep).si_powerMatrix-PSDdata(sweep).si_powerMatrix;
             PSDdata(sweep).powerMatrix=(double(PSDdata(sweep).powerMatrix)-PSDdata(sweep).compress_offset)*PSDdata(sweep).compress_multiplier;
             PSDmedian=zeros(size(PSDdata(sweep).powerMatrix,1),round(sweephossz/windowstep)-1);
+            PSDmin=zeros(size(PSDdata(sweep).powerMatrix,1),round(sweephossz/windowstep)-1);
             PSDmediantime=1:size(PSDmedian,2)*windowstep;
-            
+            peakdata=struct;
             for wini=1:round(sweephossz/windowstep)-1
                 [~,ettol]=min(abs(time-((wini)*windowstep-window/2)));
                 [~,eddig]=min(abs(time-((wini)*windowstep+window/2)));
                 PSDmedian(:,wini)=nanmedian(PSDdata(sweep).powerMatrix(:,ettol:eddig),2);
+                PSDmin(:,wini)=nanmin(PSDdata(sweep).powerMatrix(:,ettol:eddig),[],2);
+%                 PSDmedian=PSDmin;
                 [pks,locs,w,p]=findpeaks(PSDmedian(:,wini));
+                freqs=PSDdata(sweep).frequencyVector(locs);
+                needed=freqs>freqrange(1) & freqs<=freqrange(2);
+                pks=pks(needed);
+                locs=locs(needed);
+                w=w(needed);
+                p=p(needed);
                 [p,idx]=sort(p,'descend');
                 pks=pks(idx);
                 locs=locs(idx);
                 w=w(idx);
-                idxnow=locs(1:3);
                 
                 
+                peaknum=2;
+                idxnow=locs(1:peaknum);
                 if isempty(fieldnames(peakdata))
                     next=1;
                 else
                     next=length(peakdata)+1;
                 end
-                peakdata(next).peakval=pks(1:3)';
-                peakdata(next).peakwidth=w(1:3)';
-                peakdata(next).prominence=p(1:3)';
-                peakdata(next).freq=PSDdata(sweep).frequencyVector(locs(1:3));
+                peakdata(next).peakval=pks(1:peaknum)';
+                peakdata(next).peakvalratio=pks(1:peaknum)'/pks(peaknum+1);
+                peakdata(next).peakwidth=w(1:peaknum)';
+                peakdata(next).prominence=p(1:peaknum)';
+                peakdata(next).prominenceratio=p(1:peaknum)'/p(peaknum+1);
+                peakdata(next).freq=PSDdata(sweep).frequencyVector(locs(1:peaknum));
                 
 %                 figure(2)
 %                 clf
@@ -744,6 +757,7 @@ for xlsidx=length(xlsdata):-1:1
 %                 plot(idxnow,PSDmedian(idxnow,wini),'ro')
 %                 pause
             end
+            if any([peakdata.peakvalratio]>2)  %any([peakdata.peakval]>.001) 
             figure(1)
             clf
             subplot(3,2,1)
@@ -764,9 +778,12 @@ for xlsidx=length(xlsdata):-1:1
             xlabel('Time (s)')
             
             subplot(3,2,5)
-            semilogy([peakdata.freq],[peakdata.prominence],'ko')
+            semilogy([peakdata.freq],[peakdata.peakval],'ko')
             
+            subplot(3,2,6)
+            semilogy([peakdata.peakvalratio],[peakdata.peakval],'ko')
             pause
+            end
         end
     end
     
