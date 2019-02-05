@@ -11,6 +11,11 @@ elseif isfield(valtozok,'high') & valtozok.high ==1
     destdir = dirs.PSDdir_high;
     variablename = 'bridgeddata';
     valtozok.breathing=0;
+elseif isfield(valtozok,'log') & valtozok.log ==1
+    sourcedir =dirs.bridgeddir;
+    destdir = dirs.PSDdir_log;
+    variablename = 'bridgeddata';
+    valtozok.breathing=0;
 else
     sourcedir =dirs.bridgeddir;
     destdir = dirs.PSDdir;
@@ -20,7 +25,7 @@ end
 parameters=valtozok.parameters;
 for xlsi=length(xlsdata):-1:1
     if isfield(xlsdata,'anaesthesia')
-    isitawake=any(strfind(xlsdata(xlsi).anaesthesia,'awake'));
+        isitawake=any(strfind(xlsdata(xlsi).anaesthesia,'awake'));
     else
         isitawake=0;
     end

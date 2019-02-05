@@ -61,9 +61,11 @@ a=dir([handles.data.dirs.rawexporteddir,handles.data.xlsdata(handles.data.fieldx
 if ~isempty(a) 
     sourcenames=[sourcenames,{'field'}];
 end
-a=dir([handles.data.dirs.breathingdir,handles.data.xlsdata(handles.data.fieldxlsnum).ID,'.mat']);
-if ~isempty(a) 
-    sourcenames=[sourcenames,{'breathing'}];
+if isfield(handles.data.dirs,'breathingdir')
+    a=dir([handles.data.dirs.breathingdir,handles.data.xlsdata(handles.data.fieldxlsnum).ID,'.mat']);
+    if ~isempty(a)
+        sourcenames=[sourcenames,{'breathing'}];
+    end
 end
 %%
 set(handles.popupmenu2,'String',sourcenames);

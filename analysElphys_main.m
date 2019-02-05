@@ -2,7 +2,7 @@
 
 close all
 clear all
-reloadxls=0;
+reloadxls=1;
 projectnames={'CB1elphys','InVivo','Persistent-ChRstim','persistent firing','bleb recording'};
 % projectnum=3;
 
@@ -45,6 +45,7 @@ elseif projectnum==2;
     dirs.taxonomydir=[locations.tgtardir,'ANALYSISdata/marci/_Taxonomy/persistent_invivo/'];
     dirs.PSDdir=[dirs.basedir,'PSD/'];
     dirs.PSDdir_high=[dirs.basedir,'PSD_high/'];
+    dirs.PSDdir_log=[dirs.basedir,'PSD_log/'];
     dirs.videodir=[dirs.basedir,'Videodata/'];
     dirs.brainstatedir=[dirs.basedir,'BrainState/'];
     % dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
@@ -118,7 +119,7 @@ elseif projectdata.selectvideoROIs==1
     return
 end
 %% create neurontaxonomy xls file
-if isfield(dirs,'taxonomydiaE_PSD_exportr')
+if isfield(dirs,'taxonomydir')
     path=[locations.matlabstuffdir,'NotMine/20130227_xlwrite/'];
     javaaddpath([path 'poi_library/poi-3.8-20120326.jar']);
     javaaddpath([path 'poi_library/poi-ooxml-3.8-20120326.jar']);
@@ -186,7 +187,7 @@ end
 
 %% finding events
 valtozok.overwrite=projectdata.owevent;
-valtozok.overwritebefore=datenum(2017,12,29);%;datenum(datetime('today'));%;
+valtozok.overwritebefore=datenum(2018,12,29);%;datenum(datetime('today'));%;
 valtozok.plotit=0;
 valtozok.threshholdaveragetime=15;%s
 % valtozok.mindvpdt=1;
@@ -202,7 +203,7 @@ valtozok.diffmovingt=.0005;
 valtozok.steptime=.0005; %s
 valtozok.eventminsdval=3;
 valtozok.apthreshval=10;
-parallelcount=4;
+parallelcount=2;
 aE_findevents(valtozok,dirs,parallelcount,xlsdata)
 paralleldata.count=NaN;
 while isnan(paralleldata.count) | ~isempty(paralleldata.files)
@@ -292,6 +293,28 @@ if isfield(dirs,'PSDdir_high')
     parameters.max=220;% - maximal frequency for decomposition
     parameters.step=1; %- frequency stepsize
     parameters.scale=1;% - scale type, can be linear (1) or logarithmic (2)
+    parameters.wavenumber=9;% - number of waves in wavelet
+    parameters.waveletlength=30;
+    parameters.addtaper=1;
+    parameters.taperlength=30;
+    
+    valtozok.parameters=parameters;
+    aE_PSD_export(dirs,xlsdata,valtozok);
+end
+
+%% extracting PSD - log
+if isfield(dirs,'PSDdir_log')
+    valtozok=struct;
+    valtozok.overwrite=0;
+    valtozok.analyseonlyfield=1;
+    valtozok.downsamplenum='auto';
+    valtozok.log=1;
+    valtozok.onlyawake=1;
+    parameters=struct;
+    parameters.min=.5; %minimal frequency for decomposition
+    parameters.max=200;% - maximal frequency for decomposition
+    parameters.step=1; %- frequency stepsize
+    parameters.scale=2;% - scale type, can be linear (1) or logarithmic (2)
     parameters.wavenumber=9;% - number of waves in wavelet
     parameters.waveletlength=30;
     parameters.addtaper=1;
@@ -630,7 +653,12 @@ for filei=1:length(files)
     szorzo=movieobj.Height/size(videodata(1).originalpic_all,1);
     %%
     
-    alldata(filei).pupildiameter=pupildata.diameter'/alldata(filei).MinorAxisLength/szorzo;
+    alldata(filei).pupildiameter=pupildata.diameter'/alldata(filei).MinorAxisLength/szorzo*2;
+    pupildiametersnow=sort(alldata(filei).pupildiameter);
+    percentile95=pupildiametersnow(round(.95*length(pupildiametersnow)));
+    if percentile95>1
+        alldata(filei).pupildiameter=alldata(filei).pupildiameter/percentile95;
+    end
     alldata(filei).pupildiameter_raw=pupildata.diameter';
 %     alldata(filei).pupildiameter=pupildata.diameter';
     alldata(filei).pupildiameter=moving(alldata(filei).pupildiameter,2)';
@@ -672,7 +700,94 @@ videopercentiles.movementpercentiles=movementpercentiles;
 save([dirs.videodir,'percentiles'],'videopercentiles');
 return
 
-
+%% looking for slow oscillations on the field
+window=5;%s
+windowstep=2.5;
+freqrange=[.6 4];
+for xlsidx=length(xlsdata)-0:-1:1
+    ID=xlsdata(xlsidx).ID;
+    load([dirs.PSDdir,ID])
+    peakdata=struct;
+    for sweep=1:length(PSDdata)
+        sweephossz=length(PSDdata(sweep).y)*PSDdata(sweep).si_powerMatrix;
+        if sweephossz>=window*1.5
+            time=[1:length(PSDdata(sweep).y)]*PSDdata(sweep).si_powerMatrix-PSDdata(sweep).si_powerMatrix;
+            PSDdata(sweep).powerMatrix=(double(PSDdata(sweep).powerMatrix)-PSDdata(sweep).compress_offset)*PSDdata(sweep).compress_multiplier;
+            PSDmedian=zeros(size(PSDdata(sweep).powerMatrix,1),round(sweephossz/windowstep)-1);
+            PSDmin=zeros(size(PSDdata(sweep).powerMatrix,1),round(sweephossz/windowstep)-1);
+            PSDmediantime=1:size(PSDmedian,2)*windowstep;
+            peakdata=struct;
+            for wini=1:round(sweephossz/windowstep)-1
+                [~,ettol]=min(abs(time-((wini)*windowstep-window/2)));
+                [~,eddig]=min(abs(time-((wini)*windowstep+window/2)));
+                PSDmedian(:,wini)=nanmedian(PSDdata(sweep).powerMatrix(:,ettol:eddig),2);
+                PSDmin(:,wini)=nanmin(PSDdata(sweep).powerMatrix(:,ettol:eddig),[],2);
+%                 PSDmedian=PSDmin;
+                [pks,locs,w,p]=findpeaks(PSDmedian(:,wini));
+                freqs=PSDdata(sweep).frequencyVector(locs);
+                needed=freqs>freqrange(1) & freqs<=freqrange(2);
+                pks=pks(needed);
+                locs=locs(needed);
+                w=w(needed);
+                p=p(needed);
+                [p,idx]=sort(p,'descend');
+                pks=pks(idx);
+                locs=locs(idx);
+                w=w(idx);
+                
+                
+                peaknum=2;
+                idxnow=locs(1:peaknum);
+                if isempty(fieldnames(peakdata))
+                    next=1;
+                else
+                    next=length(peakdata)+1;
+                end
+                peakdata(next).peakval=pks(1:peaknum)';
+                peakdata(next).peakvalratio=pks(1:peaknum)'/pks(peaknum+1);
+                peakdata(next).peakwidth=w(1:peaknum)';
+                peakdata(next).prominence=p(1:peaknum)';
+                peakdata(next).prominenceratio=p(1:peaknum)'/p(peaknum+1);
+                peakdata(next).freq=PSDdata(sweep).frequencyVector(locs(1:peaknum));
+                
+%                 figure(2)
+%                 clf
+%                 plot(PSDmedian(:,wini));
+%                 hold on
+%                 plot(idxnow,PSDmedian(idxnow,wini),'ro')
+%                 pause
+            end
+            if any([peakdata.peakvalratio]>2)  %any([peakdata.peakval]>.001) 
+            figure(1)
+            clf
+            subplot(3,2,1)
+            plot(time,PSDdata(sweep).y);
+            subplot(3,2,2)
+            plot(PSDdata(sweep).frequencyVector,PSDmedian);
+            subplot(3,2,3)
+            imagesc(time,PSDdata(sweep).frequencyVector,PSDdata(sweep).powerMatrix);
+            set(gca,'YDir','normal');
+            colormap linspecer
+            ylabel('Frequency (Hz)')
+            xlabel('Time (s)')
+            subplot(3,2,4)
+            imagesc(PSDmediantime,PSDdata(sweep).frequencyVector,PSDmedian);
+            set(gca,'YDir','normal');
+            colormap linspecer
+            ylabel('Frequency (Hz)')
+            xlabel('Time (s)')
+            
+            subplot(3,2,5)
+            semilogy([peakdata.freq],[peakdata.peakval],'ko')
+            
+            subplot(3,2,6)
+            semilogy([peakdata.peakvalratio],[peakdata.peakval],'ko')
+            pause
+            end
+        end
+    end
+    
+end
 
 
 
@@ -1341,7 +1456,7 @@ files=dir([dirs.taxonomydir,'IVs']);
 files([files.isdir])=[];
 datafiles=dir([dirs.taxonomydir,'datafiles']);
 datafiles([datafiles.isdir])=[];
-for filenum=1:length(files)
+for filenum=length(files):-1:1
     %     pause
     fname=files(filenum).name;
     datafileidx=[];
