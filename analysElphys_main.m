@@ -187,7 +187,7 @@ end
 
 %% finding events
 valtozok.overwrite=projectdata.owevent;
-valtozok.overwritebefore=datenum(2017,12,29);%;datenum(datetime('today'));%;
+valtozok.overwritebefore=datenum(2018,12,29);%;datenum(datetime('today'));%;
 valtozok.plotit=0;
 valtozok.threshholdaveragetime=15;%s
 % valtozok.mindvpdt=1;
@@ -203,7 +203,7 @@ valtozok.diffmovingt=.0005;
 valtozok.steptime=.0005; %s
 valtozok.eventminsdval=3;
 valtozok.apthreshval=10;
-parallelcount=4;
+parallelcount=2;
 aE_findevents(valtozok,dirs,parallelcount,xlsdata)
 paralleldata.count=NaN;
 while isnan(paralleldata.count) | ~isempty(paralleldata.files)
