@@ -1005,27 +1005,29 @@ for samplei=1:length(handles.data.samples)
 %             end
 %         end
     end
-    load([handles.data.dirs.basedir, 'AxonalSpikesTrainingData.mat']);
-    load([handles.data.dirs.basedir, 'SomaticSpikesTrainingData.mat']);
-    handles.data.spikeSortAxonal=axonalSpike_Train;
-    handles.data.spikeSortSomatic=somaticSpike_Train;
-
+    a=dir([handles.data.dirs.basedir, 'AxonalSpikesTrainingData.mat']);
+    if ~isempty(a)
+        load([handles.data.dirs.basedir, 'AxonalSpikesTrainingData.mat']);
+        load([handles.data.dirs.basedir, 'SomaticSpikesTrainingData.mat']);
+        handles.data.spikeSortAxonal=axonalSpike_Train;
+        handles.data.spikeSortSomatic=somaticSpike_Train;
+    end
     %%
     if exist('xlsnum','var') & isfield(handles.data.xlsdata,'Cranio_Lat')
-    cellcoord_lat=[handles.data.xlsdata(xlsnum).Cranio_Lat]+(([handles.data.xlsdata(xlsnum).locationX]-[handles.data.xlsdata(xlsnum).Cranio_center_X])/1000).*[handles.data.xlsdata(xlsnum).Lateral_dir_X];
-cellcoord_AP=[handles.data.xlsdata(xlsnum).Cranio_AP]+(([handles.data.xlsdata(xlsnum).locationy]-[handles.data.xlsdata(xlsnum).Cranio_center_Y])/1000).*[handles.data.xlsdata(xlsnum).Rostral_dir_Y];
-cellcoord_z=handles.data.xlsdata(xlsnum).locationz;
-    fieldcoord_lat=[handles.data.xlsdata(fieldxlsnum).Cranio_Lat]+(([handles.data.xlsdata(fieldxlsnum).locationX]-[handles.data.xlsdata(fieldxlsnum).Cranio_center_X])/1000).*[handles.data.xlsdata(fieldxlsnum).Lateral_dir_X];
-fieldcoord_AP=[handles.data.xlsdata(fieldxlsnum).Cranio_AP]+(([handles.data.xlsdata(fieldxlsnum).locationy]-[handles.data.xlsdata(fieldxlsnum).Cranio_center_Y])/1000).*[handles.data.xlsdata(fieldxlsnum).Rostral_dir_Y];
-fieldcoord_z=handles.data.xlsdata(fieldxlsnum).locationz;
-craniocoord=[handles.data.xlsdata(xlsnum).Cranio_AP,handles.data.xlsdata(xlsnum).Cranio_Lat];
-cellcoord=[cellcoord_AP,cellcoord_lat,cellcoord_z];
-fieldcoord=[fieldcoord_AP,fieldcoord_lat,fieldcoord_z];
-    disp(['cranio coord: AP - ',num2str(craniocoord(1)),'   Lateral - ',num2str(craniocoord(2))])
-    disp(['cell coord: AP - ',num2str(cellcoord(1)),'   Lateral - ',num2str(cellcoord(2)),'   depth - ',num2str(cellcoord(3))])
-    disp(['field coord: AP - ',num2str(fieldcoord(1)),'   Lateral - ',num2str(fieldcoord(2)),'   depth - ',num2str(fieldcoord(3))])
+        cellcoord_lat=[handles.data.xlsdata(xlsnum).Cranio_Lat]+(([handles.data.xlsdata(xlsnum).locationX]-[handles.data.xlsdata(xlsnum).Cranio_center_X])/1000).*[handles.data.xlsdata(xlsnum).Lateral_dir_X];
+        cellcoord_AP=[handles.data.xlsdata(xlsnum).Cranio_AP]+(([handles.data.xlsdata(xlsnum).locationy]-[handles.data.xlsdata(xlsnum).Cranio_center_Y])/1000).*[handles.data.xlsdata(xlsnum).Rostral_dir_Y];
+        cellcoord_z=handles.data.xlsdata(xlsnum).locationz;
+        fieldcoord_lat=[handles.data.xlsdata(fieldxlsnum).Cranio_Lat]+(([handles.data.xlsdata(fieldxlsnum).locationX]-[handles.data.xlsdata(fieldxlsnum).Cranio_center_X])/1000).*[handles.data.xlsdata(fieldxlsnum).Lateral_dir_X];
+        fieldcoord_AP=[handles.data.xlsdata(fieldxlsnum).Cranio_AP]+(([handles.data.xlsdata(fieldxlsnum).locationy]-[handles.data.xlsdata(fieldxlsnum).Cranio_center_Y])/1000).*[handles.data.xlsdata(fieldxlsnum).Rostral_dir_Y];
+        fieldcoord_z=handles.data.xlsdata(fieldxlsnum).locationz;
+        craniocoord=[handles.data.xlsdata(xlsnum).Cranio_AP,handles.data.xlsdata(xlsnum).Cranio_Lat];
+        cellcoord=[cellcoord_AP,cellcoord_lat,cellcoord_z];
+        fieldcoord=[fieldcoord_AP,fieldcoord_lat,fieldcoord_z];
+        disp(['cranio coord: AP - ',num2str(craniocoord(1)),'   Lateral - ',num2str(craniocoord(2))])
+        disp(['cell coord: AP - ',num2str(cellcoord(1)),'   Lateral - ',num2str(cellcoord(2)),'   depth - ',num2str(cellcoord(3))])
+        disp(['field coord: AP - ',num2str(fieldcoord(1)),'   Lateral - ',num2str(fieldcoord(2)),'   depth - ',num2str(fieldcoord(3))])
     end
-
+    
 end
 
 function plotandupdate(handles)
@@ -1574,9 +1576,14 @@ set(handles.text1,'String',handles.data.samples(selectedsamplenum).changes)
     end
     
     fieldstoadd={'anaesthesia','field'};
-    if isfield(handles.data.xlsdata,'axonalAPnum')
-        fieldstoadd=[fieldstoadd,{'axonalAPnum'}];
+    if get(handles.popupmenu6,'Value')>1
+        fieldtoadd=get(handles.popupmenu6,'String');
+        fieldtoadd=fieldtoadd{get(handles.popupmenu6,'Value')};
+        fieldstoadd=[fieldstoadd,{fieldtoadd}];
     end
+%     if isfield(handles.data.xlsdata,'axonalAPnum')
+%         fieldstoadd=[fieldstoadd,{'axonalAPnum'}];
+%     end
     IDstring={};
     actualIDs=handles.data.actualIDs;
     for i=1:length(actualIDs)

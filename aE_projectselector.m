@@ -22,7 +22,7 @@ function varargout = aE_projectselector(varargin)
 
 % Edit the above text to modify the response to help aE_projectselector
 
-% Last Modified by GUIDE v2.5 15-Dec-2018 14:47:32
+% Last Modified by GUIDE v2.5 06-Feb-2019 18:17:48
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -145,7 +145,8 @@ handles.outputt.owevent=get(handles.checkbox3,'Value');
 handles.outputt.owstimepoch=get(handles.checkbox4,'Value');
 handles.outputt.inspecttraces=get(handles.checkbox7,'Value');
 handles.outputt.selectvideoROIs=get(handles.checkbox8,'Value');
-handles.outputt.doaAPstatistics=get(handles.checkbox9,'Value');
+handles.outputt.dostatistics=get(handles.checkbox9,'Value');
+handles.outputt.loadstatistics=get(handles.checkbox10,'Value');
 assignin('base', 'projectdata', handles.outputt);
 close(handles.figure1);
 
@@ -165,6 +166,7 @@ set(handles.checkbox2,'Enable',val)
 set(handles.checkbox3,'Enable',val)
 set(handles.checkbox4,'Enable',val)
 set(handles.checkbox8,'Enable',val)
+set(handles.checkbox9,'Enable',val)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox7
 
@@ -184,6 +186,7 @@ set(handles.checkbox2,'Enable',val)
 set(handles.checkbox3,'Enable',val)
 set(handles.checkbox4,'Enable',val)
 set(handles.checkbox7,'Enable',val)
+set(handles.checkbox9,'Enable',val)
 % Hint: get(hObject,'Value') returns toggle state of checkbox8
 
 
@@ -194,3 +197,12 @@ function checkbox9_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox9
+
+
+% --- Executes on button press in checkbox10.
+function checkbox10_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox10 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox10

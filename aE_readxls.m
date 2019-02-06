@@ -5,12 +5,17 @@ drugnameidx=[];
 drugtimeidx=[];
 drugwashtimeidx=[];
 drugconcidx=[];
-
+numericrows={'age','Channel','startT','endT','locationX','locationy','locationz','slicethickness','Ca','Mg'};
 for i=1:size(xlsdataraw,2)
     varname=char(xlsdataraw(1,i));
+    if any(any(strcmpi(numericrows,varname)))
+        itshouldbenumeric=true;
+    else
+        itshouldbenumeric=false;
+    end
     for j=2:size(xlsdataraw,1)
         value=cell2mat(xlsdataraw(j,i));
-        if any(strfind(varname,'T')) & ischar(value)
+        if itshouldbenumeric & ischar(value) %any(strfind(varname,'T'))
             xlsdata(j-1).(varname)=str2num(value);
         else
            xlsdata(j-1).(varname)=value;
