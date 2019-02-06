@@ -209,5 +209,4 @@ for xlsi=1:length(xlsdata)
             xlsdata(xlsi).brainstateless_aAPfreq=NaN;
     end
 end
-APstatdata=xlsdata;
-save([dirs.basedir,'statistics/APstats.mat'],'APstatdata');
+AP

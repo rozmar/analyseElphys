@@ -1,4 +1,4 @@
-function xlsdata = persistent_aAPstatistics(dirs,xlsdata)
+% function xlsdata = persistent_aAPstatistics(dirs,xlsdata)
 brainstatenames={'Slow wave sleep', 'REM sleep', 'Quiet wakefulness','Active wakefulness'};
 brainstatenames_varname={'Slow_wave_sleep', 'REM_sleep', 'Quiet_wakefulness','Active_wakefulness'};
 % stepsize=1;
