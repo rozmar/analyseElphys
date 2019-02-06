@@ -1005,6 +1005,11 @@ for samplei=1:length(handles.data.samples)
 %             end
 %         end
     end
+    load([handles.data.dirs.basedir, 'AxonalSpikesTrainingData.mat']);
+    load([handles.data.dirs.basedir, 'SomaticSpikesTrainingData.mat']);
+    handles.data.spikeSortAxonal=axonalSpike_Train;
+    handles.data.spikeSortSomatic=somaticSpike_Train;
+
     %%
     if exist('xlsnum','var') & isfield(handles.data.xlsdata,'Cranio_Lat')
     cellcoord_lat=[handles.data.xlsdata(xlsnum).Cranio_Lat]+(([handles.data.xlsdata(xlsnum).locationX]-[handles.data.xlsdata(xlsnum).Cranio_center_X])/1000).*[handles.data.xlsdata(xlsnum).Lateral_dir_X];
@@ -1020,6 +1025,7 @@ fieldcoord=[fieldcoord_AP,fieldcoord_lat,fieldcoord_z];
     disp(['cell coord: AP - ',num2str(cellcoord(1)),'   Lateral - ',num2str(cellcoord(2)),'   depth - ',num2str(cellcoord(3))])
     disp(['field coord: AP - ',num2str(fieldcoord(1)),'   Lateral - ',num2str(fieldcoord(2)),'   depth - ',num2str(fieldcoord(3))])
     end
+
 end
 
 function plotandupdate(handles)
@@ -3223,6 +3229,9 @@ function AxSomLDA_Callback(hObject, eventdata, handles)
    %Initialize set of axonal and somatic spikes
 selectedsamplenum=get(handles.popupmenu1,'Value');
 eventdata=handles.data.samples(selectedsamplenum).eventdata;
+
+axonalSpike_Train=handles.data.spikeSortAxonal;
+somaticSpike_Train=handles.data.spikeSortSomatic;
 
 %call ax_somClassifier function, return: sorted spikes, classes: axonal,somatic
 [aAPsMatrix,sAPsMatrix]=ax_somClassifier(eventdata);

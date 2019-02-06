@@ -109,9 +109,9 @@ function [PowerMatrix, frequencyVector, CoeffMatrix, PowerMatrixTrial] = calcula
     % Display waitbar
     newTitle = sprintf(waitbarMsg, frequencyVector([i,end]));
     if i==1
-      multiWaitbar( newTitle , 'Value',  i/nFrequency);  
+%      multiWaitbar( newTitle , 'Value',  i/nFrequency);  
     elseif i > 1
-      multiWaitbar( lastTitle , 'Value', i/nFrequency, 'Relabel', newTitle);
+      %multiWaitbar( lastTitle , 'Value', i/nFrequency, 'Relabel', newTitle);
     end
     lastTitle = newTitle;
          
@@ -168,6 +168,6 @@ function [PowerMatrix, frequencyVector, CoeffMatrix, PowerMatrixTrial] = calcula
   end
   %% -------------------------
   
-  multiWaitbar(lastTitle, 'Close');
+ % multiWaitbar(lastTitle, 'Close');
   
 end
