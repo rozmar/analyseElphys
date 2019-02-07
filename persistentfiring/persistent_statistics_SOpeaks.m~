@@ -209,21 +209,14 @@ for xlsidx=1:length(xlsdata)
     end
     
 end
-fieldek=fieldnames(oscillationpeaks);
+fieldek=
 for xlsnum=1:length(xlsdata) %% add field values to recordings
     fieldxlsnum=find(strcmp(xlsdata(xlsnum).HEKAfname,{xlsdata.HEKAfname}) & [xlsdata.field]==1);
     
     if isempty(fieldxlsnum)
-        for fieldi=1:length(fieldek)
-            fieldname=fieldek{fieldi};
-            oscillationpeaks(xlsnum).([fieldname,'_field'])=NaN;
-        end
+        
     else
         fieldxlsnum=fieldxlsnum(1);
-        for fieldi=1:length(fieldek)
-            fieldname=fieldek{fieldi};
-            oscillationpeaks(xlsnum).([fieldname,'_field'])=oscillationpeaks(fieldxlsnum).(fieldname);
-        end
     end
 end
 save([dirs.basedir,'statistics/SOpeaks.mat'],'oscillationpeaks');

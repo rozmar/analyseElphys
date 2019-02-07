@@ -81,12 +81,12 @@ for j=2:size(xlsdataraw,1)
             end
         end
     end
-    if xlsdata(j-1).drugnum==0
-        xlsdata(j-1).drugnames='no pharmacology';
-    else
-        xlsdata(j-1).drugnames=[xlsdata(j-1).drugdata.DrugName];
-    end
-
+    %%
+    drugnames= {xlsdata(j-1).drugdata.DrugName};
+    for drugi=1:length()
+    %%
+    xlsdata(j-1).
+    disp('lol')
 end
 
 clear i j xlsdataraw varname

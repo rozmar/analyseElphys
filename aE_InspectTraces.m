@@ -2395,7 +2395,7 @@ if ~isempty(searchstr')
         searchfield=searchtextline(1:idx-1);
         searchstr=searchtextline(idx+3:end);
         for i=1:length(xlsdata)
-            if ~any(regexp(xlsdata(i).(searchfield),searchstr))
+            if ~any(regexpi(xlsdata(i).(searchfield),searchstr))
                 ezaz(i)=false;
             end
         end
