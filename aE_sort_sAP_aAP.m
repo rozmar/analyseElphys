@@ -405,44 +405,56 @@ end
         sis=unique([APwaves.si]);
         for i=1:length(sis)
             if ii==1
-                subplot(2,2,1)
+                subplot(2,3,1)
                 title('aAPs')
                 needed=find([APwaves.si]==sis(i) & [APwaves.axonalAP]==true & [APwaves.maxtime]>=valtozok.timeborders(1) &[APwaves.maxtime]<=valtozok.timeborders(2) &[APwaves.stimulated]==false);
             elseif ii==2
-                subplot(2,2,1)
+                subplot(2,3,1)
                 title('sAPs')
                 needed=find([APwaves.si]==sis(i) & [APwaves.somaticAP]==true & [APwaves.maxtime]>=valtozok.timeborders(1) &[APwaves.maxtime]<=valtozok.timeborders(2) &[APwaves.stimulated]==false);
             elseif ii==3
-                subplot(2,2,1)
+                subplot(2,3,1)
                 title('EPSPs')
                 needed=find([APwaves.si]==sis(i) & [APwaves.ep]==true & [APwaves.maxtime]>=valtozok.timeborders(1) &[APwaves.maxtime]<=valtozok.timeborders(2) &[APwaves.stimulated]==false);
             elseif ii==4
-                subplot(2,2,1)
+                subplot(2,3,1)
                 title('noise')
                 needed=find([APwaves.si]==sis(i) & [APwaves.noise]==true & [APwaves.maxtime]>=valtozok.timeborders(1) &[APwaves.maxtime]<=valtozok.timeborders(2) &[APwaves.stimulated]==false);
             end
-            subplot(2,2,1)
+            subplot(2,3,1)
             hold on
             plot([APwaves(needed).t],[APwaves(needed).v]);
             axis tight
             ylabel('Voltage (mV)')
             xlabel('Time (ms)')
-            subplot(2,2,2)
+            subplot(2,3,2)
             hold on
             plot([APwaves(needed).tdv],[APwaves(needed).dv]);
             axis tight
             ylabel('dV/dt (mV/ms)')
             xlabel('Time (ms)')
-            subplot(2,2,3)
+            subplot(2,3,4)
             hist([APwaves(needed).RS]);
             xlabel('RS (MOhm)')
             ylabel('count')
-            subplot(2,2,4)
+            subplot(2,3,5)
             hold on
             plot([APwaves(needed).vdv],[APwaves(needed).dv]);
             axis tight
             ylabel('dV/dt (mV/ms)')
             xlabel('Voltage (mV)')
+            subplot(2,3,3)
+            hold on
+            plot([APwaves(needed).tddv],[APwaves(needed).ddv]);
+            axis tight
+            ylabel('ddV/dt (mV/ms^2)')
+            xlabel('Time (ms)')
+            subplot(2,3,6)
+            hold on
+            plot([APwaves(needed).tdddv],[APwaves(needed).dddv]);
+            axis tight
+            ylabel('dddV/dt (mV/ms^3)')
+            xlabel('Time (ms)')
         end
     end
     

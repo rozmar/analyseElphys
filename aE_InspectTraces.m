@@ -25,7 +25,7 @@ function varargout = aE_InspectTraces(varargin)
 
 % Edit the above text to modify the response to help aE_InspectTraces
 
-% Last Modified by GUIDE v2.5 21-Jan-2019 14:24:10
+% Last Modified by GUIDE v2.5 07-Feb-2019 14:38:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -3324,3 +3324,12 @@ fprintf('The optimal value of w^T*S_W*w is %f\n', (w'*Sw*w));
 fprintf('The optimal value of w^T*S_B*w/w^T*S_W*w is %f\n', (w'*Sb*w)/(w'*Sw*w));
 %distance,similarity to spike vector
 axsomdistancesimilarity(aAPsMatrix,sAPsMatrix);
+
+
+% --- Executes on button press in pushbutton16.
+function pushbutton16_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton16 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+selectedsamplenum=get(handles.popupmenu1,'Value');
+aE_InspectEvents(handles.data.samples(selectedsamplenum).bridgeddata,handles.data.samples(selectedsamplenum).stimdata,handles.data.samples(selectedsamplenum).eventdata)
