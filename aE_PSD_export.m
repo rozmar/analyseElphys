@@ -23,7 +23,7 @@ else
     valtozok.breathing=0;
 end
 parameters=valtozok.parameters;
-for xlsi=length(xlsdata):-1:1
+for xlsi=1:length(xlsdata)
     if isfield(xlsdata,'anaesthesia')
         isitawake=any(strfind(xlsdata(xlsi).anaesthesia,'awake'));
     else
