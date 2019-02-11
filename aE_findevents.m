@@ -3,9 +3,9 @@ sdval=3;
 files=dir(dirs.bridgeddir);
 files([files.isdir])=[];
 if parallelcount>1
-    delete([dirs.eventparaleldir,'*.mat']);
+%     delete([dirs.eventparaleldir,'*.mat']);
 end
-for filenum=1:length(files)% length(files):-1:1%% végigmegyünk az összes file-n %
+for filenum=length(files):-1:1%% végigmegyünk az összes file-n % filenum=1:length(files)%
     a=dir([dirs.eventdir,files(filenum).name]);
     if isfield(xlsdata,'ID')
         xlsnum=find(strcmp(files(filenum).name(1:end-4),{xlsdata.ID}));
