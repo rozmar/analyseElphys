@@ -971,7 +971,7 @@ for samplei=1:length(handles.data.samples)
             xlsnum=handles.data.samples(samplei).selectedID-1;
             fieldxlsnum=find(strcmp(handles.data.xlsdata(xlsnum).HEKAfname,{handles.data.xlsdata.HEKAfname}) & [handles.data.xlsdata.field]==1);
             if ~isempty(fieldxlsnum)
-                a=dir([handles.data.dirs.breathingdir,handles.data.xlsdata(fieldxlsnum).ID,'.mat']);
+                a=dir([handles.data.dirs.breathingdir_psd,handles.data.xlsdata(fieldxlsnum).ID,'.mat']);
                 if ~isempty(a)
                     load([handles.data.dirs.breathingdir_psd,handles.data.xlsdata(fieldxlsnum).ID,'.mat']);
                     %%
