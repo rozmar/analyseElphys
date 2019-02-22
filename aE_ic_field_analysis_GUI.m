@@ -650,15 +650,15 @@ for fieldsweepnum= 1:length(handles.data.fielddata)
     %     end
 end
 
-if isfield(handles.data,'BrainStateData')
+if isfield(handles.data,'BrainStateData') & ~isempty(fieldnames(handles.data.BrainStateData))
     statestodo=[unique({handles.data.BrainStateData.name}),'All'];
 else
     statestodo={'All'};
 end
-
+%%
 for i=1:length(FieldData)
     FieldData(i).medicV=median(FieldData(i).ic);
-    if isfield(handles.data,'BrainStateData')
+    if isfield(handles.data,'BrainStateData') & ~isempty(fieldnames(handles.data.BrainStateData))
         idx=find(FieldData(i).troughtime>[handles.data.BrainStateData.starttime] & FieldData(i).troughtime<[handles.data.BrainStateData.endtime]);
         if ~isempty(idx)
             FieldData(i).brainstatename=handles.data.BrainStateData(idx).name;
@@ -905,7 +905,7 @@ valtozok_fieldplot.highlightaAP=1;
 valtozok_fieldplot.highlightaAP_timeback=.002;
 valtozok_fieldplot.highlightaAP_timeforward=.02;
 
-if isfield(handles.data,'BrainStateData')
+if isfield(handles.data,'BrainStateData') & ~isempty(fieldnames(handles.data.BrainStateData))
     statestodo=[unique({handles.data.BrainStateData.name}),'All'];
 else
     statestodo={'All'};

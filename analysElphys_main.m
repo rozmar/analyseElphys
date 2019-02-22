@@ -108,7 +108,6 @@ end
 %% perform statistics (SO, aAP)
 if projectdata.dostatistics==1
     persistent_statistics_main(dirs,xlsdata)
-
 end
 %% load statistics
 statfilenames={'APstats.mat','SOpeaks.mat'};
@@ -340,9 +339,42 @@ if isfield(dirs,'PSDdir_high')
     valtozok.parameters=parameters;
     aE_PSD_export(dirs,xlsdata,valtozok);
 end
+%% PSD stats
+dirfields=fieldnames(dirs);
+dirstodo=dirfields(~cellfun(@isempty,regexp(dirfields,'PSDdir')));
+for diri=1:length(dirstodo)
+    dirnow=dirs.(dirstodo{diri});
+    destdir=[dirnow,'stats/'];
+    files=dir(dirnow);
+    files([files.isdir])=[];
+    for filei=1:length(files)
+        fname=files(filei).name;
+        a=dir([dirnow,'stats/',fname]);
+        if isempty(a)
+            load([dirnow,fname]);
+            PSDdata_stats=rmfield(PSDdata,{'powerMatrix','y','si_powerMatrix'});
+            if isfield(PSDdata_stats,'compress_offset')
+                PSDdata_stats=rmfield(PSDdata_stats,{'compress_offset','compress_multiplier'});
+            end
+            for sweepi=1:length(PSDdata);
+                if isfield(PSDdata,'compress_offset')
+                    PSDdata(sweepi).powerMatrix=double(PSDdata(sweepi).powerMatrix)*PSDdata(sweepi).compress_multiplier+PSDdata(sweepi).compress_offset;
+                end
+                PSDdata_stats(sweepi).mu=mean(PSDdata(sweepi).powerMatrix,2);
+                PSDdata_stats(sweepi).sigma=std(PSDdata(sweepi).powerMatrix,[],2);
+                PSDdata_stats(sweepi).min=min(PSDdata(sweepi).powerMatrix,[],2);
+                PSDdata_stats(sweepi).max=max(PSDdata(sweepi).powerMatrix,[],2);
+                PSDdata_stats(sweepi).median=median(PSDdata(sweepi).powerMatrix,2);
+                PSDdata_stats(sweepi).length=length(PSDdata(sweepi).y)*PSDdata(sweepi).si_powerMatrix;
+            end
+            save([destdir,fname],'PSDdata_stats','-v7.3');
+            disp(['PSD stat export from ',fname, ' is done'])
+        end
+    end
+end
 
 %% extracting PSD - log
-if isfield(dirs,'PSDdir_log')
+if isfield(dirs,'breathingdir_psd')
     valtozok=struct;
     valtozok.overwrite=0;
     valtozok.analyseonlyfield=1;
@@ -408,7 +440,7 @@ end
 
 valtozok.sampleinterval=.01;
 valtozok.overwrite=0;
-for xlsi=length(xlsdata):-1:1
+for xlsi=1:length(xlsdata)%length(xlsdata):-1:1
     if any(strfind(xlsdata(xlsi).anaesthesia,'awake'))
         valtozok.setupname=xlsdata(xlsi).setup;
         valtozok.filename=xlsdata(xlsi).HEKAfname;

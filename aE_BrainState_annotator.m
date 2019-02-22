@@ -60,7 +60,7 @@ set(handles.popupmenu1,'String',handles.data.BrainStateProps.Statevalues(1:end-1
 set(handles.popupmenu2,'String',[handles.data.movementnames,{'pupilsize','duration'}]);
 set(handles.popupmenu3,'String',{'<','>','='});
 set(handles.edit1,'String','0')
-set(handles.listbox2,'String',[handles.data.movementnames,{'pupilsize'}]);
+set(handles.listbox2,'String',[handles.data.movementnames,{'pupilsize','FieldPCA1'}]);
 if ~isfield(handles.data,'BrainStateRules')
     handles.data.BrainStateRules=struct;
     set(handles.listbox1,'String','none');

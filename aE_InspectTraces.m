@@ -25,7 +25,7 @@ function varargout = aE_InspectTraces(varargin)
 
 % Edit the above text to modify the response to help aE_InspectTraces
 
-% Last Modified by GUIDE v2.5 07-Feb-2019 14:38:45
+% Last Modified by GUIDE v2.5 21-Feb-2019 11:10:56
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -824,11 +824,18 @@ for samplei=1:length(handles.data.samples)
                 set(handles.edit9,'String',max(PSDdata(1).powerMatrix(:)));
                 set(handles.edit10,'String',8); %max(PSDdata(1).frequencyVector(:))
                 set(handles.edit11,'String',min(PSDdata(1).frequencyVector(:)));
+                a=dir([directory,'stats/',handles.data.xlsdata(xlsnum).ID,'.mat']);
+                if ~isempty(a)
+                    load([directory,'stats/',handles.data.xlsdata(xlsnum).ID]);
+                    handles.data.samples(samplei).PSDdata_ic_stats=PSDdata_stats;
+                else
+                    handles.data.samples(samplei).PSDdata_ic_stats=[];
+                end
             else
                 handles.data.samples(samplei).PSDdata_ic=[];
+                handles.data.samples(samplei).PSDdata_ic_stats=[];
             end                
         end
-        
         
         if isfield(handles.data.dirs,'PSDdir')
             disp('loading PSD of field')
@@ -907,8 +914,17 @@ for samplei=1:length(handles.data.samples)
                 set(handles.edit9,'String',max(PSDdata(1).powerMatrix(:)));
                 set(handles.edit10,'String',8); %max(PSDdata(1).frequencyVector(:))
                 set(handles.edit11,'String',min(PSDdata(1).frequencyVector(:)));
+                
+                a=dir([directory,'stats/',handles.data.xlsdata(fieldxlsnum).ID,'.mat']);
+                if ~isempty(a)
+                    load([directory,'stats/',handles.data.xlsdata(fieldxlsnum).ID]);
+                    handles.data.samples(samplei).PSDdata_field_stats=PSDdata_stats;
+                else
+                    handles.data.samples(samplei).PSDdata_field_stats=[];
+                end
             else
                 handles.data.samples(samplei).PSDdata_field=[];
+                handles.data.samples(samplei).PSDdata_field_stats=[];
             end                
         end
         
@@ -1013,7 +1029,7 @@ for samplei=1:length(handles.data.samples)
         handles.data.spikeSortSomatic=somaticSpike_Train;
     end
     %%
-    if exist('xlsnum','var') & isfield(handles.data.xlsdata,'Cranio_Lat')
+    if exist('xlsnum','var') & isfield(handles.data.xlsdata,'Cranio_Lat') & ~isempty(fieldxlsnum)
         cellcoord_lat=[handles.data.xlsdata(xlsnum).Cranio_Lat]+(([handles.data.xlsdata(xlsnum).locationX]-[handles.data.xlsdata(xlsnum).Cranio_center_X])/1000).*[handles.data.xlsdata(xlsnum).Lateral_dir_X];
         cellcoord_AP=[handles.data.xlsdata(xlsnum).Cranio_AP]+(([handles.data.xlsdata(xlsnum).locationy]-[handles.data.xlsdata(xlsnum).Cranio_center_Y])/1000).*[handles.data.xlsdata(xlsnum).Rostral_dir_Y];
         cellcoord_z=handles.data.xlsdata(xlsnum).locationz;
@@ -1252,6 +1268,7 @@ hObject=findall(gcf,'Name','aE_InspectTraces');
 guidata(hObject,handles);
 
 function plotlowerpanels(marker,samplenum,starttime,endtime,neededwaves,axesname,popupname,handles)
+PSD_Zscore=get(handles.checkbox10,'Value');
 axes(handles.(axesname))
 cla
 if get(handles.(popupname),'Value')-1==0
@@ -1300,7 +1317,11 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+3 & ~isemp
         cmaxval=handles.data.samples(samplenum).plotdetails.PSD.cmax(2);
     end
 %     caxis([0 str2num(get(handles.edit9,'String'))])
-    caxis([0 cmaxval])
+    if PSD_Zscore
+        caxis([0 cmaxval])
+    else
+        caxis([0 cmaxval])
+    end
     
     set(gca,'YDir','normal');
     colormap linspecer
@@ -1373,7 +1394,11 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+6 & isfiel
         cmaxval=handles.data.samples(samplenum).plotdetails.PSD.cmax(2);
     end
 %     caxis([0 str2num(get(handles.edit9,'String'))])
-    caxis([0 cmaxval])
+    if PSD_Zscore
+        caxis([0 cmaxval])
+    else
+        caxis([0 cmaxval])
+    end
     
     set(gca,'YDir','normal');
     colormap linspecer
@@ -1434,7 +1459,11 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+8 & ~isemp
         cmaxval=handles.data.samples(samplenum).plotdetails.PSD.cmax(2);
     end
 %     caxis([0 str2num(get(handles.edit9,'String'))])
-    caxis([0 cmaxval])
+    if PSD_Zscore
+        caxis([0 cmaxval])
+    else
+        caxis([0 cmaxval])
+    end
 %     caxis([0 str2num(get(handles.edit9,'String'))])
     set(gca,'YDir','normal');
     colormap linspecer
@@ -1637,15 +1666,16 @@ for selectedsamplenum=1:5
         PSD_cmax=str2num(get(handles.edit9,'string'));
         panelnames=get(handles.popupmenu10,'string');
         selectedpanel=panelnames{get(handles.popupmenu10,'Value')};
+        PSD_Zscore=get(handles.checkbox10,'Value');
         plotdetails=handles.data.samples(selectedsamplenum).plotdetails;
         if ~isempty(fieldnames(plotdetails))
-        if strcmp(selectedpanel,'upper')
-            mehetPSD=~(plotdetails.PSD.cmax(1)==PSD_cmax);
-        elseif strcmp(selectedpanel,'lower')
-            mehetPSD=~(plotdetails.PSD.cmax(2)==PSD_cmax);
-        elseif strcmp(selectedpanel,'both')
-            mehetPSD=~(plotdetails.PSD.cmax(2)==PSD_cmax & plotdetails.PSD.cmax(1)==PSD_cmax);    
-        end
+            if strcmp(selectedpanel,'upper')
+                mehetPSD=~(plotdetails.PSD.cmax(1)==PSD_cmax) | ~(plotdetails.PSD.Zscore==PSD_Zscore);
+            elseif strcmp(selectedpanel,'lower')
+                mehetPSD=~(plotdetails.PSD.cmax(2)==PSD_cmax) | ~(plotdetails.PSD.Zscore==PSD_Zscore);
+            elseif strcmp(selectedpanel,'both')
+                mehetPSD=~(plotdetails.PSD.cmax(2)==PSD_cmax & plotdetails.PSD.cmax(1)==PSD_cmax) | ~(plotdetails.PSD.Zscore==PSD_Zscore);
+            end
         end
         if ~isempty(neededwaves)
             if isempty(fieldnames(plotdetails)) | ~(length(neededwaves)==length(plotdetails.neededwaves)) | ~any(neededwaves==plotdetails.neededwaves) | ~(neededsamplenum==plotdetails.neededsamplenum) | ~all(cutoffreq==plotdetails.cutoffreq) | ~(filterdeg==plotdetails.filterdeg) | ~(shoulddownsample==plotdetails.shoulddownsample) | ~(minfreq==plotdetails.minfreq) | ~(maxfreq==plotdetails.maxfreq)  | mehetPSD
@@ -1662,10 +1692,14 @@ for selectedsamplenum=1:5
                 if ~isfield(plotdetails,'PSD') | strcmp(selectedpanel,'both')
                     plotdetails.PSD.cmax(1)=PSD_cmax;
                     plotdetails.PSD.cmax(2)=PSD_cmax;
+                    plotdetails.PSD.Zscore(1)=PSD_Zscore;
+%                     plotdetails.PSD.Zscore(2)=PSD_Zscore;
                 elseif strcmp(selectedpanel,'upper')
                     plotdetails.PSD.cmax(1)=PSD_cmax;
+                    plotdetails.PSD.Zscore(1)=PSD_Zscore;
                 elseif strcmp(selectedpanel,'lower')
                     plotdetails.PSD.cmax(2)=PSD_cmax;
+                    plotdetails.PSD.Zscore(1)=PSD_Zscore;
                 end
                 
                 
@@ -1712,7 +1746,7 @@ for selectedsamplenum=1:5
                 %%
                 
                  if ~isempty(handles.data.samples(selectedsamplenum).PSDdata_ic) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+8 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+8)
-                    PSDdatatoplot=preparePSDdataforplotting(handles.data.samples(selectedsamplenum).PSDdata_ic,handles,neededsamplenum,shoulddownsample);
+                    PSDdatatoplot=preparePSDdataforplotting(handles.data.samples(selectedsamplenum).PSDdata_ic,handles,neededsamplenum,shoulddownsample,PSD_Zscore,handles.data.samples(selectedsamplenum).PSDdata_ic_stats);
                     handles.data.samples(selectedsamplenum).PSDdata_ictoplot=PSDdatatoplot;
                     %                 set(handles.edit9,'String',handles.data.samples(selectedsamplenum).PSDdata_ictoplot.intensitypercentiles(99));
                 else
@@ -1720,7 +1754,7 @@ for selectedsamplenum=1:5
                 end
                 
                 if ~isempty(handles.data.samples(selectedsamplenum).PSDdata_field) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+3 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+3)
-                    PSDdatatoplot=preparePSDdataforplotting(handles.data.samples(selectedsamplenum).PSDdata_field,handles,neededsamplenum,shoulddownsample);
+                    PSDdatatoplot=preparePSDdataforplotting(handles.data.samples(selectedsamplenum).PSDdata_field,handles,neededsamplenum,shoulddownsample,PSD_Zscore,handles.data.samples(selectedsamplenum).PSDdata_field_stats);
                     handles.data.samples(selectedsamplenum).PSDdata_fieldtoplot=PSDdatatoplot;
                     %                 set(handles.edit9,'String',handles.data.samples(selectedsamplenum).PSDdata_fieldtoplot.intensitypercentiles(99));
                 else
@@ -1729,7 +1763,7 @@ for selectedsamplenum=1:5
                 
                 
                 if isfield(handles.data.samples(selectedsamplenum),'BreathingData_PSD') & ~isempty(handles.data.samples(selectedsamplenum).BreathingData_PSD) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+6 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+6)
-                    PSDdatatoplot=preparePSDdataforplotting(handles.data.samples(selectedsamplenum).BreathingData_PSD,handles,neededsamplenum,shoulddownsample);
+                    PSDdatatoplot=preparePSDdataforplotting(handles.data.samples(selectedsamplenum).BreathingData_PSD,handles,neededsamplenum,shoulddownsample,PSD_Zscore,[]);
                     handles.data.samples(selectedsamplenum).BreathingPSDdatatoplot=PSDdatatoplot;
                     %                 set(handles.edit9,'String',handles.data.samples(selectedsamplenum).PSDdata_fieldtoplot.intensitypercentiles(99));
                 else
@@ -1750,7 +1784,7 @@ for selectedsamplenum=1:5
     end
 end
 
-function PSDdatatoplot=preparePSDdataforplotting(PSDdata,handles,neededsamplenum,shoulddownsample)
+function PSDdatatoplot=preparePSDdataforplotting(PSDdata,handles,neededsamplenum,shoulddownsample,PSD_Zscore,PSDdata_stats)
 hosszofPSDwaves=zeros(1,length(PSDdata));
 for sweepi=1:length(PSDdata)
     if ~isempty(PSDdata(sweepi).y)
@@ -1815,7 +1849,7 @@ end
 
 %%
 if ~isempty(fieldnames(PSDdatatoplot.trace))
-    samplenumnow=length([PSDdatatoplot.trace.y]);
+    samplenumnow=length([PSDdatatoplot.trace.y])*length(frequencyVector);
     if neededsamplenum<samplenumnow & neededsamplenum>0 & shoulddownsample==1
         %                 disp('downsampling started')
         ratio=round(samplenumnow/neededsamplenum);
@@ -1833,7 +1867,7 @@ end
 
 bigtime=(1:size(bigmatrix,2))*si+starttime;
 if ~isempty(bigtime)
-    samplenumnow=length(bigtime);
+    samplenumnow=length(bigtime);%*length(frequencyVector);
     if neededsamplenum<samplenumnow & neededsamplenum>0 & shoulddownsample==1
         %                 disp('downsampling started')
         ratio=round(samplenumnow/neededsamplenum);
@@ -1845,7 +1879,20 @@ end
 
 %% normalize 
 % bigmatrix=bigmatrix.*repmat(frequencyVector',1,size(bigmatrix,2));
-
+%% Zscore
+if PSD_Zscore & ~isempty(PSDdata_stats)
+    neededwaves=[PSDdata_stats.length]>3;
+    mus=[PSDdata_stats(neededwaves).mu];%
+    mus=mus(neededfrequencies,:);%(neededwaves)
+    mu=median(mus,2);
+    sigmas=[PSDdata_stats(neededwaves).sigma];%(neededwaves)
+    sigmas=sigmas(neededfrequencies,:);
+    sigma=median(sigmas,2);
+    bigmatrix_Z=bigmatrix-repmat(mu,1,size(bigmatrix,2));
+    bigmatrix_Z=bigmatrix_Z./repmat(sigma,1,size(bigmatrix,2));
+    bigmatrix_Z(bigmatrix==0)=0;
+    bigmatrix=bigmatrix_Z;
+end
 %%
 PSDdatatoplot.powerMatrix=bigmatrix;
 PSDdatatoplot.frequencyVector=frequencyVector;
@@ -2989,27 +3036,42 @@ if get(hObject,'Value')==true
             startvalue=[];
             for sweep=1:length(bridgeddata)
                 fieldsweep=find([fielddata.realtime]==bridgeddata(sweep).realtime);
-                offsetdata(sweep).realtime=bridgeddata(sweep).realtime;
-                si=bridgeddata(sweep).si;
-                y=fielddata(fieldsweep).y;
-                step=round(hossz/si);
-                offsetdata(sweep).hossz=length(y)*si;
-                offsetdata(sweep).startvalue=median(y(1:min(length(y),step)));
-                offsetdata(sweep).endvalue=median(y(max(1,length(y)-step):end));
-                if offsetdata(sweep).hossz>hossz
-                    y_filt=[y(step:-1:1),y,y(end:-1:end-step+1)];
-                    ninq=(1/si)/2;
-                    [b,a]=butter(1,(1/hossz)/ninq,'low');
-                    y_filt=filtfilt(b,a,y_filt);
-                    y_filt=y_filt(step+1:end-step);
-                    offsetdata(sweep).y=y_filt;
+                if ~isempty(fieldsweep)
+                    offsetdata(sweep).realtime=bridgeddata(sweep).realtime;
+                    si=bridgeddata(sweep).si;
+                    y=fielddata(fieldsweep).y;
+                    step=round(hossz/si);
+                    offsetdata(sweep).hossz=length(y)*si;
+                    offsetdata(sweep).startvalue=median(y(1:min(length(y),step)));
+                    offsetdata(sweep).endvalue=median(y(max(1,length(y)-step):end));
+                    if offsetdata(sweep).hossz>hossz
+                        y_filt=[y(step:-1:1),y,y(end:-1:end-step+1)];
+                        ninq=(1/si)/2;
+                        [b,a]=butter(1,(1/hossz)/ninq,'low');
+                        y_filt=filtfilt(b,a,y_filt);
+                        y_filt=y_filt(step+1:end-step);
+                        offsetdata(sweep).y=y_filt;
+                    else
+                        offsetdata(sweep).y=ones(size(y))*mean([offsetdata(sweep).startvalue,offsetdata(sweep).endvalue]);
+                    end
                 else
-                    offsetdata(sweep).y=ones(size(y))*mean([offsetdata(sweep).startvalue,offsetdata(sweep).endvalue]);
+                    offsetdata(sweep).realtime=bridgeddata(sweep).realtime;
+                    si=bridgeddata(sweep).si;
+                    y=bridgeddata(sweep).y;
+                    step=round(hossz/si);
+                    offsetdata(sweep).hossz=length(y)*si;
+                    offsetdata(sweep).startvalue=NaN;
+                    offsetdata(sweep).endvalue=NaN;
+                    offsetdata(sweep).y=ones(size(y))*0;    
                 end
-                if isempty(startvalue)
+                if isempty(startvalue) &~ isnan(offsetdata(sweep).startvalue)
                     startvalue=offsetdata(sweep).startvalue; % define the starting point
                 end
-                offsetdata(sweep).y=offsetdata(sweep).y-startvalue;
+                if ~isempty(startvalue)
+                    offsetdata(sweep).y=offsetdata(sweep).y-startvalue;
+                else
+                     offsetdata(sweep).y=offsetdata(sweep).y;
+                end
             end
             save([handles.data.dirs.offsetdir,handles.data.xlsdata(xlsnum).ID],'offsetdata');
         else
@@ -3042,115 +3104,115 @@ bridgeddata=handles.data.samples(selectedsamplenum).bridgeddata;
 xlsnum=handles.data.samples(selectedsamplenum).selectedID-1;
 fieldxlsnum=find(strcmp(handles.data.xlsdata(xlsnum).HEKAfname,{handles.data.xlsdata.HEKAfname}) & [handles.data.xlsdata.field]==1);
 
-load([handles.data.dirs.rawexporteddir,handles.data.xlsdata(fieldxlsnum).ID],'rawdata');
-fielddata=rawdata;
-% load([handles.data.dirs.breathingdir,handles.data.xlsdata(fieldxlsnum).ID],'rawdata');
-% bridgeddata=rawdata;
-apdata=handles.data.samples(selectedsamplenum).eventdata;
-apdata=apdata(strcmp({apdata.type},'AP'));
-%%
-neededicsweeps=find([bridgeddata.realtime]>starttime&[bridgeddata.realtime]<endtime);
-for sweepi=1:length(neededicsweeps)
-    icsweepnum=neededicsweeps(sweepi);
-    fieldsweepnum=find([fielddata.realtime]==bridgeddata(icsweepnum).realtime);
-    if ~isempty(fieldsweepnum)
-        
-        si=bridgeddata(icsweepnum).si;
-        ic=bridgeddata(icsweepnum).y';
-
-%%
-        field=-1*fielddata(fieldsweepnum).y';
-        time=[1:length(ic)]*si;
-        hossz=length(ic)*si;
-        
-        if hossz>3
-                    %removing APs
-%         apdatanow=apdata([apdata.sweepnum]==icsweepnum);
-%         for api=length(apdatanow):-1:1
-%             ic(apdatanow(api).onseth:round(apdatanow(api).halfwidth/si/1000*2)+apdatanow(api).onseth)=apdatanow(api).baselineval;
+% load([handles.data.dirs.rawexporteddir,handles.data.xlsdata(fieldxlsnum).ID],'rawdata');
+% fielddata=rawdata;
+% % load([handles.data.dirs.breathingdir,handles.data.xlsdata(fieldxlsnum).ID],'rawdata');
+% % bridgeddata=rawdata;
+% apdata=handles.data.samples(selectedsamplenum).eventdata;
+% apdata=apdata(strcmp({apdata.type},'AP'));
+% %%
+% neededicsweeps=find([bridgeddata.realtime]>starttime&[bridgeddata.realtime]<endtime);
+% for sweepi=1:length(neededicsweeps)
+%     icsweepnum=neededicsweeps(sweepi);
+%     fieldsweepnum=find([fielddata.realtime]==bridgeddata(icsweepnum).realtime);
+%     if ~isempty(fieldsweepnum)
+%         
+%         si=bridgeddata(icsweepnum).si;
+%         ic=bridgeddata(icsweepnum).y';
+% 
+% %%
+%         field=-1*fielddata(fieldsweepnum).y';
+%         time=[1:length(ic)]*si;
+%         hossz=length(ic)*si;
+%         
+%         if hossz>3
+%                     %removing APs
+% %         apdatanow=apdata([apdata.sweepnum]==icsweepnum);
+% %         for api=length(apdatanow):-1:1
+% %             ic(apdatanow(api).onseth:round(apdatanow(api).halfwidth/si/1000*2)+apdatanow(api).onseth)=apdatanow(api).baselineval;
+% %         end
+% 
+%             %%
+% %             d{1} = designfilt(['lowpassiir'],'PassbandFrequency',10,'StopbandFrequency',20,'SampleRate',1/si,'DesignMethod','butter');
+%         d{2} = designfilt(['highpassiir'],'PassbandFrequency',1   ,'StopbandFrequency',.1,'SampleRate',1/si,'DesignMethod','butter');
+% %         ic=filtfilt(d{1},ic);
+%         ic=filtfilt(d{2},ic);
+% %         field=filtfilt(d{1},field);
+%         field=filtfilt(d{2},field);
+% 
+%         %%
+%         downratio=round(.001/si);
+%         ic=downsample(ic,downratio);
+%         field=downsample(field,downratio);
+%         time=downsample(time,downratio);
+%         si=si*downratio;
+%             movingwin=[5, .5];
+%             bandwidth=1;%Hz
+%             params=struct;
+% %             params.tapers=[.5, movingwin(1) ,1];
+%             params.tapers=[movingwin(1)*bandwidth movingwin(1)*bandwidth*2-1]
+%             params.Fs=1/si;%sampling rate
+%             params.fpass=[0.5 10];%frequency range
+%             params.pad=2;%frequency resolution
+%             params.err=[2 .05];
+%             [S1d,f1d] = mtspectrumc( [ic,field], params );
+%             [C1d,phi1d,S12,S1,S2,f1dc]=coherencyc(field,ic,params);
+% 
+%             
+% %             [Sfield,t,f] = mtspecgramc(field, movingwin, params );
+% %             [Sic,t,f] = mtspecgramc(ic, movingwin, params );
+%             
+%             [C,phi,Sicfield,Sfield,Sic,t,f,confC,phistd,Cerr]=cohgramc(field,ic,movingwin,params);
+%             %%
+%             figure(5)
+%             clf
+%             subplot(5,2,1)
+%             plot(time,ic)
+%             subplot(5,2,3)
+%             plot(time,field)
+%             subplot(5,2,2)
+%             imagesc(t,f,Sic')
+%             set(gca,'YDir','normal')
+%             colormap linspecer
+%             subplot(5,2,4)
+%             imagesc(t,f,Sfield')
+%             set(gca,'YDir','normal')
+%             colormap linspecer
+%             subplot(5,2,6)
+%             imagesc(t,f,C')
+%             set(gca,'YDir','normal')
+%             colormap linspecer
+%             title('coherence')
+%             subplot(5,2,5)
+%             imagesc(t,f,phi')
+%             set(gca,'YDir','normal')
+%             colormap linspecer
+%             title('phase')
+%             subplot(5,2,7)
+%             imagesc(t,f,phistd')
+%             set(gca,'YDir','normal')
+%             colormap linspecer
+%             title('phase std')
+%             subplot(5,2,8)
+%             imagesc(t,f,abs(Sicfield)')
+%             set(gca,'YDir','normal')
+%             colormap linspecer
+%             title('cross spectrum')
+%             subplot(5,2,9)
+%             plot(f1d,S1d./repmat(max(S1d),size(S1d,1),1))
+%             legend('ic','field')
+%              subplot(5,2,10)
+%             plot(f1dc,C1d)
+% %             pause
 %         end
-
-            %%
-%             d{1} = designfilt(['lowpassiir'],'PassbandFrequency',10,'StopbandFrequency',20,'SampleRate',1/si,'DesignMethod','butter');
-        d{2} = designfilt(['highpassiir'],'PassbandFrequency',1   ,'StopbandFrequency',.1,'SampleRate',1/si,'DesignMethod','butter');
-%         ic=filtfilt(d{1},ic);
-        ic=filtfilt(d{2},ic);
-%         field=filtfilt(d{1},field);
-        field=filtfilt(d{2},field);
-
-        %%
-        downratio=round(.001/si);
-        ic=downsample(ic,downratio);
-        field=downsample(field,downratio);
-        time=downsample(time,downratio);
-        si=si*downratio;
-            movingwin=[5, .5];
-            bandwidth=1;%Hz
-            params=struct;
-%             params.tapers=[.5, movingwin(1) ,1];
-            params.tapers=[movingwin(1)*bandwidth movingwin(1)*bandwidth*2-1]
-            params.Fs=1/si;%sampling rate
-            params.fpass=[0.5 10];%frequency range
-            params.pad=2;%frequency resolution
-            params.err=[2 .05];
-            [S1d,f1d] = mtspectrumc( [ic,field], params );
-            [C1d,phi1d,S12,S1,S2,f1dc]=coherencyc(field,ic,params);
-
-            
-%             [Sfield,t,f] = mtspecgramc(field, movingwin, params );
-%             [Sic,t,f] = mtspecgramc(ic, movingwin, params );
-            
-            [C,phi,Sicfield,Sfield,Sic,t,f,confC,phistd,Cerr]=cohgramc(field,ic,movingwin,params);
-            %%
-            figure(5)
-            clf
-            subplot(5,2,1)
-            plot(time,ic)
-            subplot(5,2,3)
-            plot(time,field)
-            subplot(5,2,2)
-            imagesc(t,f,Sic')
-            set(gca,'YDir','normal')
-            colormap linspecer
-            subplot(5,2,4)
-            imagesc(t,f,Sfield')
-            set(gca,'YDir','normal')
-            colormap linspecer
-            subplot(5,2,6)
-            imagesc(t,f,C')
-            set(gca,'YDir','normal')
-            colormap linspecer
-            title('coherence')
-            subplot(5,2,5)
-            imagesc(t,f,phi')
-            set(gca,'YDir','normal')
-            colormap linspecer
-            title('phase')
-            subplot(5,2,7)
-            imagesc(t,f,phistd')
-            set(gca,'YDir','normal')
-            colormap linspecer
-            title('phase std')
-            subplot(5,2,8)
-            imagesc(t,f,abs(Sicfield)')
-            set(gca,'YDir','normal')
-            colormap linspecer
-            title('cross spectrum')
-            subplot(5,2,9)
-            plot(f1d,S1d./repmat(max(S1d),size(S1d,1),1))
-            legend('ic','field')
-             subplot(5,2,10)
-            plot(f1dc,C1d)
-%             pause
-        end
-    end
-end
-disp('lol')
-%%
+%     end
+% end
+% disp('lol')
+%% APdynamics
 
 reclength=handles.data.samples(selectedsamplenum).bridgeddata(end).realtime+handles.data.samples(selectedsamplenum).bridgeddata(end).si*length(handles.data.samples(selectedsamplenum).bridgeddata(end).y)-handles.data.samples(selectedsamplenum).bridgeddata(1).realtime;
 stepsize=1;
-window=30;
+window=10;
 time=0:stepsize:reclength;
 aAPnum=zeros(size(time));
 aAPfreq=zeros(size(time));
@@ -3177,6 +3239,63 @@ plot(time,sAPfreq,'k-')
 xlabel('time since recording (sec)')
 ylabel('AP freqency')
 legend('axonal','somatic')
+% 
+figure(34)
+clf
+subplot(2,1,1)
+[n,aAPisibins]=hist((diff(aAPtimes)),[0:10:round(max((diff(aAPtimes))/10)*10)]);
+% aAPisibins=10.^aAPisibins;
+% bar(aAPisibins,n)
+hist((diff(aAPtimes)),[0:5:round(max((diff(aAPtimes))/10)*10)]);
+title('aAP ISI')
+subplot(2,1,2)
+[n,aAPisibins]=hist((diff(sAPtimes)));
+% aAPisibins=10.^aAPisibins;
+bar(aAPisibins,n)
+title('sAP ISI')
+%% squarepulsespected
+% xlsnum=handles.data.samples(selectedsamplenum).selectedID-1;
+% load([handles.data.dirs.rawexporteddir,handles.data.xlsdata(xlsnum).ID],'rawdata');
+% stimdata=handles.data.samples(selectedsamplenum).stimdata;
+% %%
+% 
+% squarepulses=struct;
+% timeback=.0005;
+% timeforward=.001;
+% 
+% for sweepi=1:length(rawdata)
+%     stimdiff=diff(stimdata(sweepi).y);
+%     squarepulseidx=find(stimdiff~=0);
+%     for pulsei=1:length(squarepulseidx)
+%         if isempty(fieldnames(squarepulses))
+%             NEXT=1;
+%         else
+%             NEXT=length(squarepulses)+1;
+%         end
+%         stepback=round(timeback/rawdata(sweepi).si);
+%         stepforward=round(timeforward/rawdata(sweepi).si);
+%         squarepulses(NEXT).realtime=rawdata(sweepi).realtime+squarepulseidx(pulsei)*rawdata(sweepi).si;
+%         squarepulses(NEXT).si=rawdata(sweepi).si;
+%         squarepulses(NEXT).current=stimdiff(squarepulseidx(pulsei));
+%         squarepulses(NEXT).y=rawdata(sweepi).y([-stepback:stepforward]+squarepulseidx(pulsei))-nanmedian(rawdata(sweepi).y([-stepback:0]+squarepulseidx(pulsei)));
+%         squarepulses(NEXT).time=[-stepback:stepforward]*rawdata(sweepi).si;
+%     end
+% %     return
+% end
+% 
+% figure(11)
+% clf
+% hold all
+% for i=1:length(squarepulses)
+%     if squarepulses(i).realtime>60100
+%         clf
+%     plot(squarepulses(i).time,squarepulses(i).y)
+%     pause
+%     end
+% end
+%%
+disp('lol')
+
 
 
 % --- Executes on selection change in popupmenu9.
@@ -3333,3 +3452,12 @@ function pushbutton16_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 selectedsamplenum=get(handles.popupmenu1,'Value');
 aE_InspectEvents(handles.data.samples(selectedsamplenum).bridgeddata,handles.data.samples(selectedsamplenum).stimdata,handles.data.samples(selectedsamplenum).eventdata)
+
+
+% --- Executes on button press in checkbox10.
+function checkbox10_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox10 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox10

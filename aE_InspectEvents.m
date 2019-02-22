@@ -22,7 +22,7 @@ function varargout = aE_InspectEvents(varargin)
 
 % Edit the above text to modify the response to help aE_InspectEvents
 
-% Last Modified by GUIDE v2.5 11-Feb-2019 16:03:06
+% Last Modified by GUIDE v2.5 12-Feb-2019 16:41:28
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -91,6 +91,7 @@ set(handles.edit3,'String','1')
 set(handles.edit2,'String','1')
 set(handles.edit1,'String','');
 set(handles.listbox2,'String','');
+set(handles.popupmenu8,'String',{'histogram','plot VS'});
 set(handles.popupmenu7,'String',fieldnames(handles.data.eventdata));
 set(handles.popupmenu6,'String',{'=','~=','<','>'});
 set(handles.popupmenu5,'String',fieldnames(handles.data.eventdata));
@@ -100,8 +101,6 @@ set(handles.listbox1,'Max',inf,'Min',0);
 set(handles.popupmenu1,'String',{'t','v'});
 set(handles.popupmenu2,'String',{'v','dv','ddv','dddv'});
 handles = updateGUI(handles);
-%%
-% Update handles structure
 guidata(hObject, handles);
 
 function handles = updateGUI(handles)
@@ -135,6 +134,7 @@ else
     
 end
 set(handles.listbox2,'String',stringtoshow);
+
 function handles = applyrules(handles)
 if ~ isempty(fieldnames(handles.data.rules))
     kell=true(size(handles.data.eventdata_orig));
@@ -205,6 +205,8 @@ if nargin==1 | doitall==false
 else
     disp('all APs analyzed')
     neededevents=find(strcmpi({handles.data.eventdata.type},'ap'));
+    apmaxtimes=[handles.data.eventdata(neededevents).maxtime];
+    apprevisis=diff([handles.data.eventdata(neededevents(1)).maxtime,handles.data.eventdata(neededevents).maxtime]);
 end
 
 APwaves=struct;
@@ -216,9 +218,9 @@ bridgeddata=handles.data.bridgeddata;
 % if ~isempty(eventdata) & ~isempty(fieldnames(eventdata))
 apidxes=neededevents;
 prevsweepnum=NaN;
-for eventi=1:length(eventdata)
-    eventdata(eventi).maxdv=0;
-end
+% for eventi=1:length(eventdata)
+%     eventdata(eventi).maxdv=0;
+% end
 for apii=1:length(apidxes)
     if doitall
         progressbar(apii/length(apidxes))
@@ -258,21 +260,74 @@ for apii=1:length(apidxes)
     [pks,locs]=findpeaks(dyfilterednow);
     needed=pks>30;
     locs=locs(needed);
-    locs=sort(locs,'ascend');
+    pks=pks(needed);
+%     locs=sort(locs,'ascend');
+    [pks,idx]=sort(pks,'descend');
+    locs=locs(idx);
+    if length(locs)==1
+        [~,minhely]=min(dyfilterednow(1:locs)-linspace(dyfilterednow(1),dyfilterednow(locs),locs)');
+        if minhely > 2
+            [pksnew,locsnew]=findpeaks(dyfilterednow(1:minhely)-linspace(dyfilterednow(1),dyfilterednow(minhely),minhely)');
+            locs=[locs;locsnew];
+            pks=dyfilterednow(locs);
+            needed=pks>30;
+            locs=locs(needed);
+            pks=pks(needed);
+            %         locs=sort(locs,'ascend');
+            [pks,idx]=sort(pks,'descend');
+            locs=locs(idx);
+        end
+    end
+    if abs(diff(locs))<5
+        locs=locs(1);
+        pks=pks(1);
+    end
     if length(locs)>1
         biphasic=true;
-        maxdvhs=[locs(1),locs(end)]+threshh-1;
-        [~,firstpeakh]=min(dyfiltered(maxdvhs(1):maxdvhs(2)));
+        locs=[locs(1),locs(2)];
+        maxdvhs=[min(locs),max(locs)]+threshh-1;
+        %%
+        dytoanal=dyfiltered(maxdvhs(1):maxdvhs(2));
+        dytoanal=dytoanal-linspace(dytoanal(1),dytoanal(end),length(dytoanal))';
+        [~,firstpeakh]=min(dytoanal);
         firstpeakh=firstpeakh+maxdvhs(1)-1;
+        firstpeakval=yfiltered(firstpeakh);
     else
         biphasic=false;
         maxdvhs=locs+threshh-1;
         firstpeakh=NaN;
+        firstpeakval=eventdata(api).maxval;%yfiltered(threshh);
+    end
+    eventdata(api).phasedelay=diff(maxdvhs)*si;
+    eventdata(api).phasevoltagediff=diff(yfiltered(maxdvhs));
+    if isempty(eventdata(api).phasedelay) %| eventdata(api).phasedelay< si*5
+        eventdata(api).phasedelay=0;
+        eventdata(api).phasevoltagediff=0;
+        
+        biphasic=false;
+        firstpeakh=NaN;
+        firstpeakval=eventdata(api).maxval;%yfiltered(threshh);
     end
     %%
+    if doitall
+        eventdata(api).prevISI=apprevisis(apii);
+        eventdata(api).prevAPnum_500ms=sum(apmaxtimes>=eventdata(api).maxtime-.5 & apmaxtimes<eventdata(api).maxtime);
+        eventdata(api).prevAPnum_100ms=sum(apmaxtimes>=eventdata(api).maxtime-.1 & apmaxtimes<eventdata(api).maxtime);
+        eventdata(api).prevAPnum_50ms=sum(apmaxtimes>=eventdata(api).maxtime-.05 & apmaxtimes<eventdata(api).maxtime);
+    end
+    
+    
+%     
+%     if isempty(eventdata(api).phasevoltagediff)
+%         
+%     end
     threshv=yfiltered(threshh);
     eventdata(api).threshv=threshv;
     eventdata(api).APamplitude=eventdata(api).maxval-eventdata(api).threshv;
+    eventdata(api).firstpeakval=firstpeakval;
+    eventdata(api).firstpeakamplitude=eventdata(api).firstpeakval-eventdata(api).threshv;
+    eventdata(api).secondpeakamplitude=eventdata(api).APamplitude-eventdata(api).firstpeakamplitude;
+    
     depolrateV=yfiltered(max(threshh-round(valtozok.depolratewindow/si),1):threshh-round(.0001/si));
     depolratet=(1:length(depolrateV))*si;
     p=polyfit(depolratet',depolrateV,1);
@@ -342,11 +397,13 @@ for apii=1:length(apidxes)
     APwaves(apii).maxdvhs=maxdvhs-centerh+stepback+1;
     APwaves(apii).spikeletpeakh=firstpeakh-centerh+stepback+1;
     APwaves(apii).biphasic=biphasic;
-    APwaves(apii).maxdv=max(dv);
-    eventdata(api).maxdv=max(dv);
+    APwaves(apii).maxdv=maxdval;%max(dv);
+    eventdata(api).maxdv=maxdval;%max(dv);
+    
 end
 handles.data.eventdata=eventdata;
 handles.data.eventwaves=APwaves;
+handles.data.selectedevents=neededevents;
 
 function handles = plotthedata(handles)
 if isfield(handles.data,'eventwaves') & ~isempty(fieldnames(handles.data.eventwaves))
@@ -371,11 +428,13 @@ if isfield(handles.data,'eventwaves') & ~isempty(fieldnames(handles.data.eventwa
             Y=[handles.data.eventwaves(needed).(Yvaltoplot)];
             plot(X,Y);
             hold on
+            
+            
 %             if any(strfind(Yvaltoplot,'dv'))
                for ii=1:length(needed) 
-                   plot(X([handles.data.eventwaves(needed(ii)).maxdvhs],needed(ii)),Y([handles.data.eventwaves(needed(ii)).maxdvhs],needed(ii)),'ro')
+                   plot(X([handles.data.eventwaves(needed(ii)).maxdvhs],ii),Y([handles.data.eventwaves(needed(ii)).maxdvhs],ii),'ro')
                    if handles.data.eventwaves(needed(ii)).biphasic
-                       plot(X([handles.data.eventwaves(needed(ii)).spikeletpeakh],needed(ii)),Y([handles.data.eventwaves(needed(ii)).spikeletpeakh],needed(ii)),'ko')
+                       plot(X([handles.data.eventwaves(needed(ii)).spikeletpeakh],ii),Y([handles.data.eventwaves(needed(ii)).spikeletpeakh],ii),'ko')
                    end
                end
 %             end
@@ -398,8 +457,43 @@ if isfield(handles.data,'eventwaves') & ~isempty(fieldnames(handles.data.eventwa
         end
         handles.(['axes',num2str(ploti)])=gca;
         %%
-        % disp('lol')
+        % 
     end
+%     disp('lol')
+    whattoplot=get(handles.popupmenu8,'String');
+    whattoplot=whattoplot{get(handles.popupmenu8,'Value')};
+    if strcmp(whattoplot,'histogram')
+        selectedeventdatafield=get(handles.popupmenu3,'String');
+        selectedeventdatafield=selectedeventdatafield{get(handles.popupmenu3,'Value')};
+        axes(handles.axes5);
+        cla
+        hist([handles.data.eventdata.(selectedeventdatafield)],100)
+        xlabel(selectedeventdatafield)
+        ylabel('count')
+        handles.axes5=gca;
+    elseif strcmp(whattoplot,'plot VS')
+        selectedeventdatafield=get(handles.popupmenu3,'String');
+        selectedeventdatafieldY=selectedeventdatafield{get(handles.popupmenu3,'Value')};
+        selectedeventdatafield=get(handles.popupmenu7,'String');
+        selectedeventdatafieldX=selectedeventdatafield{get(handles.popupmenu7,'Value')};
+        X=[handles.data.eventdata.(selectedeventdatafieldX)];
+        Y=[handles.data.eventdata.(selectedeventdatafieldY)];
+        axes(handles.axes5);
+        cla
+        plot(X,Y,'ko')
+        hold on
+        plot(X(handles.data.selectedevents),Y(handles.data.selectedevents),'ro','MarkerSize',12,'LineWidth',3)
+        xlabel(selectedeventdatafieldX)
+        ylabel(selectedeventdatafieldY)
+        handles.axes5=gca;
+    else
+        disp(['dunno what to plot: ',whattoplot])
+    end
+
+% 
+
+
+    
 end
 % UIWAIT makes aE_InspectEvents wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -770,41 +864,67 @@ function pushbutton3_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 %%
-selectedeventdatafield=get(handles.popupmenu3,'String');
-selectedeventdatafield=selectedeventdatafield{get(handles.popupmenu3,'Value')};
-axestoplot=get(handles.popupmenu4,'Value');
-axes(handles.(['axes',num2str(axestoplot)]));
-cla
-hist([handles.data.eventdata.(selectedeventdatafield)],100)
-xlabel(selectedeventdatafield)
-ylabel('count')
-handles.(['axes',num2str(axestoplot)])=gca;
-guidata(hObject,handles)
+
+
+
+whattoplot=get(handles.popupmenu8,'String');
+whattoplot=whattoplot{get(handles.popupmenu8,'Value')};
+if strcmp(whattoplot,'histogram')
+    disp('this function doesn''t work with histogram yet.. choos plot VS ')
+elseif strcmp(whattoplot,'plot VS')
+    axes(handles.axes5)
+    [x,y]=ginput(1);
+    selectedeventdatafield=get(handles.popupmenu3,'String');
+    selectedeventdatafieldY=selectedeventdatafield{get(handles.popupmenu3,'Value')};
+    selectedeventdatafield=get(handles.popupmenu7,'String');
+    selectedeventdatafieldX=selectedeventdatafield{get(handles.popupmenu7,'Value')};
+    X=[handles.data.eventdata.(selectedeventdatafieldX)];
+    Y=[handles.data.eventdata.(selectedeventdatafieldY)];
+    %%
+    distmatrix=[x,X;y,Y]';
+    xmu=nanmean(distmatrix);
+    xsigma=nanstd(distmatrix);
+    distmatrix=(distmatrix-repmat(xmu,length(distmatrix),1))./repmat(xsigma,length(distmatrix),1);
+    %%
+    distances=pdist(distmatrix);
+    distances=distances(1:length(X));
+    [~,idx]=nanmin(distances);
+    idx=idx(1);
+    
+    
+    if length(handles.data.eventdata)==0
+        uniquevals='';
+    else
+        if ~ischar(handles.data.eventdata(1).(selectedeventdatafieldY))
+            uniquevals=unique([handles.data.eventdata.(selectedeventdatafieldY)]);
+        else
+            uniquevals=unique({handles.data.eventdata.(selectedeventdatafieldY)});
+        end
+    end
+    idxtoselect=find(uniquevals==Y(idx));
+    set(handles.listbox1,'Value',idxtoselect);
+
+    handles = updateDATA(handles);
+    handles = plotthedata(handles);
+    %%
+
+end
+guidata(hObject,handles);
 %%
 % --- Executes on button press in pushbutton4.
 function pushbutton4_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton4 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-selectedeventdatafield=get(handles.popupmenu3,'String');
-selectedeventdatafieldY=selectedeventdatafield{get(handles.popupmenu3,'Value')};
-selectedeventdatafield=get(handles.popupmenu7,'String');
-selectedeventdatafieldX=selectedeventdatafield{get(handles.popupmenu7,'Value')};
-axestoplot=get(handles.popupmenu4,'Value');
-axes(handles.(['axes',num2str(axestoplot)]));
-cla
-plot([handles.data.eventdata.(selectedeventdatafieldX)],[handles.data.eventdata.(selectedeventdatafieldY)],'ko')
-xlabel(selectedeventdatafieldX)
-ylabel(selectedeventdatafieldY)
-handles.(['axes',num2str(axestoplot)])=gca;
-guidata(hObject,handles)
+disp('pushbutton4 - no function now')
 
 % --- Executes on selection change in popupmenu7.
 function popupmenu7_Callback(hObject, eventdata, handles)
 % hObject    handle to popupmenu7 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+handles = plotthedata(handles);
+guidata(hObject,handles);
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu7 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu7
 
@@ -828,10 +948,48 @@ function pushbutton5_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
  handles = updateDATA(handles,true);
- %%
+
  eventdata_orig=handles.data.eventdata_orig;
+ %%
+ if length(fieldnames(eventdata_orig)) ~= length(fieldnames(handles.data.eventdata))
+     fieldnevek=fieldnames(handles.data.eventdata);
+     for fieldi=1:length(fieldnevek)
+         if ~any(strcmp(fieldnevek{fieldi},fieldnames(eventdata_orig)))
+             [eventdata_orig.(fieldnevek{fieldi})] = deal(NaN);
+             disp(['new field added to eventdata: ',fieldnevek{fieldi}])
+         end
+     end
+     set(handles.popupmenu7,'String',fieldnames(handles.data.eventdata));
+     set(handles.popupmenu5,'String',fieldnames(handles.data.eventdata));
+     set(handles.popupmenu3,'String',fieldnames(handles.data.eventdata));
+ end
+ %%
  eventdata_orig(handles.data.eventadata_selectedidxes)=handles.data.eventdata;
  handles.data.eventdata_orig=eventdata_orig;
  guidata(hObject,handles);
  %%
 %  disp('lol')
+
+
+% --- Executes on selection change in popupmenu8.
+function popupmenu8_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles = plotthedata(handles);
+guidata(hObject,handles);
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu8 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu8
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu8_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

@@ -5,7 +5,7 @@ files([files.isdir])=[];
 if parallelcount>1
 %     delete([dirs.eventparaleldir,'*.mat']);
 end
-for filenum=length(files):-1:1%% végigmegyünk az összes file-n % filenum=1:length(files)%
+for filenum=length(files):-1:1%filenum=1:length(files)%% végigmegyünk az összes file-n % 
     a=dir([dirs.eventdir,files(filenum).name]);
     if isfield(xlsdata,'ID')
         xlsnum=find(strcmp(files(filenum).name(1:end-4),{xlsdata.ID}));

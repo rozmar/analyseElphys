@@ -273,17 +273,17 @@ for i=1:length(aAPvicinity)
 end
 figure(2)
 clf
+
+figure(1)
 subplot(3,1,1)
 hold all
 t=[aAPvicinity.time_elphys];
 y=[aAPvicinity.ic];
 plot(nanmean(t,2),nanmean(y,2))%-aAPvicinity(i).baselineval
 
-t=[aAPvicinity.time_elphys];
-y=[aAPvicinity.field];
 subplot(3,1,2)
 hold all
-plot(nanmean(t,2),nanmean(y,2))
+plot(aAPvicinity(i).time_elphys,aAPvicinity(i).field-aAPvicinity(i).field(round(length(aAPvicinity(i).field)/2)))
 %%
 figure(3)
 clf
