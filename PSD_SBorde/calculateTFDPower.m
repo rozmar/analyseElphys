@@ -16,6 +16,9 @@
 %      scale - scale type, can be linear (1) or logarithmic (2)
 %      wavenumber - number of waves in wavelet
 %      interval - sample interval for the signal
+%      waveletlength - length of the wavelet vector in seconds - default value is 1s;
+%      addtaper - (1) to add taper to avoid edge artefact;
+%       taperlength - length of taper in seconds;
 % Return values
 %   - PowerMatrix fxt matrix, the calculated power values, f is the number 
 %   of frequencies
@@ -109,15 +112,22 @@ function [PowerMatrix, frequencyVector, CoeffMatrix, PowerMatrixTrial] = calcula
     % Display waitbar
     newTitle = sprintf(waitbarMsg, frequencyVector([i,end]));
     if i==1
-%      multiWaitbar( newTitle , 'Value',  i/nFrequency);  
+%       multiWaitbar( newTitle , 'Value',  i/nFrequency);  
     elseif i > 1
-      %multiWaitbar( lastTitle , 'Value', i/nFrequency, 'Relabel', newTitle);
+        %       multiWaitbar( lastTitle , 'Value', i/nFrequency, 'Relabel', newTitle);
     end
     lastTitle = newTitle;
-         
+    
     % Create wavelet and perform convolution
     wavelet  = createMorletWavelet(f, parameters);
-    conv_fft = convolveWithFft(inputSignal, wavelet);
+    if isfield(parameters,'addtaper')
+        taperlength=min(round(parameters.taperlength/parameters.interval),length(inputSignal)-1);
+        conv_fft = convolveWithFft([inputSignal(taperlength:-1:1,:);inputSignal;inputSignal(end:-1:end-taperlength,:)], wavelet);
+        conv_fft =conv_fft(:,taperlength+1:taperlength+size(inputSignal,1));
+    else
+        conv_fft = convolveWithFft(inputSignal, wavelet);
+    end
+
       
     % Create averaged power if we can
     if canAverage
@@ -162,12 +172,13 @@ function [PowerMatrix, frequencyVector, CoeffMatrix, PowerMatrixTrial] = calcula
         end
       else
         PowerMatrix(i,:) = abs(conv_fft).^2;
+        CoeffMatrix(i,:) = conv_fft;
       end
       
     end
   end
   %% -------------------------
   
- % multiWaitbar(lastTitle, 'Close');
+%   multiWaitbar(lastTitle, 'Close');
   
 end

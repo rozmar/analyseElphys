@@ -307,7 +307,7 @@ selectedsamplenum=get(handles.popupmenu1,'Value');
 starttime=str2num(get(handles.edit4,'String'));
 endtime=str2num(get(handles.edit5,'String'));
 neededidx=find(handles.data.samples(selectedsamplenum).movementdata.time>=starttime & handles.data.samples(selectedsamplenum).movementdata.time<=endtime);
-movie=handles.data.samples(selectedsamplenum).movementdata.video(:,:,neededidx);
+% movie=handles.data.samples(selectedsamplenum).movementdata.video(:,:,neededidx);
 % implay(movie,100);
 
 %
@@ -527,7 +527,7 @@ for samplei=1:length(handles.data.samples)
             %%
             if ~isempty(a)
                 disp('loading video')
-                load([handles.data.dirs.videodir,'movement/',fname,'.mat']);
+                load([handles.data.dirs.videodir,'movement/',fname,'.mat'],'videodata');
                 if isfield(videodata,'time_behaviour')
                     exportbehaviour=true;
                 else
@@ -536,7 +536,7 @@ for samplei=1:length(handles.data.samples)
                 %%
                 movement=[];
                 time=[];
-                videoo=[];
+%                 videoo=[];
                 videofname={};
                 framenumber=[];
                 videoidx=[];
@@ -548,18 +548,18 @@ for samplei=1:length(handles.data.samples)
                 water=[];
                 trigger=[];
                 for i=1:length(videodata)
-                    if isempty(videoo)
-                        videoo=rawvideo(i).vid;
-                    else
-                        videoo=cat(3,videoo,rawvideo(i).vid);
-                    end
+%                     if isempty(videoo)
+%                         videoo=rawvideo(i).vid;
+%                     else
+%                         videoo=cat(3,videoo,rawvideo(i).vid);
+%                     end
                     framenumber=[framenumber;[1:length(videodata(i).movement_selected)]'];
                     videoidx=[videoidx;ones(length(videodata(i).movement_selected),1)*i];
                     movement=[movement;videodata(i).movement_selected];
                     time=[time;videodata(i).time];
                     [time,ix]=sort(time);
                     movement=movement(ix);
-                    videoo=videoo(:,:,ix);
+%                     videoo=videoo(:,:,ix);
                     videofname{i}=[videodata(i).timestamp,'.avi'];
                     if exportbehaviour==true
                         time_behaviour=[time_behaviour;videodata(i).time_behaviour];
@@ -627,7 +627,7 @@ for samplei=1:length(handles.data.samples)
                     handles.data.samples(samplei).movementdata.water=water;
                     handles.data.samples(samplei).movementdata.trigger=trigger;
                 end
-                handles.data.samples(samplei).movementdata.video=videoo;
+%                 handles.data.samples(samplei).movementdata.video=videoo;
                 handles.data.samples(samplei).movementdata.videofname=videofname;
                 handles.data.samples(samplei).movementdata.videoidx=videoidx;
                 handles.data.samples(samplei).movementdata.framenumber=framenumber;
@@ -840,7 +840,11 @@ for samplei=1:length(handles.data.samples)
         if isfield(handles.data.dirs,'PSDdir')
             disp('loading PSD of field')
             xlsnum=handles.data.samples(samplei).selectedID-1;
-            fieldxlsnum=find(strcmp(handles.data.xlsdata(xlsnum).HEKAfname,{handles.data.xlsdata.HEKAfname}) & [handles.data.xlsdata.field]==1);
+            if isfield(handles.data.xlsdata,'field')
+                fieldxlsnum=find(strcmp(handles.data.xlsdata(xlsnum).HEKAfname,{handles.data.xlsdata.HEKAfname}) & [handles.data.xlsdata.field]==1);
+            else
+                fieldxlsnum=[];
+            end
             if length(fieldxlsnum)>1
                 disp('error, more than 1 field files found.. user should select..')
                 ok=0;
@@ -1206,7 +1210,7 @@ for samplenum=1:length(handles.data.samples)
         y0=max([y0,max([handles.data.samples(samplenum).datatoplot.yvoltage])]);
         if length(neededwaves)>0
             prenum=handles.data.samples(samplenum).selectedID-1;
-            if isfield(handles.data.xlsdata,'drugdata')
+            if isfield(handles.data.xlsdata,'drugdata') & isstruct(handles.data.xlsdata(prenum).drugdata)
             for i=1:length(handles.data.xlsdata(prenum).drugdata)
                 y0=y0+.005;
                 startt=handles.data.xlsdata(prenum).drugdata(i).DrugWashinTime;
@@ -1318,7 +1322,7 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+3 & ~isemp
     end
 %     caxis([0 str2num(get(handles.edit9,'String'))])
     if PSD_Zscore
-        caxis([0 cmaxval])
+        caxis([-cmaxval cmaxval])
     else
         caxis([0 cmaxval])
     end
@@ -1395,7 +1399,7 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+6 & isfiel
     end
 %     caxis([0 str2num(get(handles.edit9,'String'))])
     if PSD_Zscore
-        caxis([0 cmaxval])
+        caxis([-cmaxval cmaxval])
     else
         caxis([0 cmaxval])
     end
@@ -1460,7 +1464,7 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+8 & ~isemp
     end
 %     caxis([0 str2num(get(handles.edit9,'String'))])
     if PSD_Zscore
-        caxis([0 cmaxval])
+        caxis([-cmaxval cmaxval])
     else
         caxis([0 cmaxval])
     end
@@ -1570,7 +1574,7 @@ set(handles.text1,'String',handles.data.samples(selectedsamplenum).changes)
         spontapnum=0;
     end
     
-    if handles.data.samples(selectedsamplenum).selectedID-1 > 0 & isfield(handles.data.xlsdata,'drugdata') & ~isempty(handles.data.xlsdata(handles.data.samples(selectedsamplenum).selectedID-1).drugdata)
+    if handles.data.samples(selectedsamplenum).selectedID-1 > 0 & isfield(handles.data.xlsdata,'drugdata') & ~isempty(handles.data.xlsdata(handles.data.samples(selectedsamplenum).selectedID-1).drugdata) & isstruct(handles.data.xlsdata(handles.data.samples(selectedsamplenum).selectedID-1).drugdata)
         drugnames={handles.data.xlsdata(handles.data.samples(selectedsamplenum).selectedID-1).drugdata.DrugName};
         drugwashintimes=[handles.data.xlsdata(handles.data.samples(selectedsamplenum).selectedID-1).drugdata.DrugWashinTime];
         drugstring=' ';
@@ -1802,109 +1806,111 @@ end
 neededwaves=find(reallyneededwaves);
 minfreq=str2num(get(handles.edit11,'string'));
 maxfreq=str2num(get(handles.edit10,'string'));
-
-for sweepi=1:length(neededwaves)
-    sweepnum=neededwaves(sweepi);
-    if isempty(bigmatrix)
-        frequencyVector=PSDdata(sweepnum).frequencyVector;
-        neededfrequencies=frequencyVector>=minfreq & frequencyVector<=maxfreq;
-        frequencyVector=frequencyVector(neededfrequencies);
-        starttime=PSDdata(sweepnum).realtime;
-        si=PSDdata(sweepnum).si_powerMatrix;
-        bigmatrix=PSDdata(sweepnum).powerMatrix(neededfrequencies,:);
+if ~isempty(neededwaves)
+    for sweepi=1:length(neededwaves)
+        sweepnum=neededwaves(sweepi);
+        if isempty(bigmatrix)
+            frequencyVector=PSDdata(sweepnum).frequencyVector;
+            neededfrequencies=frequencyVector>=minfreq & frequencyVector<=maxfreq;
+            frequencyVector=frequencyVector(neededfrequencies);
+            starttime=PSDdata(sweepnum).realtime;
+            si=PSDdata(sweepnum).si_powerMatrix;
+            bigmatrix=PSDdata(sweepnum).powerMatrix(neededfrequencies,:);
+            
+        else
+            timeskipped=(PSDdata(sweepnum).realtime-(starttime+size(bigmatrix,2)*si));
+            colstoadd=round(timeskipped/si);
+            if ~isempty(PSDdata(sweepnum).powerMatrix)
+                bigmatrix=[bigmatrix,zeros(size(bigmatrix,1),colstoadd),PSDdata(sweepnum).powerMatrix(neededfrequencies,:)];
+            end
+            %             starttime+size(bigmatrix,2)*si
+            %             return
+        end
         
+        PSDdatatoplot.trace(sweepi).x=[0:si:si*(length(PSDdata(sweepnum).y)-1)]+PSDdata(sweepnum).realtime;
+        
+        if ~isempty(PSDdata(sweepnum).y)
+            y=PSDdata(sweepnum).y;
+            %         dofilt=0;
+            %         if dofilt==1
+            %             [b,a]=butter(1,.1/(1/si)/2,'high');
+            %             ytofilt=[y(end:-1:1),y,y(end:-1:1)];
+            %             ytofilt=filtfilt(b,a,ytofilt);
+            %             y=ytofilt([1:length(y)]+length(y));
+            %         end
+            y=(y-min(y));
+            ysort=sort(y);
+            y=y/ysort(round(length(y)*.99));
+            %                         y=y/max(y);
+            y(y>1)=1;
+            PSDdatatoplot.trace(sweepi).y=y;
+            PSDdatatoplot.trace(sweepi).realtime=PSDdata(sweepnum).realtime;
+            PSDdatatoplot.trace(sweepi).si=PSDdata(sweepnum).si_powerMatrix;
+        end
+    end
+    
+    
+    
+    %%
+    if  ~isempty(fieldnames(PSDdatatoplot.trace))
+        samplenumnow=length([PSDdatatoplot.trace.y])*length(frequencyVector);
+        if neededsamplenum<samplenumnow & neededsamplenum>0 & shoulddownsample==1
+            %                 disp('downsampling started')
+            ratio=round(samplenumnow/neededsamplenum);
+            for sweepi=1:length(neededwaves)
+                PSDdatatoplot.trace(sweepi).x=downsample(PSDdatatoplot.trace(sweepi).x,ratio);
+                PSDdatatoplot.trace(sweepi).y=downsample(PSDdatatoplot.trace(sweepi).y,ratio);
+            end
+            %                 disp('downsampling finished')
+        end
+    end
+    %%
+    
+    
+    
+    
+    bigtime=(1:size(bigmatrix,2))*si+starttime;
+    if ~isempty(bigtime)
+        samplenumnow=length(bigtime);%*length(frequencyVector);
+        if neededsamplenum<samplenumnow & neededsamplenum>0 & shoulddownsample==1
+            %                 disp('downsampling started')
+            ratio=round(samplenumnow/neededsamplenum);
+            bigmatrix=downsample(bigmatrix',ratio)';
+            bigtime=downsample(bigtime,ratio);
+            %                 disp('downsampling finished')
+        end
+    end
+    
+    %% normalize
+    % bigmatrix=bigmatrix.*repmat(frequencyVector',1,size(bigmatrix,2));
+    %% Zscore
+    if PSD_Zscore & ~isempty(PSDdata_stats)
+        neededwaves=[PSDdata_stats.length]>3;
+        mus=[PSDdata_stats(neededwaves).mu];%
+        mus=mus(neededfrequencies,:);%(neededwaves)
+        mu=median(mus,2);
+        sigmas=[PSDdata_stats(neededwaves).sigma];%(neededwaves)
+        sigmas=sigmas(neededfrequencies,:);
+        sigma=median(sigmas,2);
+        bigmatrix_Z=bigmatrix-repmat(mu,1,size(bigmatrix,2));
+        bigmatrix_Z=bigmatrix_Z./repmat(sigma,1,size(bigmatrix,2));
+        bigmatrix_Z(bigmatrix==0)=0;
+        bigmatrix=bigmatrix_Z;
+    end
+    %%
+    PSDdatatoplot.powerMatrix=bigmatrix;
+    PSDdatatoplot.frequencyVector=frequencyVector;
+    PSDdatatoplot.si_powerMatrix=si;
+    PSDdatatoplot.time=bigtime;
+    if ~isempty(PSDdatatoplot.powerMatrix)
+        values=sort(PSDdatatoplot.powerMatrix(:));
+        PSDdatatoplot.intensitypercentiles=values(ceil([.01:.01:1]*length(values)));
     else
-        timeskipped=(PSDdata(sweepnum).realtime-(starttime+size(bigmatrix,2)*si));
-        colstoadd=round(timeskipped/si);
-        if ~isempty(PSDdata(sweepnum).powerMatrix)
-            bigmatrix=[bigmatrix,zeros(size(bigmatrix,1),colstoadd),PSDdata(sweepnum).powerMatrix(neededfrequencies,:)];
-        end
-        %             starttime+size(bigmatrix,2)*si
-        %             return
+        PSDdatatoplot.intensitypercentiles=ones(size([.01:.01:1]));
     end
-    
-    PSDdatatoplot.trace(sweepi).x=[0:si:si*(length(PSDdata(sweepnum).y)-1)]+PSDdata(sweepnum).realtime;
-    
-    if ~isempty(PSDdata(sweepnum).y)
-        y=PSDdata(sweepnum).y;
-%         dofilt=0;
-%         if dofilt==1
-%             [b,a]=butter(1,.1/(1/si)/2,'high');
-%             ytofilt=[y(end:-1:1),y,y(end:-1:1)];
-%             ytofilt=filtfilt(b,a,ytofilt);
-%             y=ytofilt([1:length(y)]+length(y));
-%         end
-        y=(y-min(y));
-        ysort=sort(y);
-        y=y/ysort(round(length(y)*.99));
-        %                         y=y/max(y);
-        y(y>1)=1;
-        PSDdatatoplot.trace(sweepi).y=y;
-        PSDdatatoplot.trace(sweepi).realtime=PSDdata(sweepnum).realtime;
-        PSDdatatoplot.trace(sweepi).si=PSDdata(sweepnum).si_powerMatrix;
-    end
-end
-
-
-
-%%
-if ~isempty(fieldnames(PSDdatatoplot.trace))
-    samplenumnow=length([PSDdatatoplot.trace.y])*length(frequencyVector);
-    if neededsamplenum<samplenumnow & neededsamplenum>0 & shoulddownsample==1
-        %                 disp('downsampling started')
-        ratio=round(samplenumnow/neededsamplenum);
-        for sweepi=1:length(neededwaves)
-            PSDdatatoplot.trace(sweepi).x=downsample(PSDdatatoplot.trace(sweepi).x,ratio);
-            PSDdatatoplot.trace(sweepi).y=downsample(PSDdatatoplot.trace(sweepi).y,ratio);
-        end
-        %                 disp('downsampling finished')
-    end
-end
-%%
-
-
-
-
-bigtime=(1:size(bigmatrix,2))*si+starttime;
-if ~isempty(bigtime)
-    samplenumnow=length(bigtime);%*length(frequencyVector);
-    if neededsamplenum<samplenumnow & neededsamplenum>0 & shoulddownsample==1
-        %                 disp('downsampling started')
-        ratio=round(samplenumnow/neededsamplenum);
-        bigmatrix=downsample(bigmatrix',ratio)';
-        bigtime=downsample(bigtime,ratio);
-        %                 disp('downsampling finished')
-    end
-end
-
-%% normalize 
-% bigmatrix=bigmatrix.*repmat(frequencyVector',1,size(bigmatrix,2));
-%% Zscore
-if PSD_Zscore & ~isempty(PSDdata_stats)
-    neededwaves=[PSDdata_stats.length]>3;
-    mus=[PSDdata_stats(neededwaves).mu];%
-    mus=mus(neededfrequencies,:);%(neededwaves)
-    mu=median(mus,2);
-    sigmas=[PSDdata_stats(neededwaves).sigma];%(neededwaves)
-    sigmas=sigmas(neededfrequencies,:);
-    sigma=median(sigmas,2);
-    bigmatrix_Z=bigmatrix-repmat(mu,1,size(bigmatrix,2));
-    bigmatrix_Z=bigmatrix_Z./repmat(sigma,1,size(bigmatrix,2));
-    bigmatrix_Z(bigmatrix==0)=0;
-    bigmatrix=bigmatrix_Z;
-end
-%%
-PSDdatatoplot.powerMatrix=bigmatrix;
-PSDdatatoplot.frequencyVector=frequencyVector;
-PSDdatatoplot.si_powerMatrix=si;
-PSDdatatoplot.time=bigtime;
-if ~isempty(PSDdatatoplot.powerMatrix)
-    values=sort(PSDdatatoplot.powerMatrix(:));
-    PSDdatatoplot.intensitypercentiles=values(ceil([.01:.01:1]*length(values)));
 else
-    PSDdatatoplot.intensitypercentiles=ones(size([.01:.01:1]));
+    PSDdatatoplot=[];
 end
-
 
 function CROSSdatatoplot=prepareCROSSdataforplotting(CROSSdata,handles,neededsamplenum,shoulddownsample)
 hosszofPSDwaves=zeros(1,length(CROSSdata));
@@ -3451,7 +3457,9 @@ function pushbutton16_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 selectedsamplenum=get(handles.popupmenu1,'Value');
+handles.data.selectedsamplenum=selectedsamplenum;
 aE_InspectEvents(handles.data.samples(selectedsamplenum).bridgeddata,handles.data.samples(selectedsamplenum).stimdata,handles.data.samples(selectedsamplenum).eventdata)
+guidata(hObject,handles);
 
 
 % --- Executes on button press in checkbox10.

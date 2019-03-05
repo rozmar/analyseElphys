@@ -8,8 +8,12 @@
 %                        2 - decibel
 %   normalizedMatrix - normalized matrix
 function normalizedMatrix = normalizeMatrix(inputMatrix, normalizationType)
+
+  if nargin<2
+    normalizationType = 1;
+  end
   
-  if nargin<2 || strcmpi(normalizationType,'zscore')
+  if strcmpi(normalizationType,'zscore')
     % Z-score normalization
     normalizedMatrix = zscore(inputMatrix')';
   elseif strcmpi(normalizationType,'decibel')

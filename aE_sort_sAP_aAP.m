@@ -75,7 +75,7 @@ if xlsnum>0
             RS=stimdata(sweepnum).RS/10^6;
             y=bridgeddata(sweepnum).y;
             si=round(bridgeddata(sweepnum).si*10^6)/10^6;
-            yfiltered=moving(y,2);
+            yfiltered=moving(y,3);
             dyfiltered=diff(yfiltered)/si;
             %                     dyfiltered_longfilt=moving(y,round(.0005/si));
             prevsweepnum=sweepnum;

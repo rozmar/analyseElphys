@@ -14,10 +14,50 @@
 function plotPowerSpectrum(timeVector, frequencyVector, powerMatrix, parameters)
 
   %% ----------------------------
-  %  Make restrictions before plotting
+  %  Parameter settings 
   %% ----------------------------
-  [timeVector, powerMatrix, xLimit] = restrictByTime(timeVector, powerMatrix, parameters);
-  [frequencyVector, powerMatrix, yLimit] = restrictByFrequency(frequencyVector, powerMatrix, parameters);
+  %  Get scale type
+  %   1 - linear
+  %   2 - logarithmic
+  if isfield(parameters, 'scale')
+    scaleType = parameters.scale;
+  else
+    scaleType = 1;
+  end
+  
+  % Cut down time
+  if isfield(parameters, 'timeBound')
+    timeBound   = parameters.timeBound;
+    timeIndices = (timeBound(1)<=timeVector&timeVector<=timeBound(2));
+    timeVector  = timeVector(timeIndices);
+    powerMatrix = powerMatrix(:,timeIndices);
+  else
+    timeBound   = timeVector([1,end]);
+  end
+  
+  % Cut down frequency
+  if isfield(parameters, 'frequencyBound')
+    freqBound        = parameters.frequencyBound;
+    frequencyIndices = (freqBound(1)<=frequencyVector&frequencyVector<=freqBound(2));
+    frequencyVector  = frequencyVector(frequencyIndices);
+    powerMatrix      = powerMatrix(frequencyIndices, :);
+  else
+    freqBound        = frequencyVector([1,end]);
+  end
+  
+  % Set title
+  if isfield(parameters, 'title')
+    plotTitle = parameters.title;
+  else
+    plotTitle = 'Spectrogram';
+  end
+  
+  % Set color limits
+  if isfield(parameters, 'colorLimit') && ~isempty(parameters.colorLimit)
+    colorLimit = parameters.colorLimit;  
+  else
+    colorLimit = [min(powerMatrix(:)), max(powerMatrix(:))];
+  end
   %% ----------------------------   
   
   %% ----------------------------
@@ -29,141 +69,33 @@ function plotPowerSpectrum(timeVector, frequencyVector, powerMatrix, parameters)
   %% ----------------------------
   
   %% ----------------------------
-  %  Customize plot
+  %  Configure plot
   %% ----------------------------  
- 
-  % Set axis limit
-  setXAxis(xLimit, parameters);
-  setYAxis(yLimit, parameters);
-  setZAxis(parameters);
+  if scaleType==2
+    yticks = logspace(log10(frequencyVector(1)),log10(frequencyVector(end)),10);
+    set(gca, 'yscale', 'log');
+  elseif scaleType==1
+    if ~isfield(parameters, 'yTick') || isempty(parameters.yTick)
+      yticks = linspace(frequencyVector(1),frequencyVector(end),10);
+    else
+      yticks = parameters.yTick; 
+    end
+    set(gca,'yscale','lin');
+  end
+  %% ----------------------------
+        
+  set(gca, 'ytick',      yticks);
+  set(gca, 'yticklabel', round(yticks*10)/10);  
+  set(gca, 'clim',       colorLimit);
   
-  % Set title for plot
-  createTitle(parameters);
-  %% ----------------------------  
-
-end
-
-%% ---------------------------------
-%  Axis customization function
-%% ---------------------------------
-% Customize the X axis
-function setXAxis(xLimit, parameters)
-
-  if isfield(parameters, 'xTick')
-    set(gca, 'xtick', parameters.xTick);
+  if isfield(parameters,'xTick')
+    set(gca, 'xtick',      parameters.xTick);
     set(gca, 'xticklabel', parameters.xTickLabel);
   end
   
-  set(gca, 'xlim', xLimit);
-end
-
-% Customize the Y axis
-function setYAxis(yLimit, parameters)
-
-  % Create ticks
-  if ~isfield(parameters, 'yTick') || isempty(parameters.yTick)
-    if isLogScale(parameters)
-      yticks = logspace(log10(yLimit(1)), log10(yLimit(2)), 10);
-    elseif isLinScale(parameters)
-      yticks = linspace(yLimit(1), yLimit(end), 10);
-    end
-  else
-    yticks = parameters.yTick; 
-  end
+  set(gca, 'xlim', timeBound);
+  set(gca, 'ylim', freqBound);
   
-  % Set scale type
-  if isLogScale(parameters)
-    set(gca, 'yscale', 'log');
-  elseif isLinScale(parameters)
-    set(gca,'yscale','lin');
-  end
-  
-  % Add ticks, ticklabels and set limit
-  set(gca, 'ytick', yticks);
-  set(gca, 'yticklabel', round(yticks*10)/10); 
-  set(gca, 'ylim', yLimit);
+  title(plotTitle);
+
 end
-
-% Customize Z axis (i.e. the color map)
-function setZAxis(parameters)
-  
-  if isfield(parameters, 'colorLimit') && ~isempty(parameters.colorLimit)
-    set(gca, 'clim', parameters.colorLimit);
-  end
-  
-end
-%% ---------------------------------
-
-%% ---------------------------------
-%  Value restriction before plot
-%% ---------------------------------
-% This function performs the restriction in time (if restriction needed)
-function [timeVector, powerMatrix, xLimit] = restrictByTime(timeVector, powerMatrix, parameters)
-
-  timeVector = createTimeVector(timeVector, size(powerMatrix, 2));
-
-  if isfield(parameters, 'timeBound')
-    powerMatrix = restrictValue(powerMatrix, timeVector, parameters.timeBound);
-    timeVector = restrictValue(toRow(timeVector), timeVector, parameters.timeBound);
-  end
-  
-  xLimit = timeVector([1,end]);
-end
-
-% Creates time vector if it wasn't given, else returns that
-function timeVector = createTimeVector(timeVector, numberOfSamples)
-  if isempty(timeVector)
-    timeVector = (1:numberOfSamples)'; 
-  end
-end
-
-% This function performs the restriction in frequency (if restriction needed)
-function [frequencyVector, powerMatrix, yLimit] = restrictByFrequency(frequencyVector, powerMatrix, parameters)
-  
-  if isfield(parameters, 'frequencyBound')
-    powerMatrix = restrictValue(powerMatrix', frequencyVector, parameters.frequencyBound)';
-    frequencyVector = toCol(restrictValue(toRow(frequencyVector), frequencyVector, parameters.frequencyBound));
-  end
-  
-  yLimit = frequencyVector([1,end]);
-  
-end
-
-% Find the values in restrictionValue vector between the permitted limit,
-% and remove elements outside this limit from the value matrix.
-function restrictedValue = restrictValue(originalValue, restrictionValue, limit)
-  indices = findRemainingIndices(restrictionValue, limit);
-  restrictedValue = originalValue(:, indices);
-end
-
-% Returns the indices of the values from a vector which falls between the
-% given limits.
-function indices = findRemainingIndices(value, limit)
-  indices = (limit(1) <= value & value <= limit(2));
-end
-%% ---------------------------------
-
-%% ---------------------------------
-%  Utility functions
-%% ---------------------------------
-% Decides whether we should use linear scale
-function answer = isLinScale(parameters)
-  answer = ~isfield(parameters, 'scale') || parameters.scale == 1;
-end
-
-% Decides whether we should use log scale
-function answer = isLogScale(parameters)
-  answer = isfield(parameters, 'scale') && parameters.scale == 2;
-end
-
-% Set plot title
-function createTitle(parameters)
-  if isfield(parameters, 'title')
-    titleString = parameters.title;
-  else
-    titleString = 'Spectrogram';
-  end
-  
-  title(titleString);
-end
-%% ---------------------------------

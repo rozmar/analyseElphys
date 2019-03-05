@@ -11,7 +11,7 @@ function wavelet = createMorletWavelet(baseFrequency, parameters)
 
     %If we want to visualize the resulting wavelet, set this to 1
     PLOT = 0;
-    
+
     % Default wave number will be 7
     if ~isfield(parameters,'wavenumber')
         wavenumber = 7;
@@ -21,15 +21,17 @@ function wavelet = createMorletWavelet(baseFrequency, parameters)
     
     interval = parameters.interval;
 
-    sigma_f = round(baseFrequency/wavenumber);
+    sigma_f = (baseFrequency/wavenumber);
     sigma_t = 1/(2*pi*sigma_f);
     sigma_tsq = sigma_t^2;
     A = sqrt(1/(sigma_t * sqrt(pi)));
-        
-    t = -1:interval:1;
-    
+        if isfield(parameters,'waveletlength')
+            t = -parameters.waveletlength:interval:parameters.waveletlength;
+        else
+            t = -1:interval:1;
+        end
     if mod(length(t),2)==0
-       t = [ t , 1 ];  
+       t = [ t , t(end) ];  
     end
     
     t_sq = t.^2;
@@ -37,6 +39,7 @@ function wavelet = createMorletWavelet(baseFrequency, parameters)
     
     if PLOT==1
         figure; plot(t, real(wavelet)); title('Wavelet');
+%             pause
     end
     
 end

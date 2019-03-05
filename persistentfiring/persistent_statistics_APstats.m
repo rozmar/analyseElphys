@@ -1,4 +1,5 @@
 % function xlsdata = persistent_aAPstatistics(dirs,xlsdata)
+valtozok.minpacketinterval=20;
 brainstatenames={'Slow wave sleep', 'REM sleep', 'Quiet wakefulness','Active wakefulness'};
 brainstatenames_varname={'Slow_wave_sleep', 'REM_sleep', 'Quiet_wakefulness','Active_wakefulness'};
 % stepsize=1;
@@ -127,6 +128,31 @@ for xlsi=1:length(xlsdata)
                 xlsdata(xlsi).sAPisi_max=NaN;
                 xlsdata(xlsi).sAPisi_med=NaN;
             end
+            aAPtimes=[eventdata(aAPidxes).maxtime];
+            isis=diff([-inf,aAPtimes]);
+            packetstarttimes=[aAPtimes((isis>valtozok.minpacketinterval)),inf];
+            if length(packetstarttimes)>1
+                packetnum=length(packetstarttimes)-1;
+                packetapnum=[];
+                packetlength=[];
+                packet_APmaxtimes={};
+                for packeti=1:length(packetstarttimes)-1
+                    firstapidx=find(aAPtimes==packetstarttimes(packeti));
+                    allapidx=find(aAPtimes>=packetstarttimes(packeti)&aAPtimes<packetstarttimes(packeti+1));
+                    packetapnum(packeti)=length(allapidx);
+                    packetlength(packeti)=aAPtimes(allapidx(end))-aAPtimes(allapidx(1));
+                    packet_APmaxtimes{packeti}=aAPtimes(allapidx)-aAPtimes(firstapidx);
+                end
+                xlsdata(xlsi).aAP_packet_num=packetnum;
+                xlsdata(xlsi).aAP_packet_APnum=packetapnum;
+                xlsdata(xlsi).aAP_packet_length=packetlength;
+                xlsdata(xlsi).aAP_packet_APmaxtimes=packet_APmaxtimes;
+            else
+                xlsdata(xlsi).aAP_packet_num=0;
+                xlsdata(xlsi).aAP_packet_APnum=NaN;
+                xlsdata(xlsi).aAP_packet_length=NaN;
+                xlsdata(xlsi).aAP_packet_APmaxtimes=NaN;
+            end
         end
         if isfield(dirs,'brainstatedir')
         a=dir([dirs.brainstatedir,xlsdata(xlsi).ID,'.mat']);
@@ -198,8 +224,13 @@ for xlsi=1:length(xlsdata)
         xlsdata(xlsi).sAPisi_med=NaN;
         xlsdata(xlsi).stimulatedsAPnum=NaN;
         
-         for brainstatei=1:length(brainstatenames)
-                brainstatename_var=brainstatenames_varname{brainstatei};
+        xlsdata(xlsi).aAP_packet_num=NaN;
+        xlsdata(xlsi).aAP_packet_APnum=NaN;
+        xlsdata(xlsi).aAP_packet_length=NaN;
+        xlsdata(xlsi).aAP_packet_APmaxtimes=NaN;
+        
+        for brainstatei=1:length(brainstatenames)
+            brainstatename_var=brainstatenames_varname{brainstatei};
                 xlsdata(xlsi).([(brainstatename_var),'_timespent'])=NaN;
                 xlsdata(xlsi).([(brainstatename_var),'_aAPnum'])=NaN;
                 xlsdata(xlsi).([(brainstatename_var),'_aAPfreq'])=NaN;

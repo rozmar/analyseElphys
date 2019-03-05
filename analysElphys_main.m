@@ -66,6 +66,7 @@ elseif projectnum==3;
     dirs.bridgeddir=[dirs.basedir,'Bridged_stim/'];
     dirs.eventdir=[dirs.basedir,'Events/'];
     dirs.eventparaleldir=[dirs.basedir,'Events/paralel/'];
+    dirs.PSDdir=[dirs.basedir,'PSD/'];
     %     dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
     %     dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
     %     dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
@@ -144,6 +145,14 @@ if projectdata.loadstatistics==1
             end
         end
     end
+    
+    fieldek=fieldnames(xlsdata);
+for fieldi=1:length(fieldek)
+    fieldnev=fieldek{fieldi};
+    if any(cellfun(@isempty,{xlsdata.(fieldnev)}))%length({xlsdata.(fieldnev)})<length(xlsdata)
+        [xlsdata((cellfun(@isempty,{xlsdata.(fieldnev)}))).(fieldnev)]=deal(NaN);
+    end
+end
 end
 
 %%
@@ -329,7 +338,7 @@ if isfield(dirs,'PSDdir_high')
     parameters=struct;
     parameters.min=.5; %minimal frequency for decomposition
     parameters.max=220;% - maximal frequency for decomposition
-    parameters.step=1; %- frequency stepsize
+    parameters.step=2; %- frequency stepsize
     parameters.scale=1;% - scale type, can be linear (1) or logarithmic (2)
     parameters.wavenumber=9;% - number of waves in wavelet
     parameters.waveletlength=30;
@@ -339,6 +348,29 @@ if isfield(dirs,'PSDdir_high')
     valtozok.parameters=parameters;
     aE_PSD_export(dirs,xlsdata,valtozok);
 end
+
+%% extracting PSD - log
+if isfield(dirs,'PSDdir_log')
+    valtozok=struct;
+    valtozok.overwrite=1;
+    valtozok.analyseonlyfield=1;
+    valtozok.downsamplenum='auto';
+    valtozok.log=1;
+    valtozok.onlyawake=1;
+    parameters=struct;
+    parameters.min=.5; %minimal frequency for decomposition
+    parameters.max=200;% - maximal frequency for decomposition
+    parameters.step=2; %- frequency stepsize
+    parameters.scale=2;% - scale type, can be linear (1) or logarithmic (2)
+    parameters.wavenumber=9;% - number of waves in wavelet
+    parameters.waveletlength=30;
+    parameters.addtaper=1;
+    parameters.taperlength=30;
+    
+    valtozok.parameters=parameters;
+    aE_PSD_export(dirs,xlsdata,valtozok);
+end
+
 %% PSD stats
 dirfields=fieldnames(dirs);
 dirstodo=dirfields(~cellfun(@isempty,regexp(dirfields,'PSDdir')));
@@ -373,27 +405,6 @@ for diri=1:length(dirstodo)
     end
 end
 
-%% extracting PSD - log
-if isfield(dirs,'breathingdir_psd')
-    valtozok=struct;
-    valtozok.overwrite=0;
-    valtozok.analyseonlyfield=1;
-    valtozok.downsamplenum='auto';
-    valtozok.log=1;
-    valtozok.onlyawake=1;
-    parameters=struct;
-    parameters.min=.5; %minimal frequency for decomposition
-    parameters.max=200;% - maximal frequency for decomposition
-    parameters.step=1; %- frequency stepsize
-    parameters.scale=2;% - scale type, can be linear (1) or logarithmic (2)
-    parameters.wavenumber=9;% - number of waves in wavelet
-    parameters.waveletlength=30;
-    parameters.addtaper=1;
-    parameters.taperlength=30;
-    
-    valtozok.parameters=parameters;
-    aE_PSD_export(dirs,xlsdata,valtozok);
-end
 %% extracting PSD for breathing
 if isfield(dirs,'PSDdir_breathing')
     valtozok=struct;

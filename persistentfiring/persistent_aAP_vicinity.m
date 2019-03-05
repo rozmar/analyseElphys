@@ -1,23 +1,26 @@
 %% cutting out the vicinities of aAPs from all experiments %%% FINISH ME!!
 valtozok=struct;
-valtozok.radius=20; %seconds before and after the aAP
+valtozok.radius=3; %seconds before and after the aAP
 valtozok.onlysporadicAP=0;
-valtozok.packets=1;
+valtozok.packets=0;
 valtozok.minpacketinterval=20;%sec
 valtozok.exportapstats=1;
 valtozok.exportfield=1;
 valtozok.exportic=1;
 valtozok.exportPSD_field=1;
-
+valtozok.sampleinterval=.001;
 sortedeventdir=[dirs.eventdir,'sorted/'];
 
 files=dir(sortedeventdir);
 files([files.isdir])=[];
 
 
-for xlsi=length(xlsdata):-1:1
+for xlsi=1:length(xlsdata)%:-1:
     aAPvicinity = struct;
     fieldxlsnum=find(strcmp(xlsdata(xlsi).HEKAfname,{xlsdata.HEKAfname}) & [xlsdata.field]==1);
+    prevsweepnum=NaN;
+    prevfieldsweepnum=NaN;
+    prevPSDsweepnum=NaN;
     if  xlsdata(xlsi).field==0 & xlsdata(xlsi).juxta==0 & any(strfind(xlsdata(xlsi).anaesthesia,'awake')) & ~isempty(fieldxlsnum)
         a=dir([sortedeventdir,xlsdata(xlsi).ID,'.mat']);
         if ~isempty(a)
@@ -70,9 +73,7 @@ for xlsi=length(xlsdata):-1:1
                         PSDdata_field_stats=[];
                     end
                 end
-                %%
                 for APi=1:length(apdata)
-                    %%
                     if isempty(fieldnames(aAPvicinity))
                         NEXT=1;
                     else
@@ -81,13 +82,30 @@ for xlsi=length(xlsdata):-1:1
                     sweepnum=apdata(APi).sweepnum;
                     maxtime=apdata(APi).maxtime;
                     maxh=apdata(APi).maxh;
-                    si=apdata(APi).si;
-                    
-                    stepsize=round(valtozok.radius/si);
                     
                     if valtozok.exportic==1
-                        
-                        y=bridgeddata(sweepnum).y;
+                        si=apdata(APi).si;
+                        if prevsweepnum==sweepnum
+                            y=icy;
+                            downsamplerate=round(valtozok.sampleinterval/si);
+                            if downsamplerate>1
+                                si=valtozok.sampleinterval;
+                                maxh=round(apdata(APi).maxh/downsamplerate);
+                            end
+                        else
+                            y=bridgeddata(sweepnum).y;
+                            d{1} = designfilt('lowpassiir','PassbandFrequency',2000,'StopbandFrequency',3000,'SampleRate',1/si,'DesignMethod','butter');
+                            y=filtfilt(d{1},y);
+                            downsamplerate=round(valtozok.sampleinterval/si);
+                            if downsamplerate>1
+                                y=downsample(y,downsamplerate);
+                                si=valtozok.sampleinterval;
+                                maxh=round(apdata(APi).maxh/downsamplerate);
+                            end
+                            prevsweepnum=sweepnum;
+                            icy=y;
+                        end
+                        stepsize=round(valtozok.radius/si);
                         hossz=length(y);
                         stepback=min(stepsize,maxh-1);
                         stepforward=min(stepsize,hossz-maxh-1);
@@ -103,16 +121,40 @@ for xlsi=length(xlsdata):-1:1
                     if valtozok.exportfield==1
                         fieldsweepnum=find([fielddata.realtime]==bridgeddata(sweepnum).realtime);
                         if ~isempty(fieldsweepnum)
-                        y=fielddata(fieldsweepnum).y;
-                        hossz=length(y);
-                        stepback=min(stepsize,maxh-1);
-                        stepforward=min(stepsize,hossz-maxh-1);
-                        field=nan(2*stepsize+1,1);
-                        field(stepsize-stepback+1:stepsize+1+stepforward)=y([-stepback:stepforward]+maxh);
-                        aAPvicinity(NEXT).field=field;
-                        aAPvicinity(NEXT).time_elphys=[-stepsize:stepsize]*si;
-                        aAPvicinity(NEXT).timeback=stepback*si;
-                        aAPvicinity(NEXT).timeforward=stepforward*si;
+                            si=apdata(APi).si;
+                            if prevfieldsweepnum==fieldsweepnum
+                                y=fieldy;
+                                downsamplerate=round(valtozok.sampleinterval/si);
+                                if downsamplerate>1
+                                    si=valtozok.sampleinterval;
+                                    maxh=round(apdata(APi).maxh/downsamplerate);
+                                end
+                            else
+                                y=fielddata(fieldsweepnum).y;
+                                d{1} = designfilt('lowpassiir','PassbandFrequency',500,'StopbandFrequency',1000,'SampleRate',1/si,'DesignMethod','butter');
+                                d{2} = designfilt('highpassiir','PassbandFrequency',.4,'StopbandFrequency',.1,'SampleRate',1/si,'DesignMethod','butter');
+                                y=filtfilt(d{1},y);
+                                y=filtfilt(d{2},y);
+                                downsamplerate=round(valtozok.sampleinterval/si);
+                                if downsamplerate>1
+                                    y=downsample(y,downsamplerate);
+                                    si=valtozok.sampleinterval;
+                                    maxh=round(apdata(APi).maxh/downsamplerate);
+                                end
+                                prevfieldsweepnum=fieldsweepnum;
+                                fieldy=y;
+                            end
+
+                            stepsize=round(valtozok.radius/si);
+                            hossz=length(y);
+                            stepback=min(stepsize,maxh-1);
+                            stepforward=min(stepsize,hossz-maxh-1);
+                            field=nan(2*stepsize+1,1);
+                            field(stepsize-stepback+1:stepsize+1+stepforward)=y([-stepback:stepforward]+maxh);
+                            aAPvicinity(NEXT).field=field;
+                            aAPvicinity(NEXT).time_elphys=[-stepsize:stepsize]*si;
+                            aAPvicinity(NEXT).timeback=stepback*si;
+                            aAPvicinity(NEXT).timeforward=stepforward*si;
                         else
                             %                             aAPvicinity(NEXT).field=[];
                             %                         aAPvicinity(NEXT).time_elphys=[-stepsize:stepsize]*si;
@@ -125,15 +167,33 @@ for xlsi=length(xlsdata):-1:1
                         fieldsweepnum=find([PSDdata_field.realtime]==bridgeddata(sweepnum).realtime);
                         if ~isempty(fieldsweepnum) & ~isempty(PSDdata_field(fieldsweepnum).si_powerMatrix)
                             %%
-                            powerMatrix=PSDdata_field(fieldsweepnum).powerMatrix;
-%                             if isfield(PSDdata_field,'compress_offset')
-%                                 powerMatrix=double(PSDdata_field(fieldsweepnum).powerMatrix)*PSDdata_field(fieldsweepnum).compress_multiplier+PSDdata_field(fieldsweepnum).compress_offset;
-%                             end
-                            frequencyVector=PSDdata_field(fieldsweepnum).frequencyVector;
-                            si_PSD=PSDdata_field(fieldsweepnum).si_powerMatrix;
+                            if prevPSDsweepnum==fieldsweepnum
+                                powerMatrix=PSDy;
+                                frequencyVector=frequencyVectory;
+                                si_PSD=PSDdata_field(fieldsweepnum).si_powerMatrix;
+                                if downsamplerate>1
+                                    si_PSD=valtozok.sampleinterval;
+                                end
+                            else
+                                powerMatrix=PSDdata_field(fieldsweepnum).powerMatrix;
+                                %                             if isfield(PSDdata_field,'compress_offset')
+                                %                                 powerMatrix=double(PSDdata_field(fieldsweepnum).powerMatrix)*PSDdata_field(fieldsweepnum).compress_multiplier+PSDdata_field(fieldsweepnum).compress_offset;
+                                %                             end
+                                frequencyVector=PSDdata_field(fieldsweepnum).frequencyVector;
+                                si_PSD=PSDdata_field(fieldsweepnum).si_powerMatrix;
+                                downsamplerate=round(valtozok.sampleinterval/si_PSD);
+                                if downsamplerate>1
+                                    powerMatrix=downsample(powerMatrix',downsamplerate)';
+                                    si_PSD=valtozok.sampleinterval;
+                                end
+                                PSDy=powerMatrix;
+                                frequencyVectory=frequencyVector;
+                                prevPSDsweepnum=fieldsweepnum;
+                            end
+                            
                             hossz=size(powerMatrix,2);
                             stepsize=round(valtozok.radius/si_PSD);
-                            maxh_field=round(maxh*(si/si_PSD));
+                            maxh_field=round(apdata(APi).maxh*(apdata(APi).si/si_PSD));
                             stepback=min(stepsize,maxh_field-1);
                             stepforward=min(stepsize,hossz-maxh_field-1);
                             PSD_field=uint32(zeros(length(frequencyVector),2*stepsize+1));
@@ -155,7 +215,7 @@ for xlsi=length(xlsdata):-1:1
                             aAPvicinity(NEXT).time_PSD_field=[];
                             aAPvicinity(NEXT).frequencyVector_field=[];
                             aAPvicinity(NEXT).PSD_field_compress_multiplier=[];
-                                aAPvicinity(NEXT).PSD_field_compress_offset=[];
+                            aAPvicinity(NEXT).PSD_field_compress_offset=[];
                         end
                     end
                     
@@ -211,11 +271,18 @@ for xlsi=length(xlsdata):-1:1
                     end
                     aAPvicinity(NEXT).baselineval=apdata(APi).baselineval;
                     aAPvicinity(NEXT).ID=xlsdata(xlsi).ID;
-                    
+                     if valtozok.packets==1
+                        aAPvicinity(NEXT).aAPsinpacket=apdata(APi).apdata;
+                     end
+                    aAPvicinity(NEXT).realtime=maxtime;
                     
                 end
                 if ~isempty(fieldnames(aAPvicinity))
-                    save([dirs.basedir,'aAP_vicinity/',xlsdata(xlsi).ID],'aAPvicinity','-v7.3');
+                    if valtozok.packets==1
+                        save([dirs.basedir,'Vicinity_packet/',xlsdata(xlsi).ID],'aAPvicinity','-v7.3');
+                    else
+                        save([dirs.basedir,'Vicinity_aAP/',xlsdata(xlsi).ID],'aAPvicinity','-v7.3');
+                    end
                 end
 %                 disp('lol')
             end
