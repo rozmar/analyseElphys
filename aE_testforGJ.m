@@ -9,7 +9,11 @@ for sweepnum=1:length(pretraces.stimdata)
     currents(end)=[];
     tdiffs=diff(pretraces.stimdata(sweepnum).segmenths)*pretraces.bridgeddata(sweepnum).si;
     if length(currdiffs)>2
-        potentialIDXes=find(currdiffs(1:end-1)<valtozok.gj_mincurrampl&tdiffs(1:end-1)>valtozok.gj_minlinelength&currents(1:end-1)<currents(1));
+        if valtozok.gj_mincurrampl<0
+            potentialIDXes=find(currdiffs(1:end-1)<valtozok.gj_mincurrampl & tdiffs(1:end-1)>valtozok.gj_minlinelength&currents(1:end-1)<currents(1));
+        else
+            potentialIDXes=find(currdiffs(1:end-1)>valtozok.gj_mincurrampl & tdiffs(1:end-1)>valtozok.gj_minlinelength & currents(1:end-1)>currents(1));
+        end
     else
         potentialIDXes=[];
     end

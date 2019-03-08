@@ -22,7 +22,7 @@ function varargout = aE_InspectEvents(varargin)
 
 % Edit the above text to modify the response to help aE_InspectEvents
 
-% Last Modified by GUIDE v2.5 28-Feb-2019 09:50:56
+% Last Modified by GUIDE v2.5 05-Mar-2019 14:00:22
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -67,9 +67,11 @@ for fieldi=1:length(fieldek)
     end
 end
 %%
+progressbar('Assigning RS to each AP.. please wait')
 for sweepi=1:length(handles.data.stimdata)
     RS=handles.data.stimdata(sweepi).RS;
     [eventdata_orig([eventdata_orig.sweepnum]==sweepi).RS]=deal(RS);
+    progressbar(sweepi/length(handles.data.stimdata))
 end
 
 %%
@@ -92,6 +94,7 @@ set(handles.edit2,'String','1')
 set(handles.edit1,'String','');
 set(handles.listbox2,'String','');
 
+set(handles.popupmenu11,'String',{'','abs'});
 set(handles.popupmenu10,'String',{'gaussian sigma','boxcar'});
 set(handles.popupmenu9,'String',{'aAP','sAP','not AP'});
 set(handles.popupmenu8,'String',{'histogram','plot VS'});
@@ -143,14 +146,19 @@ if ~ isempty(fieldnames(handles.data.rules))
     kell=true(size(handles.data.eventdata_orig));
     for i=1:length(handles.data.rules)
         if isnumeric(handles.data.rules(i).value)
+            if strcmp(handles.data.rules(i).modifyfunc,'abs')
+                valvector=abs([handles.data.eventdata_orig.(handles.data.rules(i).selectedeventdatafield)]);
+            else
+                valvector=[handles.data.eventdata_orig.(handles.data.rules(i).selectedeventdatafield)];
+            end
             if strcmp(handles.data.rules(i).comparefunc,'=')
-                kell=kell& [handles.data.eventdata_orig.(handles.data.rules(i).selectedeventdatafield)] == handles.data.rules(i).value;
+                kell=kell&  valvector== handles.data.rules(i).value;
             elseif strcmp(handles.data.rules(i).comparefunc,'~=')
-                kell=kell& [handles.data.eventdata_orig.(handles.data.rules(i).selectedeventdatafield)] ~= handles.data.rules(i).value;
+                kell=kell& valvector ~= handles.data.rules(i).value;
             elseif strcmp(handles.data.rules(i).comparefunc,'>')
-                kell=kell& [handles.data.eventdata_orig.(handles.data.rules(i).selectedeventdatafield)] > handles.data.rules(i).value;
+                kell=kell& valvector > handles.data.rules(i).value;
             elseif strcmp(handles.data.rules(i).comparefunc,'<')
-                kell=kell& [handles.data.eventdata_orig.(handles.data.rules(i).selectedeventdatafield)] < handles.data.rules(i).value;
+                kell=kell& valvector < handles.data.rules(i).value;
             end
         else
             if strcmp(handles.data.rules(i).comparefunc,'=')
@@ -169,19 +177,27 @@ end
 
 function handles=updateeventdata(handles)
  eventdata_orig=handles.data.eventdata_orig;
- if length(fieldnames(eventdata_orig)) ~= length(fieldnames(handles.data.eventdata))
+%  if length(fieldnames(eventdata_orig)) ~= length(fieldnames(handles.data.eventdata))
      fieldnevek=fieldnames(handles.data.eventdata);
      for fieldi=1:length(fieldnevek)
-         if ~any(strcmp(fieldnevek{fieldi},fieldnames(eventdata_orig)))
-             [eventdata_orig.(fieldnevek{fieldi})] = deal(NaN);
-             disp(['new field added to eventdata: ',fieldnevek{fieldi}])
+         fieldnev=fieldnevek{fieldi};
+         if ~any(strcmp(fieldnev,fieldnames(eventdata_orig)))
+             [eventdata_orig.(fieldnev)] = deal(NaN);
+             disp(['new field added to eventdata: ',fieldnev])
          end
      end
      set(handles.popupmenu7,'String',fieldnames(handles.data.eventdata));
      set(handles.popupmenu5,'String',fieldnames(handles.data.eventdata));
      set(handles.popupmenu3,'String',fieldnames(handles.data.eventdata));
- end
+%  end
  eventdata_orig(handles.data.eventadata_selectedidxes)=handles.data.eventdata;
+ for fieldi=1:length(fieldnevek)
+     fieldnev=fieldnevek{fieldi};
+     if length([eventdata_orig.(fieldnev)])<length(eventdata_orig)
+         [eventdata_orig((cellfun(@isempty,{eventdata_orig.(fieldnev)}))).(fieldnev)]=deal(NaN);
+         disp(['field filled with NANs: ',fieldnev])
+     end
+ end
  handles.data.eventdata_orig=eventdata_orig;
 
 function handles = updateDATA(handles,doitall)
@@ -590,8 +606,8 @@ for apii=1:length(apidxes)
 %     if isempty(maxdval)
 %         pause
 %     end
-    APwaves(apii).maxdv=maxdval;%max(dv);
-    eventdata(api).maxdv=maxdval;%max(dv);
+    APwaves(apii).maxdv=max(dyfiltered(maxdvhs));%maxdval;%max(dv);
+    eventdata(api).maxdv=max(dyfiltered(maxdvhs));%maxdval;%max(dv);
     if length(maxdvhs)==1
         maxdvhs=[threshh,maxdvhs];
     end
@@ -713,8 +729,8 @@ if isfield(handles.data,'eventwaves') & ~isempty(fieldnames(handles.data.eventwa
         plot(X,Y,'ko')
         hold on
         if isfield(handles.data.eventdata,'axonalAP')
-            aAPs=[handles.data.eventdata.axonalAP];
-            sAPs=[handles.data.eventdata.somaticAP];
+            aAPs=[handles.data.eventdata.axonalAP]==1;
+            sAPs=[handles.data.eventdata.somaticAP]==1;
             if ~isempty(find(aAPs))
                 plot(X(aAPs),Y(aAPs),'ro')
             end
@@ -971,6 +987,8 @@ function pushbutton1_Callback(hObject, eventdata, handles)
 %%
 selectedeventdatafield=get(handles.popupmenu5,'String');
 selectedeventdatafield=selectedeventdatafield{get(handles.popupmenu5,'Value')};
+modifyfunc=get(handles.popupmenu11,'String');
+modifyfunc=modifyfunc{get(handles.popupmenu11,'Value')};
 comparefunc=get(handles.popupmenu6,'String');
 comparefunc=comparefunc{get(handles.popupmenu6,'Value')};
 
@@ -982,6 +1000,7 @@ end
 
 handles.data.rules(next).selectedeventdatafield=selectedeventdatafield;
 handles.data.rules(next).comparefunc=comparefunc;
+handles.data.rules(next).modifyfunc=modifyfunc;
 
 if ~ischar(handles.data.eventdata_orig(1).(selectedeventdatafield))    
     handles.data.rules(next).value=str2num(get(handles.edit1,'String'));
@@ -1364,7 +1383,9 @@ if strcmp(whattoplot,'plot VS')
 %         {handles.data.eventdata(APk).type}=deal('noise');
     end
     hAP.delete;
+    handles=updateeventdata(handles);
 end
+
 handles = plotthedata(handles);
 guidata(hObject,handles);
 
@@ -1419,6 +1440,29 @@ function popupmenu10_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function popupmenu10_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupmenu10 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupmenu11.
+function popupmenu11_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu11 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu11 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu11
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu11_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu11 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

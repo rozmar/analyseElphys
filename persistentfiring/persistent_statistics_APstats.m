@@ -63,9 +63,9 @@ for xlsi=1:length(xlsdata)
             starttime=bridgeddata(1).realtime;
             endtime=bridgeddata(end).realtime+bridgeddata(end).si*length(bridgeddata(end).y);
             reclength=endtime-starttime;
-            aAPidxes=find([eventdata.axonalAP]);%&~ [eventdata.stimulated]
+            aAPidxes=find([eventdata.axonalAP]==1);%&~ [eventdata.stimulated]
             aAPtimes=[eventdata(aAPidxes).maxtime];
-            sAPidxes=find([eventdata.somaticAP] );%&~ [eventdata.stimulated]
+            sAPidxes=find([eventdata.somaticAP]==1 );%&~ [eventdata.stimulated]
             sAPtimes=[eventdata(sAPidxes).maxtime];
             %%
             for eventi=1:length(eventdata)
@@ -89,10 +89,10 @@ for xlsi=1:length(xlsdata)
             else
                 pfstarttime=endtime;
             end
-            sporadicaAPidx=[eventdata.axonalAP] &~[eventdata.stimulated] & [eventdata.aAPfreq_in_window]>=[eventdata.sAPfreq_in_window] & [eventdata.aAPfreq_in_window]<max_sporadicAP_freq & [eventdata.maxtime]<pfstarttime;
-            persistentaAPidx=[eventdata.axonalAP] &~[eventdata.stimulated] & ([eventdata.aAPfreq_in_window]<[eventdata.sAPfreq_in_window] | [eventdata.aAPfreq_in_window]>max_sporadicAP_freq | [eventdata.maxtime]>=pfstarttime);
-            APdata(NEXT).aAPnum=sum([eventdata.axonalAP]&~[eventdata.stimulated]);
-            APdata(NEXT).sAPnum=sum([eventdata.somaticAP]&~[eventdata.stimulated]);
+            sporadicaAPidx=[eventdata.axonalAP]==1 &~[eventdata.stimulated] & [eventdata.aAPfreq_in_window]>=[eventdata.sAPfreq_in_window] & [eventdata.aAPfreq_in_window]<max_sporadicAP_freq & [eventdata.maxtime]<pfstarttime;
+            persistentaAPidx=[eventdata.axonalAP]==1 &~[eventdata.stimulated] & ([eventdata.aAPfreq_in_window]<[eventdata.sAPfreq_in_window] | [eventdata.aAPfreq_in_window]>max_sporadicAP_freq | [eventdata.maxtime]>=pfstarttime);
+            APdata(NEXT).aAPnum=sum([eventdata.axonalAP]==1&~[eventdata.stimulated]);
+            APdata(NEXT).sAPnum=sum([eventdata.somaticAP]==1&~[eventdata.stimulated]);
             xlsdata(xlsi).axonalAPnum=APdata(NEXT).aAPnum;
             xlsdata(xlsi).somaticAPnum=APdata(NEXT).sAPnum;
             xlsdata(xlsi).axonalAPnum_sporadic=sum(sporadicaAPidx);
@@ -100,11 +100,11 @@ for xlsi=1:length(xlsdata)
             xlsdata(xlsi).aAPratio=xlsdata(xlsi).axonalAPnum/(xlsdata(xlsi).axonalAPnum+xlsdata(xlsi).somaticAPnum);
             xlsdata(xlsi).recordinglength=endtime-starttime;
             xlsdata(xlsi).axonalAPfreq=APdata(NEXT).aAPnum/xlsdata(xlsi).recordinglength;
-            aAPisis=diff([eventdata([eventdata.axonalAP] & ~[eventdata.stimulated]).maxtime]);
-            xlsdata(xlsi).stimulatedsAPnum=sum([[eventdata.somaticAP] & [eventdata.stimulated]]);
+            aAPisis=diff([eventdata([eventdata.axonalAP]==1 & ~[eventdata.stimulated]).maxtime]);
+            xlsdata(xlsi).stimulatedsAPnum=sum([[eventdata.somaticAP]==1 & [eventdata.stimulated]]);
             xlsdata(xlsi).somaticAPfreq=APdata(NEXT).sAPnum/xlsdata(xlsi).recordinglength;
-            xlsdata(xlsi).aAPtimes=[eventdata([eventdata.axonalAP]&~[eventdata.stimulated]).maxtime]-starttime;
-            xlsdata(xlsi).sAPtimes=[eventdata([eventdata.somaticAP]&~[eventdata.stimulated]).maxtime]-starttime;
+            xlsdata(xlsi).aAPtimes=[eventdata([eventdata.axonalAP]==1&~[eventdata.stimulated]).maxtime]-starttime;
+            xlsdata(xlsi).sAPtimes=[eventdata([eventdata.somaticAP]==1&~[eventdata.stimulated]).maxtime]-starttime;
             if ~isempty(aAPisis)
                 xlsdata(xlsi).aAPisi_mean=mean(aAPisis);
                 xlsdata(xlsi).aAPisi_min=min(aAPisis);
@@ -116,7 +116,7 @@ for xlsi=1:length(xlsdata)
                 xlsdata(xlsi).aAPisi_max=NaN;
                 xlsdata(xlsi).aAPisi_med=NaN;
             end
-            sAPisis=diff([eventdata([eventdata.somaticAP] & ~[eventdata.stimulated]).maxtime]);
+            sAPisis=diff([eventdata([eventdata.somaticAP]==1 & ~[eventdata.stimulated]).maxtime]);
             if ~isempty(aAPisis)
                 xlsdata(xlsi).sAPisi_mean=mean(sAPisis);
                 xlsdata(xlsi).sAPisi_min=min(sAPisis);
@@ -158,8 +158,8 @@ for xlsi=1:length(xlsdata)
         a=dir([dirs.brainstatedir,xlsdata(xlsi).ID,'.mat']);
         if ~isempty(a)
             %%
-            sporadicaAPidx=[eventdata.axonalAP] & [eventdata.aAPfreq_in_window]>=[eventdata.sAPfreq_in_window] & [eventdata.aAPfreq_in_window]<max_sporadicAP_freq & [eventdata.maxtime]<pfstarttime;
-            persistentaAPidx=[eventdata.axonalAP] & ([eventdata.aAPfreq_in_window]<[eventdata.sAPfreq_in_window] | [eventdata.aAPfreq_in_window]>max_sporadicAP_freq | [eventdata.maxtime]>=pfstarttime);
+            sporadicaAPidx=[eventdata.axonalAP]==1 & [eventdata.aAPfreq_in_window]>=[eventdata.sAPfreq_in_window] & [eventdata.aAPfreq_in_window]<max_sporadicAP_freq & [eventdata.maxtime]<pfstarttime;
+            persistentaAPidx=[eventdata.axonalAP]==1 & ([eventdata.aAPfreq_in_window]<[eventdata.sAPfreq_in_window] | [eventdata.aAPfreq_in_window]>max_sporadicAP_freq | [eventdata.maxtime]>=pfstarttime);
             load([dirs.brainstatedir,xlsdata(xlsi).ID]);
             aAPpresentsofar=0;
             timespentsofar=0;
@@ -169,7 +169,7 @@ for xlsi=1:length(xlsdata)
                 needed = find(strcmp({BrainStateData.name},brainstatename));
                 if ~isempty(needed)
                     timespent=sum([BrainStateData(needed).endtime]-[BrainStateData(needed).starttime]);
-%                     aAPtimes=[eventdata([eventdata.axonalAP]&~[eventdata.stimulated]).maxtime];
+%                     aAPtimes=[eventdata([eventdata.axonalAP]==1&~[eventdata.stimulated]).maxtime];
                     aAPtimes=[eventdata(sporadicaAPidx).maxtime];
                     isAPpresent=false(size(aAPtimes));
                     for brainstateidx=1:length(needed)

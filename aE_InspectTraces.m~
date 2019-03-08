@@ -1489,7 +1489,6 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+8 & ~isemp
         plot(handles.data.samples(samplenum).PSDdata_ictoplot.trace(sweepi).x(ettol:eddig),handles.data.samples(samplenum).PSDdata_ictoplot.trace(sweepi).y(ettol:eddig)*szorzo/3+2*szorzo/3,'Color',[0.5 .5 .5],'LineWidth',.5)
         
     end
-    end
     %     disp('muahah')
     axis tight
     

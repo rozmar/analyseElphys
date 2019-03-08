@@ -84,12 +84,14 @@ elseif projectnum==4
     dirs.eventparaleldir=[dirs.basedir,'Events/paralel/'];
     dirs.onlyAPeventdir=[dirs.basedir,'Events_onlyAP/'];
     dirs.PSDdir=[dirs.basedir,'PSD/'];
+    dirs.PSDdir_log=[dirs.basedir,'PSD_log/'];
     dirs.grpupedeventdir=[dirs.basedir,'Events_grouped/'];
     dirs.stimepochdir=[dirs.basedir,'Stimepochs/'];
     dirs.figuresdir=[dirs.basedir,'figures/'];
     amplifier='HEKA';
     xlsdata=aE_readxls([dirs.basedir,'persistentdata_windows.xls']);
     dirs.v0distdir=[dirs.basedir,'v0_dist/'];
+    dirs.v0_vs_PSDdir=[dirs.basedir,'v0_vs_PSD/'];
 elseif projectnum==5
     overwrite=0;
     locations=marcicucca_locations;
@@ -352,15 +354,15 @@ end
 %% extracting PSD - log
 if isfield(dirs,'PSDdir_log')
     valtozok=struct;
-    valtozok.overwrite=1;
-    valtozok.analyseonlyfield=1;
+    valtozok.overwrite=0;
+    valtozok.analyseonlyfield=0;
     valtozok.downsamplenum='auto';
     valtozok.log=1;
-    valtozok.onlyawake=1;
+    valtozok.onlyawake=0;
     parameters=struct;
     parameters.min=.5; %minimal frequency for decomposition
     parameters.max=200;% - maximal frequency for decomposition
-    parameters.step=2; %- frequency stepsize
+    parameters.step=4; %- frequency stepsize
     parameters.scale=2;% - scale type, can be linear (1) or logarithmic (2)
     parameters.wavenumber=9;% - number of waves in wavelet
     parameters.waveletlength=30;
@@ -1400,14 +1402,15 @@ end
 valtozok.plot.dpi=150;
 valtozok.plot.xcm=20;
 valtozok.plot.ycm=14;
-valtozok.plot.betumeret=14;
+valtozok.plot.betumeret=8;
 valtozok.plot.betutipus='Arial';
 valtozok.plot.axesvastagsag=2;
 valtozok.plot.xinch=valtozok.plot.xcm/2.54;
 valtozok.plot.yinch=valtozok.plot.ycm/2.54;
 valtozok.plot.xsize=valtozok.plot.dpi*valtozok.plot.xinch;
 valtozok.plot.ysize=valtozok.plot.dpi*valtozok.plot.yinch;
-
+valtozok.plot.savejpg=1;
+valtozok.plot.savefig=0;
 
 valtozok.gj_baselinelength=.010;
 valtozok.gj_baselinelengthend=.08;
@@ -1428,8 +1431,13 @@ valtozok.maxy0baselinedifference=.0005;
 valtozok.discardpostsweepswithap=1;
 valtozok.postrecordingmode='C-Clamp';%'C-Clamp' or 'V-Clamp' or 'any'
 valtozok.prerecordingmode='C-Clamp';%'C-Clamp' or 'V-Clamp' or 'any'
+[Selection,ok] = listdlg('ListString',{xlsdata.ID},'ListSize',[300 600]); % az XLS file alapján kiválasztjuk, hogy melyik file összes mérésén szeretnénk végigmenni
 
-aE_checkGJandChemicalSynapse(valtozok,xlsdata,dirs)
+for xlsnum=1:length(Selection)%xlsnum=1:length(Selection) %going throught potential presynaptic cells
+    close all
+    prenum=Selection(xlsnum);
+    aE_checkGJandChemicalSynapse(valtozok,xlsdata,dirs,prenum);
+end
 %% plotting IV
 sweepbordersrelativetorheobase=[-1,2];
 scalebarx=[.1];
