@@ -56,9 +56,7 @@ function aE_InspectEvents_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 handles.data.bridgeddata=varargin{1};
 handles.data.stimdata=varargin{2};
-
 eventdata_orig=varargin{3};
-
 fieldek=fieldnames(eventdata_orig);
 for fieldi=1:length(fieldek)
     fieldnev=fieldek{fieldi};
@@ -67,13 +65,14 @@ for fieldi=1:length(fieldek)
     end
 end
 %%
-progressbar('Assigning RS to each AP.. please wait')
-for sweepi=1:length(handles.data.stimdata)
-    RS=handles.data.stimdata(sweepi).RS;
-    [eventdata_orig([eventdata_orig.sweepnum]==sweepi).RS]=deal(RS);
-    progressbar(sweepi/length(handles.data.stimdata))
+if ~isfield(eventdata_orig,'RS')
+    progressbar('Assigning RS to each AP.. please wait')
+    for sweepi=1:length(handles.data.stimdata)
+        RS=handles.data.stimdata(sweepi).RS;
+        [eventdata_orig([eventdata_orig.sweepnum]==sweepi).RS]=deal(RS);
+        progressbar(sweepi/length(handles.data.stimdata))
+    end
 end
-
 %%
 handles.data.eventdata_orig=eventdata_orig;
 handles.data.eventdata=eventdata_orig;
@@ -317,12 +316,29 @@ for apii=1:length(apidxes)
         stepback_forthresh=round(valtozok.timebackforthreshold/si);
     end
     onseth=eventdata(api).onseth;
+    %%
     maxh=eventdata(api).maxh;
-    [~,threshh]=max(dyfiltered(max(1,maxh-stepback_forthresh):maxh-3));
+    elore=min(length(yfiltered)-maxh,5);
+    hatra=min(maxh,5);
+    [~,maxhh]=max(yfiltered([-1*hatra:elore]+maxh));
+    maxh=maxhh-1*hatra-1+maxh;
+    %% 
+    stepback_forthresh_orig=stepback_forthresh;
+    [~,threshh]=max(dyfiltered(max(1,maxh-stepback_forthresh):maxh-round(3e-5/si)));
     threshh=threshh+max(1,maxh-stepback_forthresh);
-    while ~((dyfiltered(threshh)<30) & max(dyfiltered(max(1,threshh-stepback_forthresh):threshh))<30)  & threshh>3 %
+    while ((dyfiltered(threshh)>30) | (max(dyfiltered(max(1,threshh-stepback_forthresh):threshh))>30 & max(yfiltered(max(1,threshh-stepback_forthresh):threshh))<=yfiltered(threshh)))  & threshh>3 %|    )
         threshh=threshh-1;
     end
+    %% if there is a spike doublet
+    stepback_forthresh=round(stepback_forthresh_orig/2);
+    while ((dyfiltered(threshh)>30) | (max(dyfiltered(max(1,threshh-stepback_forthresh):threshh))>30 & max(yfiltered(max(1,threshh-stepback_forthresh):threshh))<=yfiltered(threshh)))  & threshh>3 %|    )
+        threshh=threshh-1;
+    end
+    stepback_forthresh=round(stepback_forthresh_orig/4);
+    while ((dyfiltered(threshh)>30) | (max(dyfiltered(max(1,threshh-stepback_forthresh):threshh))>30 & max(yfiltered(max(1,threshh-stepback_forthresh):threshh))<=yfiltered(threshh)))  & threshh>3 %|    )
+        threshh=threshh-1;
+    end
+    stepback_forthresh=stepback_forthresh_orig;
     %% looking for biphasic AP rise - alternative universal solution
     
     v=yfiltered(threshh:maxh);
@@ -501,7 +517,9 @@ for apii=1:length(apidxes)
 %         
 %     end
     threshv=yfiltered(threshh);
+    maxval=y(maxh);
     eventdata(api).threshv=threshv;
+    eventdata(api).maxval=maxval;
     eventdata(api).APamplitude=eventdata(api).maxval-eventdata(api).threshv;
 %     eventdata(api).firstpeakval=firstpeakval;
 %     eventdata(api).firstpeakamplitude=eventdata(api).firstpeakval-eventdata(api).threshv;
@@ -611,6 +629,7 @@ for apii=1:length(apidxes)
     if length(maxdvhs)==1
         maxdvhs=[threshh,maxdvhs];
     end
+    eventdata(api).threshh=threshh;
     eventdata(api).maxdv1_V=yfiltered(maxdvhs(1));
     eventdata(api).maxdv1_t=(maxdvhs(1)-threshh)*si;
     eventdata(api).maxdv2_V=yfiltered(maxdvhs(end));
@@ -1419,7 +1438,6 @@ handles.data.samples(selectedsamplenum).eventdata=handles_orig.data.eventdata_or
 directory=handles.data.dirs.eventdir;
 ID=handles.data.xlsdata(handles.data.samples(selectedsamplenum).loadedID-1).ID;
 guidata(h,handles);
-
 eventdata=handles_orig.data.eventdata_orig;
 save([directory,'sorted/',ID],'eventdata');
 handles=handles_orig;

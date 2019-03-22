@@ -194,8 +194,11 @@ if isfield(dirs,'taxonomydir')
             g=num2str(gsc(1:hyps(1)-1));
             s=num2str(gsc(hyps(1)+1:hyps(2)-1));
             c=num2str(gsc(hyps(2)+1:end));
-            
-            taxdata(NEXT).anatgroup='0';
+            if projectnum==4 %1-2:rodent; 3-4:human; 1,3: no rhythmic; 2,4:rhythmic  
+                taxdata(NEXT).anatgroup=num2str(strcmpi(xlsdata(xlsi).species,'human')*2+any(strfind(xlsdata(xlsi).persistentfiring,'rhythmic'))+1);
+            else
+                taxdata(NEXT).anatgroup='0';
+            end
             taxdata(NEXT).g=g;
             taxdata(NEXT).s=s;
             taxdata(NEXT).c=c;
@@ -1433,7 +1436,8 @@ valtozok.postrecordingmode='C-Clamp';%'C-Clamp' or 'V-Clamp' or 'any'
 valtozok.prerecordingmode='C-Clamp';%'C-Clamp' or 'V-Clamp' or 'any'
 [Selection,ok] = listdlg('ListString',{xlsdata.ID},'ListSize',[300 600]); % az XLS file alapján kiválasztjuk, hogy melyik file összes mérésén szeretnénk végigmenni
 
-for xlsnum=1:length(Selection)%xlsnum=1:length(Selection) %going throught potential presynaptic cells
+for xlsi=length(Selection):-1:1 %xlsnum=1:length(Selection)%going throught potential presynaptic cells
+    xlsnum=Selection(xlsi);
     close all
     prenum=Selection(xlsnum);
     aE_checkGJandChemicalSynapse(valtozok,xlsdata,dirs,prenum);

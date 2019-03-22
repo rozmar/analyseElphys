@@ -5,7 +5,7 @@ if nargin<4
     valtozok=struct;
     valtozok.movingvindowsize=3;
     valtozok.movingvindowstep=.5; %seconds for downsampling and median filtering
-    valtozok.PSDonfield=true;
+    valtozok.PSDonfield=false;
     valtozok.minsweeplength=valtozok.movingvindowsize/2;
 end
 
@@ -131,6 +131,10 @@ for sweepi=1:length(bridgeddata)
         end
 
         fieldsweepnum=find([PSDdata.realtime]==bridgeddata(sweepi).realtime);
+        if length(fieldsweepnum)>1
+            disp('gebasz, 2 sweep ugyanazzal a realtime-val.. valszeg imon és vmon egyszerre.. elsőt használom')
+        fieldsweepnum=fieldsweepnum(1);
+        end
         si_PSD=PSDdata(fieldsweepnum).si_powerMatrix;
         frequencyVector=PSDdata(fieldsweepnum).frequencyVector;
         if isfield(PSDdata,'compress_offset')

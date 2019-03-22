@@ -5,7 +5,7 @@ if isempty(a)
         valtozok.export=struct;
         valtozok.export.movingvindowsize=3;
         valtozok.export.movingvindowstep=.5; %seconds for downsampling and median filtering
-        valtozok.export.PSDonfield=true;
+        valtozok.export.PSDonfield=false;
         valtozok.export.minsweeplength=valtozok.export.movingvindowsize/2;
 
         valtozok.plot.v0_start=-90;

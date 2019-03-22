@@ -787,8 +787,10 @@ for sweep=1:length(toplot)
 end
 ylim([nanmin([toplot.y]),nanmax([toplot.y])])
 xlim([starttime,endtime])
+if isfield(handles.data.eventdata,'axonalAP')
 aAPidxs=find([handles.data.eventdata.axonalAP] & [handles.data.eventdata.maxtime]<=endtime & [handles.data.eventdata.maxtime]>=starttime);
 plot([handles.data.eventdata(aAPidxs).maxtime],ones(size(aAPidxs))*nanmax([toplot.y]),'b^')
+end
 % if isfield(handles.data,'FieldData')
 %     timetotroughs=[];
 %     for aAPi=1:length(aAPidxs)
