@@ -1,4 +1,4 @@
-function persistent_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok,expname,additionaldata)
+function persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok,expname,additionaldata)
 
 if isfield(valtozok,'xcm')
     xcm=valtozok.xcm;
@@ -41,8 +41,17 @@ if isfield(valtozok,'axeswidth')
 else
     axesvastagsag=1;
 end
-voltagelinewidth=.5;
-currentlinewidth=1;
+if isfield(valtozok,'voltagelinewidth')
+    voltagelinewidth=valtozok.voltagelinewidth;
+else
+    voltagelinewidth=.5;
+end
+if isfield(valtozok,'currentlinewidth')
+    currentlinewidth=valtozok.currentlinewidth;
+else
+    currentlinewidth=1;
+end
+
    %Usage: 
 % ID='1608242rm_2_1,26_4'; 
 % xlsidx=find(strcmp({xlsdata.ID},ID));
@@ -98,8 +107,8 @@ fname=[xlsdata(xlsidx).ID,'.mat'];
 if nargin>5 & isfield(additionaldata,'eventdata')
     eventdata=additionaldata.eventdata;
 else
-    if ~isempty(dir(([dirs.eventdir,fname])));
-        load([dirs.eventdir,fname],'eventdata');
+    if ~isempty(dir(([dirs.eventdir,'sorted/',fname])));
+        load([dirs.eventdir,'sorted/',fname],'eventdata');
     else
         eventdata=[];
     end
