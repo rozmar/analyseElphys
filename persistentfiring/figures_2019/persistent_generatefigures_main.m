@@ -49,7 +49,7 @@ cellnums.persistent_sporadic_rhythmic=sum(neededcells&[xlsdata.persistent_dunno]
 cellnums.persistent_sporadic_only=cellnums.persistent_sporadic-cellnums.persistent_sporadic_rhythmic-cellnums.persistent_sporadic_tonic;
 cellnums.persistent_no_aAP=sum(neededcells&[xlsdata.persistent_dunno]==0 & [xlsdata.persistent_tested]==1 & [xlsdata.persistent_nopersistent]==1);
 % tested=cellnums.persistent_rhythmic+cellnums.persistent_tonic+cellnums.persistent_nopersistent+cellnums.persistent_sporadic-cellnums.persistent_sporadic_rhythmic-cellnums.persistent_sporadic_tonic;
-piechartorder={'persistent_no_aAP','persistent_sporadic_only','persistent_sporadic_tonic','persistent_tonic','persistent_rhythmic','persistent_sporadic_rhythmic'};
+piechartorder={'persistent_sporadic_only','persistent_no_aAP','persistent_sporadic_tonic','persistent_tonic','persistent_rhythmic','persistent_sporadic_rhythmic'};
 piechartstring={};
 cellnumvec=zeros(length(piechartorder),1);
 for i=1:length(piechartorder)
@@ -58,8 +58,52 @@ for i=1:length(piechartorder)
 end
 figure(9)
 clf
-pie(cellnumvec,piechartstring);
-title(['persistent firing in n=',num2str(cellnums.persistent_tested),' human interneurons'])
+p=pie(cellnumvec);%,piechartstring
+% title(['persistent firing in n=',num2str(cellnums.persistent_tested),' human interneurons'])
+% színezés és sráfozás
+colors.no_aAP=[1 1 1];[255,237,160]/256;
+colors.tonic=[254,178,76]/256;
+colors.rhythmic=[240,59,32]/256;
+colors.colororder=[];
+for i=1:length(piechartorder)
+    if any(regexpi(piechartorder{i},'rhythmic'))
+        colors.colororder(:,i)=colors.rhythmic;
+    elseif any(regexpi(piechartorder{i},'tonic'))
+        colors.colororder(:,i)=colors.tonic;
+    else
+        colors.colororder(:,i)=colors.no_aAP;
+    end
+end
+patches=p.findobj('type','Patch');
+patchestostripe=find(cellfun(@any,strfind(piechartorder,'sporadic')));
+for i = 1:length(patches)
+    if any(i==patchestostripe)
+        patches(i)=hatchfill(patches(i), 'single', 45, 10,colors.colororder(:,i));
+    else
+        patches(i).FaceColor=colors.colororder(:,i);
+    end
+end
+[~,hlegend]=legend(['no aAP (n = ',num2str(cellnums.persistent_no_aAP),')'],['tonic persistent firing (n = ',num2str(cellnums.persistent_tonic),')'],['rhythmic persistent firing (n = ',num2str(cellnums.persistent_rhythmic),')'],['sporadic aAPs (n = ',num2str(cellnums.persistent_sporadic),')'],'Location','southoutside');
+PatchInLegend = hlegend.findobj('type', 'Patch');
+PatchInLegend(1).FaceColor=colors.no_aAP;
+PatchInLegend(2).FaceColor=colors.tonic;
+PatchInLegend(3).FaceColor=colors.rhythmic;
+PatchInLegend(4).FaceColor=[1 1 1];
+legend boxoff 
+% hatchfill(PatchInLegend(4), 'single', 45, 5,colors.no_aAP); % this
+% doesn't work for some reason...fuck
+
+valtozok.xcm=5;
+valtozok.ycm=5;
+valtozok.ycm_current=1;
+valtozok.fontsize=8;
+valtozok.fonttype='Helvetica';
+valtozok.axesvastagsag=1;
+valtozok.dpi=900;
+set(gca,'LineWidth',valtozok.axesvastagsag,'FontSize',valtozok.fontsize,'Fontname',valtozok.fonttype,'Units','normalized','Position',[.25 .25 .5 .5])
+set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[valtozok.xcm/.5 valtozok.ycm/.5]+2,'PaperPosition',[2 2 valtozok.xcm/.5 valtozok.ycm/.5])
+saveas(gcf,[dirs.figuresdir,'Human_aAP_stats.pdf'])
+print(gcf,[dirs.figuresdir,'Human_aAP_stats.jpg'],'-djpeg',['-r',num2str(valtozok.dpi)])
 %% rhythmic persistent anatomy
 ishuman=strcmp({xlsdata.species},'Human')& ~[xlsdata.field];
 neededcells=ishuman;

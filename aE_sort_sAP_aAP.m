@@ -471,15 +471,15 @@ end
     disp([num2str(axonalapnum),' axonal APs and ',num2str(somaticaptnum),' somatic APs found - ' ,num2str(stimulatedapnum),'AP by somatic current injection during the inspected ',num2str(diff(valtozok.timeborders)),' seconds'])
     
     
-    figure(5)
-    saveas(gcf,[dirs.figuresdir,ID,'_threshold_rateofdepol'],'pdf')
-    saveas(gcf,[dirs.figuresdir,ID,'_threshold_rateofdepol'],'jpg')
-    figure(1)
-    saveas(gcf,[dirs.figuresdir,ID,'_axonal_spikes'],'pdf')
-    saveas(gcf,[dirs.figuresdir,ID,'_axonal_spikes'],'jpg')
-    figure(2)
-    saveas(gcf,[dirs.figuresdir,ID,'_somatic_spikes'],'pdf')
-    saveas(gcf,[dirs.figuresdir,ID,'_somatic_spikes'],'jpg')
+%     figure(5)
+%     saveas(gcf,[dirs.figuresdir,ID,'_threshold_rateofdepol'],'pdf')
+%     saveas(gcf,[dirs.figuresdir,ID,'_threshold_rateofdepol'],'jpg')
+%     figure(1)
+%     saveas(gcf,[dirs.figuresdir,ID,'_axonal_spikes'],'pdf')
+%     saveas(gcf,[dirs.figuresdir,ID,'_axonal_spikes'],'jpg')
+%     figure(2)
+%     saveas(gcf,[dirs.figuresdir,ID,'_somatic_spikes'],'pdf')
+%     saveas(gcf,[dirs.figuresdir,ID,'_somatic_spikes'],'jpg')
     dataout.APwaves=APwaves([APwaves.maxtime]>=valtozok.timeborders(1) &[APwaves.maxtime]<=valtozok.timeborders(2));
     dataout.eventdata=eventdata([eventdata.maxtime]>=valtozok.timeborders(1) &[eventdata.maxtime]<=valtozok.timeborders(2));
     dataout.bridgeddata=bridgeddata;

@@ -24,7 +24,34 @@ valtozok.ycm=2;
 valtozok.ycm_current=1;
 valtozok.fontsize=8;
 valtozok.fonttype='Helvetica';
-persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok,expname,additionaldata);
+persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok,expname);
+
+%% HUMAN sporadic
+ID='1602261rm_5_1_4';
+expname=[ID,'HUMAN_sporadic_persistent'];
+xlsidx=find(strcmp({xlsdata.ID},ID));
+valtozok=struct;
+valtozok.debugmode=0;
+valtozok.zerotime=73271;%61391.4+92+1.45;
+valtozok.xlimits=[-5 38.5]+valtozok.zerotime;
+valtozok.xlimitstoexclude=[0,0]+valtozok.zerotime;
+valtozok.xlimitsblowup=[0,0]+valtozok.zerotime;
+valtozok.ylimitsblowup=[0,0];
+valtozok.ylimits=[0,0];%
+% valtozok.ylimitscurr=[0 0];%[-150,250];
+valtozok.isiYlimits=[0 2];
+valtozok.freqYlimits=[.1 500];
+valtozok.freqYscale=[0.1, 1, 10, 100];
+valtozok.cutofffreq=8500;
+valtozok.highlightaxonalspikes=1;
+valtozok.highlightaxonalspikes_timeback=.001;
+valtozok.highlightaxonalspikes_timeforward=.015;
+valtozok.xcm=17;
+valtozok.ycm=2;
+valtozok.ycm_current=1;
+valtozok.fontsize=8;
+valtozok.fonttype='Helvetica';
+persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok,expname);
 
 %% HUMAN rhythmic 
 ID='1702021rm_6_1_3';
@@ -35,7 +62,7 @@ valtozok_sampletrace.debugmode=0;
 valtozok_sampletrace.zerotime=65124.6;
 valtozok_sampletrace.xlimits=[-5 38.5]+valtozok_sampletrace.zerotime;
 valtozok_sampletrace.xlimitstoexclude=[0,0]+valtozok_sampletrace.zerotime;
-valtozok_sampletrace.xlimitsblowup=[-4,-.5;20,23.5]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.xlimitsblowup=[-4,-1.5;21,23.5]+valtozok_sampletrace.zerotime;%[-4,-.5;20,23.5]+valtozok_sampletrace.zerotime;%
 valtozok_sampletrace.ylimitsblowup=zeros(size(valtozok_sampletrace.xlimitsblowup));
 valtozok_sampletrace.ylimits=[-73,31];%
 % valtozok_sampletrace.ylimitscurr=[0 0];%[-150,250];
@@ -45,7 +72,7 @@ valtozok_sampletrace.freqYscale=[0.1, 1, 10, 100];
 valtozok_sampletrace.cutofffreq=8500;
 valtozok_sampletrace.highlightaxonalspikes=1;
 valtozok_sampletrace.highlightaxonalspikes_timeback=.001;
-valtozok_sampletrace.highlightaxonalspikes_timeforward=.010;
+valtozok_sampletrace.highlightaxonalspikes_timeforward=.020;
 valtozok_sampletrace.xcm=17;
 valtozok_sampletrace.xcm_blowup=8;
 valtozok_sampletrace.ycm=2;
@@ -67,12 +94,13 @@ valtozok_APwaves.xlimits=valtozok_sampletrace.xlimits;%[-5 5]+valtozok_APwaves.z
 valtozok_APwaves.filter='gauss';% 'gauss' - gaussian filter, 'boxcar' - moving average
 valtozok_APwaves.movingt=20;%microseconds for filtering: sigma in case of gaussian filter, width in case of boxcar
 valtozok_APwaves.zerosettime='threshold'; %threshold, apmaximum
-valtozok_APwaves.timeback=.0005; %ms back from zero time
+valtozok_APwaves.timeback=.001; %ms back from zero time
 valtozok_APwaves.timeforward=.002; %ms forward from zero time
 APwaves=persistent_generatefigures_generate_APwaves(dirs,xlsdata,xlsidx,valtozok_APwaves);
-needed=(valtozok_sampletrace.xlimitsblowup(1,1)<=[APwaves.maxtime] & valtozok_sampletrace.xlimitsblowup(2,1)>=[APwaves.maxtime]) | (valtozok_sampletrace.xlimitsblowup(1,2)<=[APwaves.maxtime] & valtozok_sampletrace.xlimitsblowup(2,2)>=[APwaves.maxtime]);
+needed=(valtozok_sampletrace.xlimitsblowup(1,1)<=[APwaves.maxtime] & valtozok_sampletrace.xlimitsblowup(1,2)>=[APwaves.maxtime]) | (valtozok_sampletrace.xlimitsblowup(2,1)<=[APwaves.maxtime] & valtozok_sampletrace.xlimitsblowup(2,2)>=[APwaves.maxtime]);
 APwaves=APwaves(needed);
-%%
+% APwaves([APwaves.stimulated]&[APwaves.axonalAP])=[]; %% axonal aps from stimulated ss
+%
 valtozok_APwaves_plot=struct;
 valtozok_APwaves_plot.markersize=5;
 valtozok_APwaves_plot.linewidth=.5;
@@ -81,8 +109,8 @@ valtozok_APwaves_plot.highlight.Window=[0, 0] + valtozok_APwaves.zerotime;
 aptimestohighlight=[-3;21.5];
 [~,valtozok_APwaves_plot.highlight.idx]=min(abs(repmat([APwaves.maxtime]-valtozok_APwaves.zerotime,length(aptimestohighlight),1)-repmat(aptimestohighlight,1,length([APwaves.maxtime]))),[],2);
 valtozok_APwaves_plot.highlight.linewidth=1;
-valtozok_APwaves_plot.xcm=4;
-valtozok_APwaves_plot.ycm=4;
+valtozok_APwaves_plot.xcm=3;
+valtozok_APwaves_plot.ycm=3;
 valtozok_APwaves_plot.fontsize=8;
 valtozok_APwaves_plot.fonttype='Helvetica';
 valtozok_APwaves_plot.axeswidth=1;

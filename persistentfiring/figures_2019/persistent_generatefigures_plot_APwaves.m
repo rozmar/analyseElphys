@@ -75,7 +75,7 @@ if isfield(valtozok,'highlight')
     needed=~[APwaves.stimulated]&[APwaves.somaticAP]& ephidx;
     plot([APwaves(needed).depolrate],[APwaves(needed).threshv]*1000,'ko','MarkerFaceColor',[1 1 1],'MarkerSize',valtozok.markersize+1,'LineWidth',valtozok.highlight.linewidth)
 end
-
+axis tight
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
 set(gcf, 'Renderer', renderer);
