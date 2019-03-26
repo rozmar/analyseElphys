@@ -51,7 +51,12 @@ if isfield(valtozok,'currentlinewidth')
 else
     currentlinewidth=1;
 end
-
+if isfield(valtozok,'markersize')
+    markersize=valtozok.markersize;
+else
+    markersize=1;
+end
+renderer='painters';
    %Usage: 
 % ID='1608242rm_2_1,26_4'; 
 % xlsidx=find(strcmp({xlsdata.ID},ID));
@@ -266,9 +271,25 @@ if isfield(valtozok,'threshold') & valtozok.threshold.displayonvoltagetrace==1
     %       plot([eventdata(allapidxes).thresht]-valtozok.zerotime,[eventdata(allapidxes).medianthreshy]*1000,'rs-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[1 0 0])
     plot(medianthreshtimevector,medianthreshvalues*1000,'r-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[1 0 0])
     if isfield(valtozok,'threshold') & isfield(valtozok.threshold,'addbaselineval') & valtozok.threshold.addbaselineval==1
-           plot([bridgedsweeps.baselinetime],[bridgedsweeps.baselineval],'bo-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[0 0 1])
-       end
+        plot([bridgedsweeps.baselinetime],[bridgedsweeps.baselineval],'bo-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[0 0 1])
+    end
 end
+%%
+if isfield(valtozok,'drugwashin') & ~isempty(xlsdata(xlsidx).drugdata)
+    drugtimes=[[xlsdata(xlsidx).drugdata.DrugWashinTime];[xlsdata(xlsidx).drugdata.DrugWashoutTime]]-valtozok.zerotime;
+    uniquedrugtimes=unique(drugtimes','rows');
+    drugwashinline_ystart=valtozok.drugwashin.drugwashinline_ystart;
+    drugwashinline_ystep=valtozok.drugwashin.drugwashinline_ystep;
+    drugwashinline_linewidth=valtozok.drugwashin.drugwashinline_linewidth;
+    for drugi=1:size(uniquedrugtimes,1)
+        yvalnow=drugwashinline_ystart+drugwashinline_ystep*(drugi-1);
+        if uniquedrugtimes(drugi,1)<=valtozok.xlimits(2)-valtozok.zerotime
+            plot([max(uniquedrugtimes(drugi,1),valtozok.xlimits(1)-valtozok.zerotime),min(uniquedrugtimes(drugi,2),valtozok.xlimits(2)-valtozok.zerotime)],[yvalnow,yvalnow],'k-','LineWidth',drugwashinline_linewidth);
+        end
+    end
+end
+%%
+
 axis tight
 xlim(valtozok.xlimits-valtozok.zerotime)
 if diff(valtozok.ylimits)>0
@@ -283,9 +304,26 @@ valtozok.ylimits=get(gca,'Ylim');
 %%
 xlabel('Time (s)')
 ylabel('Voltage (mV)')
+
+%%
+if isfield(valtozok,'axis')
+    h = gca;
+    if valtozok.axis.voltage_x
+        h.XAxis.Visible = 'on';
+    else
+        h.XAxis.Visible = 'off';
+    end
+    if valtozok.axis.voltage_y
+        h.YAxis.Visible = 'on';
+    else
+        h.YAxis.Visible = 'of';
+    end
+end
+%%
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
-saveas(gcf,[dirs.figuresdir,expname,'_voltage.pdf'])
+set(gcf, 'Renderer', renderer);
+% saveas(gcf,[dirs.figuresdir,expname,'_voltage.pdf'])
 print(gcf,[dirs.figuresdir,expname,'_voltage.jpg'],'-djpeg',['-r',num2str(dpi)])
 
 %%
@@ -313,6 +351,7 @@ if sum(diff(valtozok.xlimitsblowup(1,:)))>0
         
         set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
         set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm_blowup/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm_blowup/.5 ycm/.5])
+        set(gcf, 'Renderer', renderer);
         saveas(gcf,[dirs.figuresdir,expname,'_voltage_blowup_',num2str(blowupi),'_.pdf'])
         print(gcf,[dirs.figuresdir,expname,'_voltage_blowup_',num2str(blowupi),'_.jpg'],'-djpeg',['-r',num2str(dpi)])
     end
@@ -341,8 +380,22 @@ end
 % saveas(gcf,[dirs.figuresdir,expname,'_current.pdf'])
 xlabel('Time (s)')
 ylabel('Injected current (pA)')
+if isfield(valtozok,'axis')
+    h = gca;
+    if valtozok.axis.current_x
+        h.XAxis.Visible = 'on';
+    else
+        h.XAxis.Visible = 'off';
+    end
+    if valtozok.axis.current_y
+        h.YAxis.Visible = 'on';
+    else
+        h.YAxis.Visible = 'of';
+    end
+end
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm_current/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm_current/.5])
+set(gcf, 'Renderer', renderer);
 saveas(gcf,[dirs.figuresdir,expname,'_current.pdf'])
 print(gcf,[dirs.figuresdir,expname,'_current.jpg'],'-djpeg',['-r',num2str(dpi)])
 if ~isempty(eventdata)
@@ -361,10 +414,10 @@ clf
 hold on
 
 if length(isis)>1
-    plot([APpers.maxtime]-valtozok.zerotime,isis,'ro','MarkerSize',3,'MarkerFaceColor',[1 0 0])
+    plot([APpers.maxtime]-valtozok.zerotime,isis,'ro','MarkerSize',markersize,'MarkerFaceColor',[1 0 0])
 end
 if length(isisstim)>1
-    plot([APstim.maxtime]-valtozok.zerotime,isisstim,'ko','MarkerSize',3,'MarkerFaceColor',[0 0 0])
+    plot([APstim.maxtime]-valtozok.zerotime,isisstim,'ko','MarkerSize',markersize,'MarkerFaceColor',[0 0 0])
 end
 axis tight
 if diff(valtozok.isiYlimits)>0
@@ -374,19 +427,33 @@ xlim(valtozok.xlimits-valtozok.zerotime)
 box off
 % set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm])
 % set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
+if isfield(valtozok,'axis')
+    h = gca;
+    if valtozok.axis.freq_x
+        h.XAxis.Visible = 'on';
+    else
+        h.XAxis.Visible = 'off';
+    end
+    if valtozok.axis.freq_y
+        h.YAxis.Visible = 'on';
+    else
+        h.YAxis.Visible = 'of';
+    end
+end
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
+set(gcf, 'Renderer', renderer);
 print(gcf,[dirs.figuresdir,expname,'_ISI.jpg'],'-djpeg',['-r',num2str(dpi)])
 % betumeret=14;
-axesvastagsag=1;
+% axesvastagsag=1;
 figure(4)
 clf
 if length(isis)>1
-    semilogy([APpers.maxtime]-valtozok.zerotime,1./isis,'ro','MarkerSize',3,'MarkerFaceColor',[1 0 0])
+    semilogy([APpers.maxtime]-valtozok.zerotime,1./isis,'ro','MarkerSize',markersize,'MarkerFaceColor',[1 0 0])
 end
 hold on
 if length(isisstim)>1
-    semilogy([APstim.maxtime]-valtozok.zerotime,1./isisstim,'ko','MarkerSize',3,'MarkerFaceColor',[0 0 0])
+    semilogy([APstim.maxtime]-valtozok.zerotime,1./isisstim,'ko','MarkerSize',markersize,'MarkerFaceColor',[0 0 0])
 end
 % xlabel('time(s)')
 % ylabel('Spont. Frequency (Hz)')
@@ -403,6 +470,7 @@ box off
 % set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
+set(gcf, 'Renderer', renderer);
 print(gcf,[dirs.figuresdir,expname,'_freq.jpg'],'-djpeg',['-r',num2str(dpi)])
 %%
 eventdata=eventdataold;
@@ -465,6 +533,7 @@ if isfield(valtozok,'showevents')
         end
         set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Position',[1/xcm 1/ycm 1-2/xcm 1-2/ycm])
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
+    set(gcf, 'Renderer', renderer);
     print(gcf,[dirs.figuresdir,expname,'_events_',num2str(i),'.jpg'],'-djpeg',['-r',num2str(dpi)])
     end
     

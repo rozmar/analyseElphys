@@ -83,12 +83,13 @@ for i = 1:length(patches)
         patches(i).FaceColor=colors.colororder(:,i);
     end
 end
-[~,hlegend]=legend(['no aAP (n = ',num2str(cellnums.persistent_no_aAP),')'],['tonic persistent firing (n = ',num2str(cellnums.persistent_tonic),')'],['rhythmic persistent firing (n = ',num2str(cellnums.persistent_rhythmic),')'],['sporadic aAPs (n = ',num2str(cellnums.persistent_sporadic),')'],'Location','southoutside');
+[~,hlegend]=legend(['no aAP (n = ',num2str(cellnums.persistent_no_aAP),')'],['sporadic aAPs (n = ',num2str(cellnums.persistent_sporadic),')'],['tonic persistent firing (n = ',num2str(cellnums.persistent_tonic),')'],['rhythmic persistent firing (n = ',num2str(cellnums.persistent_rhythmic),')'],'Location','southoutside');
 PatchInLegend = hlegend.findobj('type', 'Patch');
 PatchInLegend(1).FaceColor=colors.no_aAP;
-PatchInLegend(2).FaceColor=colors.tonic;
-PatchInLegend(3).FaceColor=colors.rhythmic;
-PatchInLegend(4).FaceColor=[1 1 1];
+PatchInLegend(2).FaceColor=[1 1 1];
+PatchInLegend(3).FaceColor=colors.tonic;
+PatchInLegend(4).FaceColor=colors.rhythmic;
+
 legend boxoff 
 % hatchfill(PatchInLegend(4), 'single', 45, 5,colors.no_aAP); % this
 % doesn't work for some reason...fuck
@@ -104,6 +105,7 @@ set(gca,'LineWidth',valtozok.axesvastagsag,'FontSize',valtozok.fontsize,'Fontnam
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[valtozok.xcm/.5 valtozok.ycm/.5]+2,'PaperPosition',[2 2 valtozok.xcm/.5 valtozok.ycm/.5])
 saveas(gcf,[dirs.figuresdir,'Human_aAP_stats.pdf'])
 print(gcf,[dirs.figuresdir,'Human_aAP_stats.jpg'],'-djpeg',['-r',num2str(valtozok.dpi)])
+
 %% rhythmic persistent anatomy
 ishuman=strcmp({xlsdata.species},'Human')& ~[xlsdata.field];
 neededcells=ishuman;
