@@ -105,9 +105,10 @@ valtozok_sampletrace.axis.current_y=false;
 valtozok_sampletrace.axis.current_x=false;
 valtozok_sampletrace.axis.freq_y=true;
 valtozok_sampletrace.axis.freq_x=true;
+
 persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok_sampletrace,expname);
 
-%% APwaves generation
+%% APwaves generation - first run sampletrace extraction for time boundaries
 ID='1702021rm_6_1_3';
 xlsidx=find(strcmp({xlsdata.ID},ID));
 valtozok_APwaves=struct;
@@ -134,19 +135,22 @@ aptimestohighlight=[-3;21.5];
 valtozok_APwaves_plot.highlight.linewidth=1;
 valtozok_APwaves_plot.xcm=3;
 valtozok_APwaves_plot.ycm=3;
+valtozok_APwaves_plot.xcm_scatterplot=5;
+valtozok_APwaves_plot.ycm_scatterplot=5;
 valtozok_APwaves_plot.fontsize=8;
 valtozok_APwaves_plot.fonttype='Helvetica';
 valtozok_APwaves_plot.axeswidth=.5;
-valtozok_sampletrace.axis.voltage_y=true;
-valtozok_sampletrace.axis.voltage_x=false;
-valtozok_sampletrace.axis.current_y=true;
-valtozok_sampletrace.axis.current_x=false;
-valtozok_sampletrace.axis.freq_y=true;
-valtozok_sampletrace.axis.freq_x=true;
+valtozok_APwaves_plot.separateapwaves=1;
+% valtozok_sampletrace.axis.voltage_y=true;
+% valtozok_sampletrace.axis.voltage_x=false;
+% valtozok_sampletrace.axis.current_y=true;
+% valtozok_sampletrace.axis.current_x=false;
+% valtozok_sampletrace.axis.freq_y=true;
+% valtozok_sampletrace.axis.freq_x=true;
 persistent_generatefigures_plot_APwaves(xlsidx,dirs,xlsdata,valtozok_APwaves_plot,expname,APwaves)%(APwaves,valtozok_APwaves_plot)
 
 %% Figure 2
-%% pharmacology - NBQX, GBZ, APV, CGP
+%% pharmacology - NBQX, GBZ, APV, CGP - sample trace
 ID='1411283rm_2_1,4_4';
 xlsidx=find(strcmp({xlsdata.ID},ID));
 expname=[ID,'_HUMAN_rhythmic_persistent_NBQX_GBZ_APV_CGP'];
@@ -156,7 +160,7 @@ valtozok_sampletrace.zerotime=12650;
 valtozok_sampletrace.xlimits=[0 1350]+valtozok_sampletrace.zerotime;
 valtozok_sampletrace.ylimits=[-72 31];%
 valtozok_sampletrace.xlimitstoexclude=[0,0]+valtozok_sampletrace.zerotime;
-valtozok_sampletrace.xlimitsblowup=[88.7, 98.7;728.7,738.7;1264, 1274]+valtozok_sampletrace.zerotime-50;
+valtozok_sampletrace.xlimitsblowup=[38.7, 48.7;678.7,688.7;1214, 1224]+valtozok_sampletrace.zerotime;
 valtozok_sampletrace.ylimitsblowup=zeros(size(valtozok_sampletrace.xlimitsblowup));
 valtozok_sampletrace.ylimitsblowup=[-72,24;-72,24;-72,24];
 
@@ -190,3 +194,116 @@ valtozok_sampletrace.axis.freq_y=true;
 valtozok_sampletrace.axis.freq_x=true;
 
 persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok_sampletrace,expname);
+
+%% pharmacology - NBQX, GBZ, APV, CGP - PSD plot
+ID='1411283rm_2_1,4_4';
+xlsidx=find(strcmp({xlsdata.ID},ID));
+expname=[ID,'_HUMAN_rhythmic_persistent_NBQX_GBZ_APV_CGP'];
+valtozok_PSD=struct;
+valtozok_PSD.debugmode=0;
+valtozok_PSD.zerotime=12650;
+valtozok_PSD.xlimits=[0 1350]+valtozok_PSD.zerotime;
+valtozok_PSD.xlimitstoexclude=[0,0]+valtozok_PSD.zerotime;
+
+valtozok_PSD.xcm=17;
+valtozok_PSD.xcm_blowup=5;
+valtozok_PSD.ycm=2;
+valtozok_PSD.fontsize=8;
+valtozok_PSD.fonttype='Helvetica';
+valtozok_PSD.axeswidth=.5;
+valtozok_PSD.caxvals=[0 .1];
+valtozok_PSD.freqticks=[0.3,1,3,9];
+% valtozok_PSD.freqticks=[0.5,1,2,4];
+
+valtozok_PSD.PSDparameters=struct;
+valtozok_PSD.PSDparameters.min=.25; %minimal frequency for decomposition
+valtozok_PSD.PSDparameters.max=10;% - maximal frequency for decomposition
+valtozok_PSD.PSDparameters.step=.01; %- frequency stepsize
+valtozok_PSD.PSDparameters.scale=2;% - scale type, can be linear (1) or logarithmic (2)
+valtozok_PSD.PSDparameters.wavenumber=9;% - number of waves in wavelet
+valtozok_PSD.PSDparameters.waveletlength=30;
+valtozok_PSD.PSDparameters.addtaper=1;
+valtozok_PSD.PSDparameters.taperlength=30;
+
+persistent_generatefigures_plot_PSD_for_timeinterval(xlsidx,dirs,xlsdata,valtozok_PSD,expname);
+
+%% voltage dependence - sample trace
+
+ID='1411283rm_2_1,4_4';
+xlsidx=find(strcmp({xlsdata.ID},ID));
+expname=[ID,'_HUMAN_rhythmic_persistent_voltage_dependence'];
+valtozok_sampletrace=struct;
+valtozok_sampletrace.debugmode=0;
+valtozok_sampletrace.zerotime=11838.5;
+valtozok_sampletrace.xlimits=[-5 90]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.ylimits=[-101 28];%
+valtozok_sampletrace.xlimitstoexclude=[0,0]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.xlimitsblowup=[25, 30;51,56;65, 70]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.ylimitsblowup=zeros(size(valtozok_sampletrace.xlimitsblowup));
+% valtozok_sampletrace.ylimitsblowup=[-72,24;-72,24;-72,24];
+
+% valtozok_sampletrace.ylimitscurr=[0 0];%[-150,250];
+valtozok_sampletrace.isiYlimits=[0 2];
+valtozok_sampletrace.freqYlimits=[.1 500];
+valtozok_sampletrace.freqYscale=[0.1, 1, 10, 100];
+valtozok_sampletrace.cutofffreq=8500;
+valtozok_sampletrace.highlightaxonalspikes=1;
+valtozok_sampletrace.highlightaxonalspikes_timeback=.001;
+valtozok_sampletrace.highlightaxonalspikes_timeforward=.020;
+valtozok_sampletrace.drugwashin.drugwashinline_ystart=26;
+valtozok_sampletrace.drugwashin.drugwashinline_ystep=5;
+valtozok_sampletrace.drugwashin.drugwashinline_linewidth=2;
+
+valtozok_sampletrace.xcm=17;
+valtozok_sampletrace.xcm_blowup=5;
+valtozok_sampletrace.ycm=2;
+valtozok_sampletrace.ycm_current=.5;
+valtozok_sampletrace.voltagelinewidth=.5;
+valtozok_sampletrace.currentlinewidth=.5;
+valtozok_sampletrace.markersize=1;
+valtozok_sampletrace.fontsize=8;
+valtozok_sampletrace.fonttype='Helvetica';
+valtozok_sampletrace.axeswidth=.5;
+valtozok_sampletrace.axis.voltage_y=true;
+valtozok_sampletrace.axis.voltage_x=false;
+valtozok_sampletrace.axis.current_y=false;
+valtozok_sampletrace.axis.current_x=false;
+valtozok_sampletrace.axis.freq_y=true;
+valtozok_sampletrace.axis.freq_x=true;
+
+persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok_sampletrace,expname);
+
+%% voltage dependence - PSD plot
+ID='1411283rm_2_1,4_4';
+xlsidx=find(strcmp({xlsdata.ID},ID));
+expname=[ID,'_HUMAN_rhythmic_persistent_voltage_dependence'];
+valtozok_PSD=struct;
+valtozok_PSD.debugmode=0;
+valtozok_PSD.zerotime=11838.5;
+valtozok_PSD.xlimits=[-5 90]+valtozok_PSD.zerotime;
+valtozok_PSD.xlimitstoexclude=[0,0]+valtozok_PSD.zerotime;
+valtozok_PSD.xlimitsblowup=[25, 30;51,56;65, 70]+valtozok_PSD.zerotime;
+
+valtozok_PSD.xcm=17;
+valtozok_PSD.xcm_blowup=5;
+valtozok_PSD.ycm=2;
+valtozok_PSD.fontsize=8;
+valtozok_PSD.fonttype='Helvetica';
+valtozok_PSD.axeswidth=.5;
+valtozok_PSD.caxvals=[0 .5];
+valtozok_PSD.freqticks=[0.3,1,3,9];
+% valtozok_PSD.freqticks=[0.5,1,2,4];
+
+valtozok_PSD.PSDparameters=struct;
+valtozok_PSD.PSDparameters.min=.25; %minimal frequency for decomposition
+valtozok_PSD.PSDparameters.max=10;% - maximal frequency for decomposition
+valtozok_PSD.PSDparameters.step=.01; %- frequency stepsize
+valtozok_PSD.PSDparameters.scale=2;% - scale type, can be linear (1) or logarithmic (2)
+valtozok_PSD.PSDparameters.wavenumber=9;% - number of waves in wavelet
+valtozok_PSD.PSDparameters.waveletlength=30;
+valtozok_PSD.PSDparameters.addtaper=1;
+valtozok_PSD.PSDparameters.taperlength=30;
+
+persistent_generatefigures_plot_PSD_for_timeinterval(xlsidx,dirs,xlsdata,valtozok_PSD,expname);
+
+%%

@@ -206,6 +206,7 @@ function handles = updateDATA(handles,doitall)
 % valtozok.timeforward=.001;
 % valtozok.movingn=3;
 valtozok.timebackforthreshold=.002;
+valtozok.timebackforthreshold_duringstim=.0005;
 valtozok.timeback=str2num(get(handles.edit2,'String'))/1000;
 valtozok.timeforward=str2num(get(handles.edit3,'String'))/1000;
 valtozok.movingt=round(str2num(get(handles.edit4,'String')));
@@ -313,6 +314,11 @@ for apii=1:length(apidxes)
         stepback_forthresh_first=round(.0002/si);
         stepback=round(valtozok.timeback/si);
         stepforward=round(valtozok.timeforward/si);
+%         stepback_forthresh=round(valtozok.timebackforthreshold/si);
+    end
+    if eventdata(api).stimulated==1
+        stepback_forthresh=round(valtozok.timebackforthreshold_duringstim/si);
+    else
         stepback_forthresh=round(valtozok.timebackforthreshold/si);
     end
     onseth=eventdata(api).onseth;

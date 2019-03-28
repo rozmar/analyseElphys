@@ -1643,7 +1643,7 @@ end
 set(handles.listbox1,'String',reducednames);
 set(handles.text1,'String',handles.data.samples(selectedsamplenum).changes)
 
-    if ~isempty(handles.data.samples(selectedsamplenum).eventdata)
+    if ~isempty(handles.data.samples(selectedsamplenum).eventdata) & ~isempty(fieldnames(handles.data.samples(selectedsamplenum).eventdata))
         stimapnum=length(find(strcmp({handles.data.samples(selectedsamplenum).eventdata.type},'AP') & [handles.data.samples(selectedsamplenum).eventdata.stimulated]));
         spontapnum=length(find(strcmp({handles.data.samples(selectedsamplenum).eventdata.type},'AP') & ~[handles.data.samples(selectedsamplenum).eventdata.stimulated]));
         if isfield(handles.data.samples(selectedsamplenum).eventdata,'axonalAP')
@@ -1832,7 +1832,7 @@ for selectedsamplenum=1:5
                 handles.data.samples(selectedsamplenum).plotdetails=plotdetails;
                 %%
                 
-                 if ~isempty(handles.data.samples(selectedsamplenum).PSDdata_ic) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+8 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+8)
+                 if isfield(handles.data.samples,'PSDdata_ic') & ~isempty(handles.data.samples(selectedsamplenum).PSDdata_ic) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+8 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+8)
                     PSDdatatoplot=preparePSDdataforplotting(handles.data.samples(selectedsamplenum).PSDdata_ic,handles,neededsamplenum,shoulddownsample,PSD_Zscore,handles.data.samples(selectedsamplenum).PSDdata_ic_stats);
                     handles.data.samples(selectedsamplenum).PSDdata_ictoplot=PSDdatatoplot;
                     %                 set(handles.edit9,'String',handles.data.samples(selectedsamplenum).PSDdata_ictoplot.intensitypercentiles(99));
@@ -1840,7 +1840,7 @@ for selectedsamplenum=1:5
                     handles.data.samples(selectedsamplenum).PSDdata_ictoplot=[];
                 end
                 
-                if ~isempty(handles.data.samples(selectedsamplenum).PSDdata_field) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+3 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+3)
+                if isfield(handles.data.samples,'PSDdata_field') & ~isempty(handles.data.samples(selectedsamplenum).PSDdata_field) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+3 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+3)
                     PSDdatatoplot=preparePSDdataforplotting(handles.data.samples(selectedsamplenum).PSDdata_field,handles,neededsamplenum,shoulddownsample,PSD_Zscore,handles.data.samples(selectedsamplenum).PSDdata_field_stats);
                     handles.data.samples(selectedsamplenum).PSDdata_fieldtoplot=PSDdatatoplot;
                     %                 set(handles.edit9,'String',handles.data.samples(selectedsamplenum).PSDdata_fieldtoplot.intensitypercentiles(99));

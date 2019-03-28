@@ -1160,7 +1160,7 @@ if  projectnum==5
     %% checking somatically triggered axonal events
     timebefore=.003;
     timeafter=.005;
-    cutofffreq=[3000];
+    cutofffreq=[10000];
     filterorder=1;
     for i=1:length(xlsdata)
         if xlsdata(i).startT>xlsdata(i).endT
@@ -1185,11 +1185,11 @@ if  projectnum==5
         blebSelection=blebidxes(find(blebSelection));
         for blebi=1:length(blebSelection)
             blebxlsidx=blebSelection(blebi);
-            disp(xlsdata(blebxlsidx).ID)
+            disp(['bleb recorded: ', xlsdata(blebxlsidx).ID])
             ic=struct;
             bleb=struct;
             ic=load([dirs.bridgeddir,xlsdata(icxlsidx).ID]);
-            load([dirs.eventdir,xlsdata(icxlsidx).ID],'eventdata');
+            load([dirs.eventdir,'sorted/',xlsdata(icxlsidx).ID],'eventdata');
             ic.eventdata=eventdata;
             bleb=load([dirs.bridgeddir,xlsdata(blebxlsidx).ID]);
             for blebsweepnum=1:length(bleb.bridgeddata) %filtering
@@ -1212,11 +1212,11 @@ if  projectnum==5
                 eventidx=apidxes(api);
                 si=round(ic.eventdata(eventidx).si*10^6)/10^6;
                 icsweepnum=ic.eventdata(eventidx).sweepnum;
-                maxh=ic.eventdata(eventidx).maxh;
+                maxh=ic.eventdata(eventidx).threshh;%maxh;
                 maxtime=ic.eventdata(eventidx).maxtime;
                 stimulated=ic.eventdata(eventidx).stimulated;
                 baselineval=ic.eventdata(eventidx).baselineval;
-                amplitude=ic.eventdata(eventidx).amplitude;
+                amplitude=ic.eventdata(eventidx).APamplitude;
                 halfwidth=ic.eventdata(eventidx).halfwidth;
                 blebsweepnum=find([bleb.bridgeddata.realtime]==ic.bridgeddata(icsweepnum).realtime);
                 stepback=round(timebefore/si);
@@ -1238,6 +1238,18 @@ if  projectnum==5
                     APdata(NEXT).baselineval=median(APdata(NEXT).ic_y(1:stepback));
                     APdata(NEXT).amplitude=amplitude;
                     APdata(NEXT).halfwidth=halfwidth;
+                    APdata(NEXT).threshv=eventdata(eventidx).threshv;
+                    APdata(NEXT).axonalAP=eventdata(eventidx).axonalAP;
+                    APdata(NEXT).somaticAP=eventdata(eventidx).somaticAP;
+%                     figure(3)
+%                     clf
+%                     subplot(3,1,1)
+%                     plot(APdata(NEXT).time,APdata(NEXT).ic_y)
+%                     subplot(3,1,2)
+%                     plot(APdata(NEXT).time,APdata(NEXT).bleb_y)
+%                     subplot(3,1,3)
+%                     plot(APdata(NEXT).time,APdata(NEXT).bleb_y_filt)
+%                     disp('lol')
                 end
             end
             si=max([APdata.si]);
@@ -1255,9 +1267,10 @@ if  projectnum==5
     APdataOriginal=APdata;
     %% visualize bleb data
     APdata=APdataOriginal;
+    APdata=APdata([APdata.maxtime]>87120 & [APdata.maxtime]<87250 )
     recordingmode='V-Clamp';
     baselinepercentilerange=[.01 .99];
-    baselinestdmin=3;
+    baselinestdmin=-3;
     % detect amplitudes
     %      figure(1)
     %     subplot(4,4,i*4+2);
@@ -1273,11 +1286,28 @@ if  projectnum==5
         idxes=find(time>min(x)&time<max(x));
         baselineidxes=find(time>min(baselinex)&time<max(baselinex));
         if strcmp(recordingmode,'V-Clamp')
-            [peakv,peakh]=max(bleb_y_filt(idxes));
-            peakv=(peakv-bleb_y_baseline);
+%             [peakv,peakh]=max(bleb_y_filt(idxes));
+%             peakv=(peakv-bleb_y_baseline);
+%             peakh=peakh+idxes(1);
+%             [baselinepeakv,~]=min(bleb_y_filt(baselineidxes));
+%             baselinepeakv=-(baselinepeakv-bleb_y_baseline);
+% % % % % % % % %             [peakv,peakh]=min(bleb_y_filt(idxes));
+% % % % % % % % %             peakv=(peakv-bleb_y_baseline);
+% % % % % % % % %             peakh=peakh+idxes(1);
+% % % % % % % % %             [baselinepeakv,~]=max(bleb_y_filt(baselineidxes));
+% % % % % % % % %             baselinepeakv=-(baselinepeakv-bleb_y_baseline);
+% %             figure(33)
+% %             clf
+% %             subplot(2,1,1)
+% %             plot(APdata(api).ic_y)
+% %             subplot(2,1,2)
+% %             plot(bleb_y_filt)
+% %             pause
+            [peakv,peakh]=min(bleb_y_filt(idxes));
+            peakv=-(peakv-bleb_y_baseline);
             peakh=peakh+idxes(1);
-            [baselinepeakv,~]=min(bleb_y_filt(baselineidxes));
-            baselinepeakv=-(baselinepeakv-bleb_y_baseline);
+            [baselinepeakv,~]=max(bleb_y_filt(baselineidxes));
+            baselinepeakv=(baselinepeakv-bleb_y_baseline);
         elseif strcmp(recordingmode,'C-Clamp')
             [peakv,peakh]=min(bleb_y_filt(idxes));
             peakv=-(peakv-bleb_y_baseline);
@@ -1301,7 +1331,7 @@ if  projectnum==5
     
     APdata(todel)=[];
     
-    close all
+%     close all
     figure(33)
     clf
     bar(xbincenters,nbase,'r')
@@ -1319,16 +1349,18 @@ if  projectnum==5
         needed=(strcmp({APdata.bleb_Amplifiermode},recordingmode));
         if i==0 % persistent spikelet
             cim='axonal spikelet';
-            needed=find(needed&[APdata.stimulated]==0 & [APdata.amplitude]<.06 & [APdata.halfwidth]>300*10^-6); %
+            needed=find(needed&[APdata.axonalAP]==1 & [APdata.amplitude]<.06 & [APdata.halfwidth]>300*10^-6); %
         elseif i==1 % persistent spike
             cim='axonal spike';
-            needed=find(needed&[APdata.stimulated]==0 & [APdata.amplitude]>.07 &  [APdata.baselineval]<-.00); %& [APdata.halfwidth]>300*10^-6
+            needed=find(needed&[APdata.axonalAP]==1 & [APdata.amplitude]>.07 &  [APdata.baselineval]<-.00); %& [APdata.halfwidth]>300*10^-6
         elseif i==2 % somatic spike
-            cim='somatic spike - hyperpolarized v0';
-            needed=find(needed&[APdata.stimulated]==1 & [APdata.amplitude]>.07&  [APdata.baselineval]<-.07);
+%             cim='somatic spike - hyperpolarized v0';
+%             needed=find(needed&[APdata.somaticAP]==1 & [APdata.amplitude]>.07&  [APdata.baselineval]<-.07);
+            cim='all axonal';
+            needed=find(needed&[APdata.axonalAP]==1);
         elseif i==3 % somatic spike
             cim='somatic spike - depolarized v0';
-            needed=find(needed&[APdata.stimulated]==1 & [APdata.amplitude]>.07&  [APdata.baselineval]>-.05);
+            needed=find(needed&[APdata.somaticAP]==1 & [APdata.amplitude]>.07&  [APdata.baselineval]>-.05);
         end
         figure(1)
         hsom(i+1)=subplot(4,4,i*4+1);
@@ -1350,15 +1382,15 @@ if  projectnum==5
             hist([APdata(needed).bleb_amplitude_t],ampltbins)
             xlabel('peak latency')
         end
-        linkaxes(hsom,'xy')
-        linkaxes(hax,'xy')
+%         linkaxes(hsom,'xy')
+%         linkaxes(hax,'xy')
         subplot(4,4,i*4+2);
         axis tight
         subplot(4,4,i*4+1);
         axis tight
         if isfield(APdata,'bleb_amplitude')
             figure(2)
-            if i<2
+            if i<3
                 colorka='rx';
             else
                 colorka='ko';
