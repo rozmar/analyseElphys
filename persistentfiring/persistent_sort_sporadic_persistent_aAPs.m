@@ -52,8 +52,8 @@ else
     pfstarttime=endtime;
 end
 
-sporadicaAPidx=[eventdata.axonalAP] & [eventdata.aAPfreq_in_window]>=[eventdata.sAPfreq_in_window]*valtozok.sAPnumszorzo & [eventdata.aAPfreq_in_window]<max_sporadicAP_freq & [eventdata.maxtime]<pfstarttime;
-persistentaAPidx=[eventdata.axonalAP] & ([eventdata.aAPfreq_in_window]<[eventdata.sAPfreq_in_window] | [eventdata.aAPfreq_in_window]>max_sporadicAP_freq | [eventdata.maxtime]>=pfstarttime);
+sporadicaAPidx=[eventdata.axonalAP]==1 & [eventdata.aAPfreq_in_window]>=[eventdata.sAPfreq_in_window]*valtozok.sAPnumszorzo & [eventdata.aAPfreq_in_window]<max_sporadicAP_freq & [eventdata.maxtime]<pfstarttime;
+persistentaAPidx=[eventdata.axonalAP]==1 & ([eventdata.aAPfreq_in_window]<[eventdata.sAPfreq_in_window] | [eventdata.aAPfreq_in_window]>max_sporadicAP_freq | [eventdata.maxtime]>=pfstarttime);
 
 for eventi=1:length(eventdata)
     if sporadicaAPidx(eventi)==1

@@ -1101,145 +1101,151 @@ for samplenum=1:length(handles.data.samples)
     if handles.data.samples(samplenum).switch==1 & handles.data.samples(samplenum).selectedID>1 & ~isempty(handles.data.samples(samplenum).neededwaves)
         neededwaves=handles.data.samples(samplenum).neededwaves;
         marker=handles.data.samples(samplenum).marker;
-        axes(handles.axes1)
-      
-        for sweepi=1:length(neededwaves)
-            ettol=find(handles.data.samples(samplenum).datatoplot(sweepi).x>starttime,1,'first');
-            eddig=find(handles.data.samples(samplenum).datatoplot(sweepi).x<endtime,1,'last');
-            plot(handles.data.samples(samplenum).datatoplot(sweepi).x(ettol:eddig),handles.data.samples(samplenum).datatoplot(sweepi).yvoltage(ettol:eddig),marker(1),'LineWidth',2)
-        end
-        markevents=get(handles.checkbox3,'Value');
-        if markevents==1 & ~isempty(handles.data.samples(samplenum).eventdata) %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
-            neededevents=[handles.data.samples(samplenum).eventdata.axonalAP]==1;
-            eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
-            neededevents=false(size(eventsnow));
-              for sweepi=1:length(neededwaves)
-                 sweepnum=neededwaves(sweepi);
-                 neededevents([eventsnow.sweepnum]==sweepnum)=1;
-              end
-             plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'ro','MarkerSize',8)
-             
-             handles.data.samples(samplenum).eventdata=persistent_sort_sporadic_persistent_aAPs(handles.data.samples(samplenum).eventdata);
-             
-             neededevents=[handles.data.samples(samplenum).eventdata.axonalAP_persistent]==1;
-            eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
-            neededevents=false(size(eventsnow));
-              for sweepi=1:length(neededwaves)
-                 sweepnum=neededwaves(sweepi);
-                 neededevents([eventsnow.sweepnum]==sweepnum)=1;
-              end
-             plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'rx','MarkerSize',8)
-        end
-        if get(handles.checkbox5,'Value')==1 & ~isempty(handles.data.samples(samplenum).eventdata) %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
-            neededevents=[handles.data.samples(samplenum).eventdata.somaticAP]==1;%strcmp({handles.data.samples(samplenum).eventdata.type},'AP') & ~[handles.data.samples(samplenum).eventdata.stimulated];
-            eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
-            neededevents=false(size(eventsnow));
-              for sweepi=1:length(neededwaves)
-                 sweepnum=neededwaves(sweepi);
-                 neededevents([eventsnow.sweepnum]==sweepnum)=1;
-              end
-             plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'ko','MarkerSize',8)
-        end
-        if get(handles.checkbox6,'Value')==1 & ~isempty(handles.data.samples(samplenum).eventdata) %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
-            neededevents=strcmp({handles.data.samples(samplenum).eventdata.type},'ep');%strcmp({handles.data.samples(samplenum).eventdata.type},'AP') & ~[handles.data.samples(samplenum).eventdata.stimulated];
-            eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
-            neededevents=false(size(eventsnow));
-              for sweepi=1:length(neededwaves)
-                 sweepnum=neededwaves(sweepi);
-                 neededevents([eventsnow.sweepnum]==sweepnum)=1;
-              end
-             plot([eventsnow(neededevents).onsettime],[eventsnow(neededevents).baselineval],'rs','MarkerSize',8) 
-             plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'r^','MarkerSize',8)
-        end
-         if get(handles.checkbox7,'Value')==1 & ~isempty(handles.data.samples(samplenum).eventdata) %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
-            neededevents=strcmp({handles.data.samples(samplenum).eventdata.type},'ip');%strcmp({handles.data.samples(samplenum).eventdata.type},'AP') & ~[handles.data.samples(samplenum).eventdata.stimulated];
-            eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
-            neededevents=false(size(eventsnow));
-              for sweepi=1:length(neededwaves)
-                 sweepnum=neededwaves(sweepi);
-                 neededevents([eventsnow.sweepnum]==sweepnum)=1;
-              end
-             plot([eventsnow(neededevents).onsettime],[eventsnow(neededevents).baselineval],'bs','MarkerSize',8) 
-             plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'bv','MarkerSize',8)
-        end
-       markstates=get(handles.checkbox4,'Value');
-       if markstates==1 & isfield(handles.data.dirs,'statedir')
-           %%
-           if ~isfield(handles.data.samples(samplenum),'statedata')
-               load([handles.data.dirs.statedir,handles.data.IDs{handles.data.samples(samplenum).loadedID}],'statedata');
-               handles.data.samples(samplenum).statedata=statedata;
-           end
+        if samplenum~=get(handles.popupmenu4,'Value')-1 & samplenum~=get(handles.popupmenu7,'Value')-1
+            axes(handles.axes1)
             for sweepi=1:length(neededwaves)
-                 sweepnum=neededwaves(sweepi);
-                 neededup=find([handles.data.samples(samplenum).statedata.UP.sweepnum]==sweepnum);
-                 for upi=1:length(neededup)
-                     onseth=handles.data.samples(samplenum).statedata.UP(neededup(upi)).onseth;
-                     endh=handles.data.samples(samplenum).statedata.UP(neededup(upi)).endh;
-                     voltagevalue=median(handles.data.samples(samplenum).datatoplot(sweepi).yvoltage(onseth:endh))-.001;
-                     plot(handles.data.samples(samplenum).datatoplot(sweepi).x([onseth,endh]),[voltagevalue,voltagevalue],'r-','LineWidth',4)
-                 end
-                   neededdown=find([handles.data.samples(samplenum).statedata.DOWN.sweepnum]==sweepnum);
-                 for downi=1:length(neededdown)
-                     onseth=handles.data.samples(samplenum).statedata.DOWN(neededdown(downi)).onseth;
-                     endh=handles.data.samples(samplenum).statedata.DOWN(neededdown(downi)).endh;
-                     voltagevalue=median(handles.data.samples(samplenum).datatoplot(sweepi).yvoltage(onseth:endh))-.001;
-                     plot(handles.data.samples(samplenum).datatoplot(sweepi).x([onseth,endh]),[voltagevalue,voltagevalue],'b-','LineWidth',4)
-                 end
+                ettol=find(handles.data.samples(samplenum).datatoplot(sweepi).x>starttime,1,'first');
+                eddig=find(handles.data.samples(samplenum).datatoplot(sweepi).x<endtime,1,'last');
+                plot(handles.data.samples(samplenum).datatoplot(sweepi).x(ettol:eddig),handles.data.samples(samplenum).datatoplot(sweepi).yvoltage(ettol:eddig),marker(1),'LineWidth',2)
             end
-       end
-       markbrainstates=get(handles.checkbox8,'Value');
-       if markbrainstates==1 & isfield(handles.data.dirs,'brainstatedir')
-           %%
-           BrainStateProps=handles.data.BrainStateProps;
-           BrainStateData=handles.data.samples(samplenum).BrainStateData;
-           if ~isempty(fieldnames(BrainStateData))
-               ylimits=[min([handles.data.samples(samplenum).datatoplot.yvoltage]),max([handles.data.samples(samplenum).datatoplot.yvoltage])];
-               for statei=1:length(BrainStateData)
-                   if isempty(find(strcmp(BrainStateData(statei).name,BrainStateProps.Statevalues)))
-                       color='k';
-                   else
-                       color=BrainStateProps.Statecolors_short{find(strcmp(BrainStateData(statei).name,BrainStateProps.Statevalues))};
-                   end
-                   rectangle('Position',[BrainStateData(statei).starttime,ylimits(1),BrainStateData(statei).endtime-BrainStateData(statei).starttime,diff(ylimits)],'EdgeColor',color,'LineWidth',2);
-                   text(BrainStateData(statei).starttime,ylimits(1)+.95*diff(ylimits),BrainStateData(statei).name,'Color',color)
-               end
-           end
-       end
-       
-%         plot([handles.data.samples(samplenum).datatoplot.x],[handles.data.samples(samplenum).datatoplot.yvoltage],marker(1),'LineWidth',2)
-        y0=max([y0,max([handles.data.samples(samplenum).datatoplot.yvoltage])]);
-        if length(neededwaves)>0
-            prenum=handles.data.samples(samplenum).selectedID-1;
-            if isfield(handles.data.xlsdata,'drugdata') & isstruct(handles.data.xlsdata(prenum).drugdata)
-            for i=1:length(handles.data.xlsdata(prenum).drugdata)
-                y0=y0+.005;
-                startt=handles.data.xlsdata(prenum).drugdata(i).DrugWashinTime;
-                origstartt=startt;
-                endt=handles.data.xlsdata(prenum).drugdata(i).DrugWashoutTime;
-                originalednt=endt;
-                mintval=nanmin([handles.data.samples(samplenum).datatoplot.x]);
-                maxtval=nanmax([handles.data.samples(samplenum).datatoplot.x]);
-                if startt<mintval;
-                    startt=mintval;
+            
+            %         plot([handles.data.samples(samplenum).datatoplot.x],[handles.data.samples(samplenum).datatoplot.yvoltage],marker(1),'LineWidth',2)
+            y0=max([y0,max([handles.data.samples(samplenum).datatoplot.yvoltage])]);
+            if length(neededwaves)>0
+                prenum=handles.data.samples(samplenum).selectedID-1;
+                if isfield(handles.data.xlsdata,'drugdata') & isstruct(handles.data.xlsdata(prenum).drugdata)
+                    for i=1:length(handles.data.xlsdata(prenum).drugdata)
+                        y0=y0+.005;
+                        startt=handles.data.xlsdata(prenum).drugdata(i).DrugWashinTime;
+                        origstartt=startt;
+                        endt=handles.data.xlsdata(prenum).drugdata(i).DrugWashoutTime;
+                        originalednt=endt;
+                        mintval=nanmin([handles.data.samples(samplenum).datatoplot.x]);
+                        maxtval=nanmax([handles.data.samples(samplenum).datatoplot.x]);
+                        if startt<mintval;
+                            startt=mintval;
+                        end
+                        if isempty(endt)
+                            endt=maxtval;
+                        end
+                        if endt<startt
+                            endt=startt;
+                        end
+                        plot([startt, endt],[y0,y0],[marker(1),'-'],'LineWidth', 10)
+                        text(startt,y0,[handles.data.xlsdata(prenum).drugdata(i).DrugName,' - washin at ',num2str(round(origstartt))],'Color',[1 1 1])
+                    end
                 end
-                if isempty(endt)
-                    endt=maxtval;
-                end
-                if endt<startt
-                    endt=startt;
-                end
-                plot([startt, endt],[y0,y0],[marker(1),'-'],'LineWidth', 10)
-                text(startt,y0,[handles.data.xlsdata(prenum).drugdata(i).DrugName,' - washin at ',num2str(round(origstartt))],'Color',[1 1 1])
             end
+            
+            markevents=get(handles.checkbox3,'Value');
+            if markevents==1 & ~isempty(handles.data.samples(samplenum).eventdata) & isfield(handles.data.samples(samplenum).eventdata,'axonalAP') %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
+                neededevents=[handles.data.samples(samplenum).eventdata.axonalAP]==1;
+                eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
+                neededevents=false(size(eventsnow));
+                for sweepi=1:length(neededwaves)
+                    sweepnum=neededwaves(sweepi);
+                    neededevents([eventsnow.sweepnum]==sweepnum)=1;
+                end
+                plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'ro','MarkerSize',8)
+                
+                handles.data.samples(samplenum).eventdata=persistent_sort_sporadic_persistent_aAPs(handles.data.samples(samplenum).eventdata);
+                
+                neededevents=[handles.data.samples(samplenum).eventdata.axonalAP_persistent]==1;
+                eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
+                neededevents=false(size(eventsnow));
+                for sweepi=1:length(neededwaves)
+                    sweepnum=neededwaves(sweepi);
+                    neededevents([eventsnow.sweepnum]==sweepnum)=1;
+                end
+                plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'rx','MarkerSize',8)
             end
+            if get(handles.checkbox5,'Value')==1 & ~isempty(handles.data.samples(samplenum).eventdata) %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
+                neededevents=[handles.data.samples(samplenum).eventdata.somaticAP]==1;%strcmp({handles.data.samples(samplenum).eventdata.type},'AP') & ~[handles.data.samples(samplenum).eventdata.stimulated];
+                eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
+                neededevents=false(size(eventsnow));
+                for sweepi=1:length(neededwaves)
+                    sweepnum=neededwaves(sweepi);
+                    neededevents([eventsnow.sweepnum]==sweepnum)=1;
+                end
+                plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'ko','MarkerSize',8)
+            end
+            if get(handles.checkbox6,'Value')==1 & ~isempty(handles.data.samples(samplenum).eventdata) %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
+                neededevents=strcmp({handles.data.samples(samplenum).eventdata.type},'ep');%strcmp({handles.data.samples(samplenum).eventdata.type},'AP') & ~[handles.data.samples(samplenum).eventdata.stimulated];
+                eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
+                neededevents=false(size(eventsnow));
+                for sweepi=1:length(neededwaves)
+                    sweepnum=neededwaves(sweepi);
+                    neededevents([eventsnow.sweepnum]==sweepnum)=1;
+                end
+                plot([eventsnow(neededevents).onsettime],[eventsnow(neededevents).baselineval],'rs','MarkerSize',8)
+                plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'r^','MarkerSize',8)
+            end
+            if get(handles.checkbox7,'Value')==1 & ~isempty(handles.data.samples(samplenum).eventdata) %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
+                neededevents=strcmp({handles.data.samples(samplenum).eventdata.type},'ip');%strcmp({handles.data.samples(samplenum).eventdata.type},'AP') & ~[handles.data.samples(samplenum).eventdata.stimulated];
+                eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
+                neededevents=false(size(eventsnow));
+                for sweepi=1:length(neededwaves)
+                    sweepnum=neededwaves(sweepi);
+                    neededevents([eventsnow.sweepnum]==sweepnum)=1;
+                end
+                plot([eventsnow(neededevents).onsettime],[eventsnow(neededevents).baselineval],'bs','MarkerSize',8)
+                plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'bv','MarkerSize',8)
+            end
+            markstates=get(handles.checkbox4,'Value');
+            if markstates==1 & isfield(handles.data.dirs,'statedir')
+                %%
+                if ~isfield(handles.data.samples(samplenum),'statedata')
+                    load([handles.data.dirs.statedir,handles.data.IDs{handles.data.samples(samplenum).loadedID}],'statedata');
+                    handles.data.samples(samplenum).statedata=statedata;
+                end
+                for sweepi=1:length(neededwaves)
+                    sweepnum=neededwaves(sweepi);
+                    neededup=find([handles.data.samples(samplenum).statedata.UP.sweepnum]==sweepnum);
+                    for upi=1:length(neededup)
+                        onseth=handles.data.samples(samplenum).statedata.UP(neededup(upi)).onseth;
+                        endh=handles.data.samples(samplenum).statedata.UP(neededup(upi)).endh;
+                        voltagevalue=median(handles.data.samples(samplenum).datatoplot(sweepi).yvoltage(onseth:endh))-.001;
+                        plot(handles.data.samples(samplenum).datatoplot(sweepi).x([onseth,endh]),[voltagevalue,voltagevalue],'r-','LineWidth',4)
+                    end
+                    neededdown=find([handles.data.samples(samplenum).statedata.DOWN.sweepnum]==sweepnum);
+                    for downi=1:length(neededdown)
+                        onseth=handles.data.samples(samplenum).statedata.DOWN(neededdown(downi)).onseth;
+                        endh=handles.data.samples(samplenum).statedata.DOWN(neededdown(downi)).endh;
+                        voltagevalue=median(handles.data.samples(samplenum).datatoplot(sweepi).yvoltage(onseth:endh))-.001;
+                        plot(handles.data.samples(samplenum).datatoplot(sweepi).x([onseth,endh]),[voltagevalue,voltagevalue],'b-','LineWidth',4)
+                    end
+                end
+            end
+            markbrainstates=get(handles.checkbox8,'Value');
+            if markbrainstates==1 & isfield(handles.data.dirs,'brainstatedir')
+                %%
+                BrainStateProps=handles.data.BrainStateProps;
+                BrainStateData=handles.data.samples(samplenum).BrainStateData;
+                if ~isempty(fieldnames(BrainStateData))
+                    ylimits=[min([handles.data.samples(samplenum).datatoplot.yvoltage]),max([handles.data.samples(samplenum).datatoplot.yvoltage])];
+                    for statei=1:length(BrainStateData)
+                        if isempty(find(strcmp(BrainStateData(statei).name,BrainStateProps.Statevalues)))
+                            color='k';
+                        else
+                            color=BrainStateProps.Statecolors_short{find(strcmp(BrainStateData(statei).name,BrainStateProps.Statevalues))};
+                        end
+                        rectangle('Position',[BrainStateData(statei).starttime,ylimits(1),BrainStateData(statei).endtime-BrainStateData(statei).starttime,diff(ylimits)],'EdgeColor',color,'LineWidth',2);
+                        text(BrainStateData(statei).starttime,ylimits(1)+.95*diff(ylimits),BrainStateData(statei).name,'Color',color)
+                    end
+                end
+            end
+            
+            
         end
-        handles.axes1=gca;
+%         handles.axes1=gca;
         axesname='axes2';
         popupname='popupmenu4';
         plotlowerpanels(marker,samplenum,starttime,endtime,neededwaves,axesname,popupname,handles);
         axesname='axes3';
         popupname='popupmenu7';
         plotlowerpanels(marker,samplenum,starttime,endtime,neededwaves,axesname,popupname,handles);
+        
+        
     end
 end
 axes(handles.axes3)
@@ -1272,9 +1278,12 @@ hObject=findall(gcf,'Name','aE_InspectTraces');
 guidata(hObject,handles);
 
 function plotlowerpanels(marker,samplenum,starttime,endtime,neededwaves,axesname,popupname,handles)
+selectedsamplenum=get(handles.popupmenu1,'Value');
 PSD_Zscore=get(handles.checkbox10,'Value');
 axes(handles.(axesname))
+if samplenum==1
 cla
+end
 if get(handles.(popupname),'Value')-1==0
     for sweepi=1:length(neededwaves)
         ettol=find(handles.data.samples(samplenum).datatoplot(sweepi).x>starttime,1,'first');
@@ -1284,15 +1293,72 @@ if get(handles.(popupname),'Value')-1==0
 %     xlabel('Time (s)')
     ylabel('Injected Current (pA)')
     axis tight
+    set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
 elseif samplenum==get(handles.(popupname),'Value')-1
     for sweepi=1:length(neededwaves)
         ettol=find(handles.data.samples(samplenum).datatoplot(sweepi).x>starttime,1,'first');
         eddig=find(handles.data.samples(samplenum).datatoplot(sweepi).x<endtime,1,'last');
         plot(handles.data.samples(samplenum).datatoplot(sweepi).x(ettol:eddig),handles.data.samples(samplenum).datatoplot(sweepi).yvoltage(ettol:eddig),marker(1),'LineWidth',2)
     end
+    markevents=get(handles.checkbox3,'Value');
+            if markevents==1 & ~isempty(handles.data.samples(samplenum).eventdata) & isfield(handles.data.samples(samplenum).eventdata,'axonalAP') %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
+                neededevents=[handles.data.samples(samplenum).eventdata.axonalAP]==1;
+                eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
+                neededevents=false(size(eventsnow));
+                for sweepi=1:length(neededwaves)
+                    sweepnum=neededwaves(sweepi);
+                    neededevents([eventsnow.sweepnum]==sweepnum)=1;
+                end
+                plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'ro','MarkerSize',8)
+                
+                handles.data.samples(samplenum).eventdata=persistent_sort_sporadic_persistent_aAPs(handles.data.samples(samplenum).eventdata);
+                
+                neededevents=[handles.data.samples(samplenum).eventdata.axonalAP_persistent]==1;
+                eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
+                neededevents=false(size(eventsnow));
+                for sweepi=1:length(neededwaves)
+                    sweepnum=neededwaves(sweepi);
+                    neededevents([eventsnow.sweepnum]==sweepnum)=1;
+                end
+                plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'rx','MarkerSize',8)
+            end
+            if get(handles.checkbox5,'Value')==1 & ~isempty(handles.data.samples(samplenum).eventdata) %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
+                neededevents=[handles.data.samples(samplenum).eventdata.somaticAP]==1;%strcmp({handles.data.samples(samplenum).eventdata.type},'AP') & ~[handles.data.samples(samplenum).eventdata.stimulated];
+                eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
+                neededevents=false(size(eventsnow));
+                for sweepi=1:length(neededwaves)
+                    sweepnum=neededwaves(sweepi);
+                    neededevents([eventsnow.sweepnum]==sweepnum)=1;
+                end
+                plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'ko','MarkerSize',8)
+            end
+            if get(handles.checkbox6,'Value')==1 & ~isempty(handles.data.samples(samplenum).eventdata) %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
+                neededevents=strcmp({handles.data.samples(samplenum).eventdata.type},'ep');%strcmp({handles.data.samples(samplenum).eventdata.type},'AP') & ~[handles.data.samples(samplenum).eventdata.stimulated];
+                eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
+                neededevents=false(size(eventsnow));
+                for sweepi=1:length(neededwaves)
+                    sweepnum=neededwaves(sweepi);
+                    neededevents([eventsnow.sweepnum]==sweepnum)=1;
+                end
+                plot([eventsnow(neededevents).onsettime],[eventsnow(neededevents).baselineval],'rs','MarkerSize',8)
+                plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'r^','MarkerSize',8)
+            end
+            if get(handles.checkbox7,'Value')==1 & ~isempty(handles.data.samples(samplenum).eventdata) %| isempty(fieldnames(handles.data.samples(samplenum).eventdata)))
+                neededevents=strcmp({handles.data.samples(samplenum).eventdata.type},'ip');%strcmp({handles.data.samples(samplenum).eventdata.type},'AP') & ~[handles.data.samples(samplenum).eventdata.stimulated];
+                eventsnow=handles.data.samples(samplenum).eventdata(neededevents);
+                neededevents=false(size(eventsnow));
+                for sweepi=1:length(neededwaves)
+                    sweepnum=neededwaves(sweepi);
+                    neededevents([eventsnow.sweepnum]==sweepnum)=1;
+                end
+                plot([eventsnow(neededevents).onsettime],[eventsnow(neededevents).baselineval],'bs','MarkerSize',8)
+                plot([eventsnow(neededevents).maxtime],[eventsnow(neededevents).maxval],'bv','MarkerSize',8)
+            end
     axis tight
     ylabel('Voltage (mV)')
-elseif get(handles.(popupname),'Value')==length(handles.data.samples)+2
+    set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
+
+elseif get(handles.(popupname),'Value')==length(handles.data.samples)+2 & samplenum==selectedsamplenum
     %%
     hold on
     if isfield(handles.data.samples(samplenum),'pupildata')
@@ -1310,7 +1376,7 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+2
     end
     ylabel('\color{red}Movement \color{black}and \color{blue}pupil size \color{black}(AU)')
     ylim([0 2])
-elseif get(handles.(popupname),'Value')==length(handles.data.samples)+3 & ~isempty(handles.data.samples(samplenum).PSDdata_fieldtoplot)
+elseif get(handles.(popupname),'Value')==length(handles.data.samples)+3 & ~isempty(handles.data.samples(samplenum).PSDdata_fieldtoplot) & samplenum==selectedsamplenum
     
     imagesc(handles.data.samples(samplenum).PSDdata_fieldtoplot.time,handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector,handles.data.samples(samplenum).PSDdata_fieldtoplot.powerMatrix)
 %     contourf(handles.data.samples(samplenum).PSDdata_fieldtoplot.time,handles.data.samples(samplenum).PSDdata_fieldtoplot.frequencyVector,handles.data.samples(samplenum).PSDdata_fieldtoplot.powerMatrix)
@@ -1359,7 +1425,7 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+3 & ~isemp
     end
     %     disp('muahah')
     axis tight
-elseif get(handles.(popupname),'Value')==length(handles.data.samples)+4 & isfield(handles.data.samples(samplenum).movementdata,'time_behaviour')
+elseif get(handles.(popupname),'Value')==length(handles.data.samples)+4 & isfield(handles.data.samples(samplenum).movementdata,'time_behaviour') & samplenum==selectedsamplenum
     %%
     hold on
     ettol=find(handles.data.samples(samplenum).movementdata.time_behaviour>starttime,1,'first');
@@ -1370,7 +1436,7 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+4 & isfiel
     plot(handles.data.samples(samplenum).movementdata.time_behaviour(ettol:eddig),handles.data.samples(samplenum).movementdata.lick(ettol:eddig),'r-','LineWidth',1)
     plot(handles.data.samples(samplenum).movementdata.time_behaviour(ettol:eddig),handles.data.samples(samplenum).movementdata.water(ettol:eddig),'b-','LineWidth',1)
 %     plot(handles.data.samples(samplenum).movementdata.time(ettol:eddig),handles.data.samples(samplenum).movementdata.(movementfield)(ettol:eddig),'r-','LineWidth',2);
-elseif get(handles.(popupname),'Value')==length(handles.data.samples)+5 & isfield(handles.data.samples(samplenum),'BreathingData')
+elseif get(handles.(popupname),'Value')==length(handles.data.samples)+5 & isfield(handles.data.samples(samplenum),'BreathingData') & samplenum==selectedsamplenum
     %%
     ettol=find(handles.data.samples(samplenum).BreathingData.time>=starttime,1,'first');
     if isempty(ettol)
@@ -1386,7 +1452,7 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+5 & isfiel
     y=handles.data.samples(samplenum).BreathingData.y(ettol:eddig);
     plot(x,y,'k-','LineWidth',1)
     ylim([min(y), max(y)])
-elseif get(handles.(popupname),'Value')==length(handles.data.samples)+6 & isfield(handles.data.samples(samplenum),'BreathingPSDdatatoplot')
+elseif get(handles.(popupname),'Value')==length(handles.data.samples)+6 & isfield(handles.data.samples(samplenum),'BreathingPSDdatatoplot') & samplenum==selectedsamplenum
     imagesc(handles.data.samples(samplenum).BreathingPSDdatatoplot.time,handles.data.samples(samplenum).BreathingPSDdatatoplot.frequencyVector,handles.data.samples(samplenum).BreathingPSDdatatoplot.powerMatrix)
     
     
@@ -1422,7 +1488,7 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+6 & isfiel
     end
     %     disp('muahah')
     axis tight
-elseif get(handles.(popupname),'Value')==length(handles.data.samples)+7 & isfield(handles.data.samples(samplenum),'Breathing_Field_CROSSdatatoplot')
+elseif get(handles.(popupname),'Value')==length(handles.data.samples)+7 & isfield(handles.data.samples(samplenum),'Breathing_Field_CROSSdatatoplot') & samplenum==selectedsamplenum
     imagesc(handles.data.samples(samplenum).Breathing_Field_CROSSdatatoplot.time,handles.data.samples(samplenum).Breathing_Field_CROSSdatatoplot.frequencyVector,handles.data.samples(samplenum).Breathing_Field_CROSSdatatoplot.coherence)
     
     if strcmp(axesname,'axes2')
@@ -1453,7 +1519,7 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+7 & isfiel
     %     disp('muahah')
     axis tight
   
-elseif get(handles.(popupname),'Value')==length(handles.data.samples)+8 & ~isempty(handles.data.samples(samplenum).PSDdata_ictoplot)
+elseif get(handles.(popupname),'Value')==length(handles.data.samples)+8 & ~isempty(handles.data.samples(samplenum).PSDdata_ictoplot) & isfield(handles.data.samples(samplenum).PSDdata_ictoplot,'trace') & samplenum==selectedsamplenum
     
     imagesc(handles.data.samples(samplenum).PSDdata_ictoplot.time,handles.data.samples(samplenum).PSDdata_ictoplot.frequencyVector,handles.data.samples(samplenum).PSDdata_ictoplot.powerMatrix)
     
@@ -1473,17 +1539,34 @@ elseif get(handles.(popupname),'Value')==length(handles.data.samples)+8 & ~isemp
     colormap linspecer
     ylabel('Frequency (Hz)')
     xlabel('Time (s)')
+    %%
+    set(gca, 'YTickMode', 'auto', 'YTickLabelMode', 'auto')
+    ytickidxs=[];
+    yticknow=get(gca,'YTick');
+    ylimnow=get(gca,'Ylim');
+   
+    linearyticks = linspace(ylimnow(1),ylimnow(end),length(handles.data.samples(samplenum).PSDdata_ictoplot.frequencyVector));
+    if ~isempty(linearyticks)
+    for ticki=1:length(yticknow)
+        [~,ytickidxs(ticki)]=min(abs(linearyticks-yticknow(ticki)));
+    end
+    yticklabelnow=handles.data.samples(samplenum).PSDdata_ictoplot.frequencyVector(ytickidxs);
+    set(gca,'Yticklabel',round(yticklabelnow*100)/100)
+    end
+    %%
     hold on
     if ~isempty(handles.data.samples(samplenum).PSDdata_ictoplot.frequencyVector)
         szorzo=max(handles.data.samples(samplenum).PSDdata_ictoplot.frequencyVector);
     else
         szorzo=1;
     end
+    if ~isempty(handles.data.samples(samplenum).PSDdata_ictoplot(1).powerMatrix)
     for sweepi=1:length(handles.data.samples(samplenum).PSDdata_ictoplot.trace)
         ettol=find(handles.data.samples(samplenum).PSDdata_ictoplot.trace(sweepi).x>starttime,1,'first');
         eddig=find(handles.data.samples(samplenum).PSDdata_ictoplot.trace(sweepi).x<endtime,1,'last');
         plot(handles.data.samples(samplenum).PSDdata_ictoplot.trace(sweepi).x(ettol:eddig),handles.data.samples(samplenum).PSDdata_ictoplot.trace(sweepi).y(ettol:eddig)*szorzo/3+2*szorzo/3,'Color',[0.5 .5 .5],'LineWidth',.5)
         
+    end
     end
     %     disp('muahah')
     axis tight
@@ -1560,14 +1643,14 @@ end
 set(handles.listbox1,'String',reducednames);
 set(handles.text1,'String',handles.data.samples(selectedsamplenum).changes)
 
-    if ~isempty(handles.data.samples(selectedsamplenum).eventdata)
+    if ~isempty(handles.data.samples(selectedsamplenum).eventdata) & ~isempty(fieldnames(handles.data.samples(selectedsamplenum).eventdata))
         stimapnum=length(find(strcmp({handles.data.samples(selectedsamplenum).eventdata.type},'AP') & [handles.data.samples(selectedsamplenum).eventdata.stimulated]));
         spontapnum=length(find(strcmp({handles.data.samples(selectedsamplenum).eventdata.type},'AP') & ~[handles.data.samples(selectedsamplenum).eventdata.stimulated]));
         if isfield(handles.data.samples(selectedsamplenum).eventdata,'axonalAP')
-           stimaAPnum=length(find([handles.data.samples(selectedsamplenum).eventdata.axonalAP] & [handles.data.samples(selectedsamplenum).eventdata.stimulated]));
-           stimsAPnum=length(find([handles.data.samples(selectedsamplenum).eventdata.somaticAP] & [handles.data.samples(selectedsamplenum).eventdata.stimulated]));
-           spontaAPnum=length(find([handles.data.samples(selectedsamplenum).eventdata.axonalAP] & ~[handles.data.samples(selectedsamplenum).eventdata.stimulated]));
-           spontsAPnum=length(find([handles.data.samples(selectedsamplenum).eventdata.somaticAP] & ~[handles.data.samples(selectedsamplenum).eventdata.stimulated]));
+           stimaAPnum=length(find([handles.data.samples(selectedsamplenum).eventdata.axonalAP]==1 & [handles.data.samples(selectedsamplenum).eventdata.stimulated]));
+           stimsAPnum=length(find([handles.data.samples(selectedsamplenum).eventdata.somaticAP]==1 & [handles.data.samples(selectedsamplenum).eventdata.stimulated]));
+           spontaAPnum=length(find([handles.data.samples(selectedsamplenum).eventdata.axonalAP]==1 & ~[handles.data.samples(selectedsamplenum).eventdata.stimulated]));
+           spontsAPnum=length(find([handles.data.samples(selectedsamplenum).eventdata.somaticAP]==1 & ~[handles.data.samples(selectedsamplenum).eventdata.stimulated]));
         end
     else
         stimapnum=0;
@@ -1749,7 +1832,7 @@ for selectedsamplenum=1:5
                 handles.data.samples(selectedsamplenum).plotdetails=plotdetails;
                 %%
                 
-                 if ~isempty(handles.data.samples(selectedsamplenum).PSDdata_ic) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+8 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+8)
+                 if isfield(handles.data.samples,'PSDdata_ic') & ~isempty(handles.data.samples(selectedsamplenum).PSDdata_ic) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+8 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+8)
                     PSDdatatoplot=preparePSDdataforplotting(handles.data.samples(selectedsamplenum).PSDdata_ic,handles,neededsamplenum,shoulddownsample,PSD_Zscore,handles.data.samples(selectedsamplenum).PSDdata_ic_stats);
                     handles.data.samples(selectedsamplenum).PSDdata_ictoplot=PSDdatatoplot;
                     %                 set(handles.edit9,'String',handles.data.samples(selectedsamplenum).PSDdata_ictoplot.intensitypercentiles(99));
@@ -1757,7 +1840,7 @@ for selectedsamplenum=1:5
                     handles.data.samples(selectedsamplenum).PSDdata_ictoplot=[];
                 end
                 
-                if ~isempty(handles.data.samples(selectedsamplenum).PSDdata_field) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+3 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+3)
+                if isfield(handles.data.samples,'PSDdata_field') & ~isempty(handles.data.samples(selectedsamplenum).PSDdata_field) & (get(handles.popupmenu4,'Value')==length(handles.data.samples)+3 | get(handles.popupmenu7,'Value')==length(handles.data.samples)+3)
                     PSDdatatoplot=preparePSDdataforplotting(handles.data.samples(selectedsamplenum).PSDdata_field,handles,neededsamplenum,shoulddownsample,PSD_Zscore,handles.data.samples(selectedsamplenum).PSDdata_field_stats);
                     handles.data.samples(selectedsamplenum).PSDdata_fieldtoplot=PSDdatatoplot;
                     %                 set(handles.edit9,'String',handles.data.samples(selectedsamplenum).PSDdata_fieldtoplot.intensitypercentiles(99));
@@ -1852,7 +1935,7 @@ if ~isempty(neededwaves)
     
     
     %%
-    if  ~isempty(fieldnames(PSDdatatoplot.trace))
+    if  ~isempty(fieldnames(PSDdatatoplot.trace)) & isfield(PSDdatatoplot.trace,'y')
         samplenumnow=length([PSDdatatoplot.trace.y])*length(frequencyVector);
         if neededsamplenum<samplenumnow & neededsamplenum>0 & shoulddownsample==1
             %                 disp('downsampling started')
@@ -2953,17 +3036,18 @@ function pushbutton11_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton11 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-valtozok=struct;
-valtozok.movingvindowsize=5;
-valtozok.movingvindowstep=.5; %seconds for downsampling and median filtering
-valtozok.timeborders=[str2num(get(handles.edit4,'String')),str2num(get(handles.edit5,'String'))];
-valtozok.frequencyrange=[1 4];
-valtozok.PSDonfield=true;
-valtozok.minsweeplength=valtozok.movingvindowsize/2;
-
 selectedsamplenum=get(handles.popupmenu1,'Value');
-
-aE_V0_vs_PSD(handles.data.dirs,handles.data.xlsdata,handles.data.samples(selectedsamplenum).selectedID-1,valtozok)
+persistent_V0_vs_PSD_GUI(handles.data.dirs,handles.data.xlsdata,handles.data.samples(selectedsamplenum).selectedID-1)
+% valtozok=struct;
+% valtozok.movingvindowsize=4;
+% valtozok.movingvindowstep=.5; %seconds for downsampling and median filtering
+% % valtozok.timeborders=[str2num(get(handles.edit4,'String')),str2num(get(handles.edit5,'String'))];
+% % valtozok.frequencyrange=[1 4];
+% valtozok.PSDonfield=true;
+% valtozok.minsweeplength=valtozok.movingvindowsize/2;
+% 
+% 
+% aE_V0_vs_PSD(handles.data.dirs,handles.data.xlsdata,handles.data.samples(selectedsamplenum).selectedID-1,valtozok)
 
 
 % --- Executes on button press in pushbutton12.
