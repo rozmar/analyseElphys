@@ -122,6 +122,7 @@ end
 
 
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
 
 

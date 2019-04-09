@@ -238,14 +238,14 @@ valtozok_sampletrace.zerotime=11838.5;
 valtozok_sampletrace.xlimits=[-5 90]+valtozok_sampletrace.zerotime;
 valtozok_sampletrace.ylimits=[-101 28];%
 valtozok_sampletrace.xlimitstoexclude=[0,0]+valtozok_sampletrace.zerotime;
-valtozok_sampletrace.xlimitsblowup=[25, 30;51,56;65, 70]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.xlimitsblowup=[25, 30;51,56;65, 70;87,92]+valtozok_sampletrace.zerotime;
 valtozok_sampletrace.ylimitsblowup=zeros(size(valtozok_sampletrace.xlimitsblowup));
 % valtozok_sampletrace.ylimitsblowup=[-72,24;-72,24;-72,24];
 
 % valtozok_sampletrace.ylimitscurr=[0 0];%[-150,250];
 valtozok_sampletrace.isiYlimits=[0 2];
 valtozok_sampletrace.freqYlimits=[.1 500];
-valtozok_sampletrace.freqYscale=[0.1, 1, 10, 100];
+valtozok_sampletrace.freqYscale=[1, 10, 100];
 valtozok_sampletrace.cutofffreq=8500;
 valtozok_sampletrace.highlightaxonalspikes=1;
 valtozok_sampletrace.highlightaxonalspikes_timeback=.001;
@@ -266,12 +266,15 @@ valtozok_sampletrace.fonttype='Helvetica';
 valtozok_sampletrace.axeswidth=.5;
 valtozok_sampletrace.axis.voltage_y=true;
 valtozok_sampletrace.axis.voltage_x=false;
+valtozok_sampletrace.axis.voltage_blowup_y=false;
+valtozok_sampletrace.axis.voltage_blowup_x=false;
 valtozok_sampletrace.axis.current_y=false;
 valtozok_sampletrace.axis.current_x=false;
 valtozok_sampletrace.axis.freq_y=true;
-valtozok_sampletrace.axis.freq_x=true;
+valtozok_sampletrace.axis.freq_x=false;
 
 persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok_sampletrace,expname);
+
 
 %% voltage dependence - PSD plot
 ID='1411283rm_2_1,4_4';

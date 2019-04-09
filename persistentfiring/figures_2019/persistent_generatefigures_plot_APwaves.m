@@ -257,6 +257,7 @@ end
 if separateapwaves==1
 figure(2)
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
 set(gcf, 'Renderer', renderer);
 saveas(gcf,[dirs.figuresdir,expname,'_apwaves_stimulated_v_t.pdf'])
@@ -264,6 +265,7 @@ print(gcf,[dirs.figuresdir,expname,'_apwaves_stimulated_v_t.jpg'],'-djpeg',['-r'
 
 figure(3)
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
 set(gcf, 'Renderer', renderer);
 saveas(gcf,[dirs.figuresdir,expname,'_apwaves_spontaneous_v_t.pdf'])
@@ -271,6 +273,7 @@ print(gcf,[dirs.figuresdir,expname,'_apwaves_spontaneous_v_t.jpg'],'-djpeg',['-r
 
 figure(4)
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
 set(gcf, 'Renderer', renderer);
 saveas(gcf,[dirs.figuresdir,expname,'_apwaves_stimulated_dv_v.pdf'])
@@ -278,6 +281,7 @@ print(gcf,[dirs.figuresdir,expname,'_apwaves_stimulated_dv_v.jpg'],'-djpeg',['-r
 
 figure(5)
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
 set(gcf, 'Renderer', renderer);
 saveas(gcf,[dirs.figuresdir,expname,'_apwaves_spontaneous_dv_v.pdf'])
@@ -285,12 +289,14 @@ print(gcf,[dirs.figuresdir,expname,'_apwaves_spontaneous_dv_v.jpg'],'-djpeg',['-
 else
     figure(2)
     set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+    set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
     set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
     set(gcf, 'Renderer', renderer);
     saveas(gcf,[dirs.figuresdir,expname,'_apwaves_all_v_t.pdf'])
     print(gcf,[dirs.figuresdir,expname,'_apwaves_all_v_t.jpg'],'-djpeg',['-r',num2str(dpi)])
     figure(4)
     set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+    set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
     set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
     set(gcf, 'Renderer', renderer);
     saveas(gcf,[dirs.figuresdir,expname,'_apwaves_all_dv_v.pdf'])
