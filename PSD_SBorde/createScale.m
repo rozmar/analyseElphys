@@ -38,13 +38,17 @@ function scaleVector = createScale(range, step, scale)
       scaleVector = [ scaleVector(1:end-1) , max(50, range(1)):step:range(2) ];
     end
   elseif scale==LOGARITHMIC  
-    if range(2)<=50
-      nValue = min(range(2), 50)-min(range(1), 50)+1;
-      scaleVector = logspace(log10(min(range(1), 50)), log10(min(range(2), 50)), nValue);
-    else
-      nValue = ceil(range(2)-range(1))+1;
+%     if range(2)<=50
+%       nValue = min(range(2), 50)-min(range(1), 50)+1;
+%       scaleVector = logspace(log10(min(range(1), 50)), log10(min(range(2), 50)), nValue);
+%     else
+        if step<=0
+            nValue = ceil(range(2)-range(1))+1;
+        else
+            nValue = round(ceil(range(2)-range(1))/step)+1;
+        end 
       scaleVector = logspace(log10(range(1)), log10(range(2)), nValue);
-    end
+%     end
   end
     
 end
