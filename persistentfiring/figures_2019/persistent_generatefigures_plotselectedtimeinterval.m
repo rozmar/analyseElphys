@@ -321,6 +321,7 @@ if isfield(valtozok,'axis')
 end
 %%
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
 set(gcf, 'Renderer', renderer);
 % saveas(gcf,[dirs.figuresdir,expname,'_voltage.pdf'])
@@ -333,6 +334,19 @@ if isfield(valtozok,'debugmode')&valtozok.debugmode==1
     return
 end
 if sum(diff(valtozok.xlimitsblowup(1,:)))>0
+    if isfield(valtozok,'axis') & isfield(valtozok.axis,'voltage_blowup_x')
+        h = gca;
+        if valtozok.axis.voltage_blowup_x
+            h.XAxis.Visible = 'on';
+        else
+            h.XAxis.Visible = 'off';
+        end
+        if valtozok.axis.voltage_blowup_y
+            h.YAxis.Visible = 'on';
+        else
+            h.YAxis.Visible = 'of';
+        end
+    end
     if isfield(valtozok,'threshold') & valtozok.threshold.displayonblowup==1
       plot([eventdata(allapidxes).thresht]-valtozok.zerotime,[eventdata(allapidxes).threshy]*1000,'ro','LineWidth',1,'MarkerSize',5)
       plot(medianthreshtimevector,medianthreshvalues*1000,'r-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[1 0 0])
@@ -350,6 +364,7 @@ if sum(diff(valtozok.xlimitsblowup(1,:)))>0
         end
         
         set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+        set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
         set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm_blowup/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm_blowup/.5 ycm/.5])
         set(gcf, 'Renderer', renderer);
         saveas(gcf,[dirs.figuresdir,expname,'_voltage_blowup_',num2str(blowupi),'_.pdf'])
@@ -394,6 +409,7 @@ if isfield(valtozok,'axis')
     end
 end
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm_current/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm_current/.5])
 set(gcf, 'Renderer', renderer);
 saveas(gcf,[dirs.figuresdir,expname,'_current.pdf'])
@@ -441,6 +457,7 @@ if isfield(valtozok,'axis')
     end
 end
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
 set(gcf, 'Renderer', renderer);
 print(gcf,[dirs.figuresdir,expname,'_ISI.jpg'],'-djpeg',['-r',num2str(dpi)])
@@ -466,9 +483,25 @@ if sum(valtozok.freqYscale)>0
     set(gca,'Ytick',valtozok.freqYscale)
 end
 box off
+
+if isfield(valtozok,'axis')
+    h = gca;
+    if valtozok.axis.freq_x
+        h.XAxis.Visible = 'on';
+    else
+        h.XAxis.Visible = 'off';
+    end
+    if valtozok.axis.freq_y
+        h.YAxis.Visible = 'on';
+    else
+        h.YAxis.Visible = 'of';
+    end
+end
+
 % set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Position',[1/xcm 1/ycmnow 1-2/xcm 1-2/ycmnow])
 % set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
 set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm/.5 ycm/.5])
 set(gcf, 'Renderer', renderer);
 print(gcf,[dirs.figuresdir,expname,'_freq.jpg'],'-djpeg',['-r',num2str(dpi)])
@@ -492,6 +525,7 @@ if isfield(valtozok,'threshold')
 
     box off
     set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Position',[1/xcm 1/ycmnow 1-2/xcm 1-2/ycmnow])
+    set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 xsize/dpi ysize/dpi])
     print(gcf,[dirs.figuresdir,expname,'_thresh.jpg'],'-djpeg',['-r',num2str(dpi)])
 end

@@ -92,8 +92,8 @@ PatchInLegend(3).FaceColor=colors.tonic;
 PatchInLegend(4).FaceColor=colors.rhythmic;
 
 legend boxoff 
-% hatchfill(PatchInLegend(4), 'single', 45, 5,colors.no_aAP); % this
-% doesn't work for some reason...fuck
+% % % % % hatchfill(PatchInLegend(4), 'single', 45, 5,colors.no_aAP); % this
+% % % % % doesn't work for some reason...fuck
 
 valtozok.xcm=5;
 valtozok.ycm=5;
@@ -103,6 +103,7 @@ valtozok.fonttype='Helvetica';
 valtozok.axesvastagsag=1;
 valtozok.dpi=900;
 set(gca,'LineWidth',valtozok.axesvastagsag,'FontSize',valtozok.fontsize,'Fontname',valtozok.fonttype,'Units','normalized','Position',[.25 .25 .5 .5])
+set(findobj(gcf,'type','text'),'fontsize',valtozok.fontsize,'Fontname',valtozok.fonttype)
 set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[valtozok.xcm/.5 valtozok.ycm/.5]+2,'PaperPosition',[2 2 valtozok.xcm/.5 valtozok.ycm/.5])
 saveas(gcf,[dirs.figuresdir,'Human_aAP_stats.pdf'])
 print(gcf,[dirs.figuresdir,'Human_aAP_stats.jpg'],'-djpeg',['-r',num2str(valtozok.dpi)])
@@ -215,6 +216,7 @@ for pftypei=1:length(PFtypes)
     valtozok.axesvastagsag=1;
     valtozok.dpi=900;
     set(gca,'LineWidth',valtozok.axesvastagsag,'FontSize',valtozok.fontsize,'Fontname',valtozok.fonttype,'Units','normalized','Position',[.25 .25 .5 .5])
+    set(findobj(gcf,'type','text'),'fontsize',valtozok.fontsize,'Fontname',valtozok.fonttype)
     set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[valtozok.xcm/.5 valtozok.ycm/.5]+2,'PaperPosition',[2 2 valtozok.xcm/.5 valtozok.ycm/.5])
     saveas(gcf,[dirs.figuresdir,'Human_aAP_',pftype,'_anatomy_stats.pdf'])
     print(gcf,[dirs.figuresdir,'Human_aAP_',pftype,'_anatomy_stats.jpg'],'-djpeg',['-r',num2str(valtozok.dpi)])
