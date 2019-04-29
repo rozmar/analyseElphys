@@ -1,5 +1,6 @@
+% the analyseElphys_main script first runs the aE_projectselector.m where you can choose a project to analyze
+% each project has its own directories
 %%
-
 close all
 clear all
 
