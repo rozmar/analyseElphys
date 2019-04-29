@@ -310,3 +310,154 @@ valtozok_PSD.PSDparameters.taperlength=30;
 persistent_generatefigures_plot_PSD_for_timeinterval(xlsidx,dirs,xlsdata,valtozok_PSD,expname);
 
 %%
+
+%% stim during rhythmic PF - sample trace
+
+ID='1612012rm_5_1,2_4';
+xlsidx=find(strcmp({xlsdata.ID},ID));
+expname=[ID,'_HUMAN_rhythmic_persistent_stim_during_PF'];
+valtozok_sampletrace=struct;
+valtozok_sampletrace.debugmode=1;
+valtozok_sampletrace.zerotime=57871;
+valtozok_sampletrace.xlimits=[0 120]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.ylimits=[0 0];%
+valtozok_sampletrace.xlimitstoexclude=[0,0]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.xlimitsblowup=[0, 0]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.ylimitsblowup=zeros(size(valtozok_sampletrace.xlimitsblowup));
+% valtozok_sampletrace.ylimitsblowup=[-72,24;-72,24;-72,24];
+
+
+% ez már egy második..
+ID='1605111rm_1_1_4';
+xlsidx=find(strcmp({xlsdata.ID},ID));
+expname=[ID,'_HUMAN_rhythmic_persistent_stim_during_PF'];
+valtozok_sampletrace=struct;
+valtozok_sampletrace.debugmode=1;
+valtozok_sampletrace.zerotime=62100;
+valtozok_sampletrace.xlimits=[0 200]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.ylimits=[0 0];%
+valtozok_sampletrace.xlimitstoexclude=[0,0]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.xlimitsblowup=[0, 0]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.ylimitsblowup=zeros(size(valtozok_sampletrace.xlimitsblowup));
+
+% ez már egy harmadik..
+ID='1605102rm_4_1_4';
+xlsidx=find(strcmp({xlsdata.ID},ID));
+expname=[ID,'_HUMAN_rhythmic_persistent_stim_during_PF'];
+valtozok_sampletrace=struct;
+valtozok_sampletrace.debugmode=1;
+valtozok_sampletrace.zerotime=57575;
+valtozok_sampletrace.xlimits=[0 15]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.ylimits=[0 0];%
+valtozok_sampletrace.xlimitstoexclude=[0,0]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.xlimitsblowup=[0, 0]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.ylimitsblowup=zeros(size(valtozok_sampletrace.xlimitsblowup));
+
+
+% ez már egy negyedik..
+ID='1603102rm_4_1_4';
+xlsidx=find(strcmp({xlsdata.ID},ID));
+expname=[ID,'_HUMAN_rhythmic_persistent_stim_during_PF'];
+valtozok_sampletrace=struct;
+valtozok_sampletrace.debugmode=0;
+valtozok_sampletrace.zerotime=79029.7;
+valtozok_sampletrace.xlimits=[0 15]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.ylimits=[0 0];%
+valtozok_sampletrace.xlimitstoexclude=[0,0]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.xlimitsblowup=[2.6,3.4;9.3, 10.1]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.ylimitsblowup=zeros(size(valtozok_sampletrace.xlimitsblowup));
+
+
+
+
+% valtozok_sampletrace.ylimitscurr=[0 0];%[-150,250];
+valtozok_sampletrace.isiYlimits=[0 2];
+valtozok_sampletrace.freqYlimits=[.1 500];
+valtozok_sampletrace.freqYscale=[1, 10, 100];
+valtozok_sampletrace.cutofffreq=15000;
+valtozok_sampletrace.highlightaxonalspikes=1;
+valtozok_sampletrace.highlightaxonalspikes_timeback=.001;
+valtozok_sampletrace.highlightaxonalspikes_timeforward=.020;
+
+
+valtozok_sampletrace.xcm=17;
+valtozok_sampletrace.xcm_blowup=8;
+valtozok_sampletrace.ycm=2;
+valtozok_sampletrace.ycm_current=.5;
+valtozok_sampletrace.voltagelinewidth=.5;
+valtozok_sampletrace.currentlinewidth=.5;
+valtozok_sampletrace.markersize=1;
+valtozok_sampletrace.fontsize=8;
+valtozok_sampletrace.fonttype='Helvetica';
+valtozok_sampletrace.axeswidth=.5;
+valtozok_sampletrace.axis.voltage_y=true;
+valtozok_sampletrace.axis.voltage_x=true;
+valtozok_sampletrace.axis.voltage_blowup_y=true;
+valtozok_sampletrace.axis.voltage_blowup_x=false;
+valtozok_sampletrace.axis.current_y=false;
+valtozok_sampletrace.axis.current_x=false;
+valtozok_sampletrace.axis.freq_y=true;
+valtozok_sampletrace.axis.freq_x=true;
+
+
+% valtozok_sampletrace.threshold.threshold=10;
+% valtozok_sampletrace.threshold.stepbacklength=.002;
+% valtozok_sampletrace.threshold.aplength=.006;
+valtozok_sampletrace.threshold.displayonvoltagetrace=1;
+% valtozok_sampletrace.threshold.displayonblowup=0;
+% valtozok_sampletrace.threshold.movingstep=4;
+% valtozok_sampletrace.threshold.threshmedianwindow=.15;
+% valtozok_sampletrace.threshold.addbaselineval=1;
+
+persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok_sampletrace,expname);
+
+%% pharmacology - cadmium - sample trace
+
+ID='1605062rm_4_1_4';
+xlsidx=find(strcmp({xlsdata.ID},ID));
+expname=[ID,'_HUMAN_rhythmic_persistent_pharmacology_cadmium'];
+valtozok_sampletrace=struct;
+valtozok_sampletrace.debugmode=0;
+valtozok_sampletrace.zerotime=64485;
+valtozok_sampletrace.xlimits=[-80 600]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.ylimits=[-80 30];%
+valtozok_sampletrace.xlimitstoexclude=[0,0]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.xlimitsblowup=[-71.8, -31.8;183.8,218.8]+valtozok_sampletrace.zerotime;
+valtozok_sampletrace.ylimitsblowup=zeros(size(valtozok_sampletrace.xlimitsblowup));
+% valtozok_sampletrace.ylimitsblowup=[-72,24;-72,24;-72,24];
+
+% valtozok_sampletrace.ylimitscurr=[0 0];%[-150,250];
+valtozok_sampletrace.isiYlimits=[0 2];
+valtozok_sampletrace.freqYlimits=[.1 500];
+valtozok_sampletrace.freqYscale=[1, 10, 100];
+valtozok_sampletrace.cutofffreq=10500;
+valtozok_sampletrace.highlightaxonalspikes=1;
+valtozok_sampletrace.highlightaxonalspikes_timeback=.001;
+valtozok_sampletrace.highlightaxonalspikes_timeforward=.020;
+% valtozok_sampletrace.drugwashin.drugwashinline_ystart=30;
+% valtozok_sampletrace.drugwashin.drugwashinline_ystep=5;
+% valtozok_sampletrace.drugwashin.drugwashinline_linewidth=2;
+
+valtozok_sampletrace.xcm=17;
+valtozok_sampletrace.xcm_blowup=8;
+valtozok_sampletrace.ycm=2;
+valtozok_sampletrace.ycm_current=.5;
+valtozok_sampletrace.voltagelinewidth=.5;
+valtozok_sampletrace.currentlinewidth=.5;
+valtozok_sampletrace.markersize=1;
+valtozok_sampletrace.fontsize=8;
+valtozok_sampletrace.fonttype='Helvetica';
+valtozok_sampletrace.axeswidth=.5;
+valtozok_sampletrace.axis.voltage_y=true;
+valtozok_sampletrace.axis.voltage_x=true;
+valtozok_sampletrace.axis.voltage_blowup_y=true;
+valtozok_sampletrace.axis.voltage_blowup_x=true;
+valtozok_sampletrace.axis.current_blowup_y=true;
+valtozok_sampletrace.axis.current_blowup_x=true;
+valtozok_sampletrace.axis.current_y=true;
+valtozok_sampletrace.axis.current_x=true;
+valtozok_sampletrace.axis.freq_y=true;
+valtozok_sampletrace.axis.freq_x=true;
+
+persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok_sampletrace,expname);
+

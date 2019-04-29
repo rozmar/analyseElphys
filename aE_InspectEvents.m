@@ -205,7 +205,7 @@ function handles = updateDATA(handles,doitall)
 % valtozok.timeback=.001;
 % valtozok.timeforward=.001;
 % valtozok.movingn=3;
-valtozok.timebackforthreshold=.002;
+valtozok.timebackforthreshold=.004;
 valtozok.timebackforthreshold_duringstim=.0005;
 valtozok.timeback=str2num(get(handles.edit2,'String'))/1000;
 valtozok.timeforward=str2num(get(handles.edit3,'String'))/1000;
@@ -316,10 +316,12 @@ for apii=1:length(apidxes)
         stepforward=round(valtozok.timeforward/si);
 %         stepback_forthresh=round(valtozok.timebackforthreshold/si);
     end
-    if eventdata(api).stimulated==1
+    if eventdata(api).stimulated==1 & eventdata(api).maxtimetosquarepulse>-.005 & eventdata(api).maxtimetosquarepulse<0
         stepback_forthresh=round(valtozok.timebackforthreshold_duringstim/si);
+        voltageoffset=.00;
     else
         stepback_forthresh=round(valtozok.timebackforthreshold/si);
+        voltageoffset=.002;
     end
     onseth=eventdata(api).onseth;
     %%
@@ -329,19 +331,20 @@ for apii=1:length(apidxes)
     [~,maxhh]=max(yfiltered([-1*hatra:elore]+maxh));
     maxh=maxhh-1*hatra-1+maxh;
     %% 
+    
+    [~,threshh]=max(dyfiltered(max(1,maxh-stepback_forthresh_first):maxh-round(3e-5/si)));
+    threshh=threshh+max(1,maxh-stepback_forthresh_first);
     stepback_forthresh_orig=stepback_forthresh;
-    [~,threshh]=max(dyfiltered(max(1,maxh-stepback_forthresh):maxh-round(3e-5/si)));
-    threshh=threshh+max(1,maxh-stepback_forthresh);
-    while ((dyfiltered(threshh)>30) | (max(dyfiltered(max(1,threshh-stepback_forthresh):threshh))>30 & max(yfiltered(max(1,threshh-stepback_forthresh):threshh))<=yfiltered(threshh)))  & threshh>3 %|    )
+    while ((dyfiltered(threshh)>30) | (max(dyfiltered(max(1,threshh-stepback_forthresh):threshh))>30 & max(yfiltered(max(1,threshh-stepback_forthresh):threshh))<=yfiltered(threshh)+voltageoffset))  & threshh>3 %|    )
         threshh=threshh-1;
     end
     %% if there is a spike doublet
     stepback_forthresh=round(stepback_forthresh_orig/2);
-    while ((dyfiltered(threshh)>30) | (max(dyfiltered(max(1,threshh-stepback_forthresh):threshh))>30 & max(yfiltered(max(1,threshh-stepback_forthresh):threshh))<=yfiltered(threshh)))  & threshh>3 %|    )
+    while ((dyfiltered(threshh)>30) | (max(dyfiltered(max(1,threshh-stepback_forthresh):threshh))>30 & max(yfiltered(max(1,threshh-stepback_forthresh):threshh))<=yfiltered(threshh)+voltageoffset))  & threshh>3 %|    )
         threshh=threshh-1;
     end
     stepback_forthresh=round(stepback_forthresh_orig/4);
-    while ((dyfiltered(threshh)>30) | (max(dyfiltered(max(1,threshh-stepback_forthresh):threshh))>30 & max(yfiltered(max(1,threshh-stepback_forthresh):threshh))<=yfiltered(threshh)))  & threshh>3 %|    )
+    while ((dyfiltered(threshh)>30) | (max(dyfiltered(max(1,threshh-stepback_forthresh):threshh))>30 & max(yfiltered(max(1,threshh-stepback_forthresh):threshh))<=yfiltered(threshh)+voltageoffset))  & threshh>3 %|    )
         threshh=threshh-1;
     end
     stepback_forthresh=stepback_forthresh_orig;
@@ -509,7 +512,13 @@ for apii=1:length(apidxes)
 %         firstpeakh=NaN;
 %         firstpeakval=eventdata(api).maxval;%yfiltered(threshh);
 %     end
-    %%
+    % looking for AHP
+    ahph=maxh+10;
+    ahpstepforward=round(.003/si);
+    while ahph<length(yfiltered)-ahpstepforward & yfiltered(ahph)>min(yfiltered(ahph:ahph+ahpstepforward))
+        ahph=ahph+1;
+    end
+    %
     if doitall
         eventdata(api).prevISI=apprevisis(apii);
         eventdata(api).prevAPnum_500ms=sum(apmaxtimes>=eventdata(api).maxtime-.5 & apmaxtimes<eventdata(api).maxtime);
@@ -635,6 +644,10 @@ for apii=1:length(apidxes)
     if length(maxdvhs)==1
         maxdvhs=[threshh,maxdvhs];
     end
+    eventdata(api).ahph=ahph;
+    eventdata(api).ahpv=yfiltered(ahph);
+    eventdata(api).thresh_ahp_dv=eventdata(api).ahpv-eventdata(api).threshv;
+    eventdata(api).ahpt=(ahph-threshh)*si;
     eventdata(api).threshh=threshh;
     eventdata(api).maxdv1_V=yfiltered(maxdvhs(1));
     eventdata(api).maxdv1_t=(maxdvhs(1)-threshh)*si;
