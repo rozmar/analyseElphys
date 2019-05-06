@@ -22,7 +22,7 @@ function varargout = aE_projectselector(varargin)
 
 % Edit the above text to modify the response to help aE_projectselector
 
-% Last Modified by GUIDE v2.5 06-Feb-2019 18:17:48
+% Last Modified by GUIDE v2.5 29-Apr-2019 16:51:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -55,12 +55,13 @@ function aE_projectselector_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for aE_projectselector
 handles.output = hObject;
 handles.projectnames=varargin{1};
+% handles.outputt=[];
 set(handles.listbox1,'String',handles.projectnames);
 % Update handles structure
 guidata(hObject, handles);
 
 % UIWAIT makes aE_projectselector wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
+uiwait(handles.figure1);
 
 
 % --- Outputs from this function are returned to the command line.
@@ -71,7 +72,13 @@ function varargout = aE_projectselector_OutputFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Get default command line output from handles structure
-varargout{1} = handles.output;
+% varargout{1} = handles.output;
+
+varargout{1}=handles.outputt;
+delete(handles.figure1);
+% if isfield(handles,'outputt')
+%     varargout{1}=handles.outputt;
+% end
 
 
 % --- Executes on selection change in listbox1.
@@ -147,8 +154,13 @@ handles.outputt.inspecttraces=get(handles.checkbox7,'Value');
 handles.outputt.selectvideoROIs=get(handles.checkbox8,'Value');
 handles.outputt.dostatistics=get(handles.checkbox9,'Value');
 handles.outputt.loadstatistics=get(handles.checkbox10,'Value');
-assignin('base', 'projectdata', handles.outputt);
-close(handles.figure1);
+guidata(hObject,handles)
+% assignin('base', 'projectdata', handles.outputt);
+% assignin('caller', 'projectdata', handles.outputt);
+
+uiresume(handles.figure1);
+
+
 
 
 % --- Executes on button press in checkbox7.
@@ -206,3 +218,20 @@ function checkbox10_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox10
+
+
+% --- Executes when user attempts to close figure1.
+function figure1_CloseRequestFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: delete(hObject) closes the figure
+% delete(hObject);
+if isequal(get(hObject, 'waitstatus'), 'waiting')
+    % The GUI is still in UIWAIT, us UIRESUME
+    uiresume(hObject);
+else
+    % The GUI is no longer waiting, just close it
+    delete(hObject);
+end

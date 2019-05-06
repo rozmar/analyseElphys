@@ -330,30 +330,25 @@ if isfield(dirs,'PSDdir_breathing')
 end
 
 %% (13) extracting movement info from video
-if isfield(dirs,'videodir')
-    valtozok.sampleinterval=.01;
-    valtozok.overwrite=0;
-    for xlsi=1:length(xlsdata)%length(xlsdata):-1:1
-        if any(strfind(xlsdata(xlsi).anaesthesia,'awake'))
-            valtozok.setupname=xlsdata(xlsi).setup;
-            valtozok.filename=xlsdata(xlsi).HEKAfname;
-            aE_analyzevideo_main(valtozok,dirs);
-        end
+valtozok.sampleinterval=.01;
+valtozok.overwrite=0;
+for xlsi=1:length(xlsdata)%length(xlsdata):-1:1
+    if any(strfind(xlsdata(xlsi).anaesthesia,'awake'))
+        valtozok.setupname=xlsdata(xlsi).setup;
+        valtozok.filename=xlsdata(xlsi).HEKAfname;
+        aE_analyzevideo_main(valtozok,dirs);
     end
 end
+
 %% (14) PCA on ROIs
-if isfield(dirs,'videodir')
-    overwrite=0;
-    aE_analyzevideo_PCA_on_ROIs(dirs,xlsdata,overwrite)
-end
+overwrite=0;
+aE_analyzevideo_PCA_on_ROIs(dirs,xlsdata,overwrite)
 %% (15) processing Gaspar's pupil diameter data
-if isfield(dirs,'videodir')
-    aE_analyzevideo_pupilsize_load(dirs,xlsdata)
-end
+aE_analyzevideo_pupilsize_load(dirs,xlsdata)
 %% (16) normalizing pupil size and movement data
-if isfield(dirs,'videodir')
-    aE_analyzevideo_normalize_pupil_movement(dirs,xlsdata)
-end
+aE_analyzevideo_normalize_pupil_movement(dirs,xlsdata)
+
+
 %% (17) plotting IV
 sweepbordersrelativetorheobase=[-1,2];
 scalebarx=[.1];
@@ -461,7 +456,7 @@ valtozok.prerecordingmode='C-Clamp';%'C-Clamp' or 'V-Clamp' or 'any'
 for xlsi=length(Selection):-1:1 %xlsnum=1:length(Selection)%going throught potential presynaptic cells
     xlsnum=Selection(xlsi);
     close all
-    prenum=xlsnum;%Selection(xlsnum);
+    prenum=Selection(xlsnum);
     aE_checkGJandChemicalSynapse(valtozok,xlsdata,dirs,prenum);
 end
 
