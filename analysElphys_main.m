@@ -73,7 +73,10 @@
 %   potentials, hyper- and depolarizing square pulses and averages them so
 %   PSPs and GJ currents will be apparent. The generated figures are saved
 %   in the dirs.figuresdir folder
-
+%
+% See also aE_projectselector_main, aE_InspectTraces, aE_exportrawHEKAdata,
+% aE_generatePGF_bridge_HEKA, aE_findevents, aE_PSD_export,
+% aE_analyzevideo_main, aE_checkGJandChemicalSynapse
 close all
 clear all
 locations=marcicucca_locations;
@@ -166,6 +169,7 @@ end
 valtozok.overwrite=projectdata.owevent;
 valtozok.overwritebefore=datenum(datetime('today'));%;datenum(2018,12,29);%;
 valtozok.plotit=0;
+valtozok.sdval=3;
 valtozok.threshholdaveragetime=15;%s
 % valtozok.mindvpdt=1;
 valtozok.minampl=.0001;

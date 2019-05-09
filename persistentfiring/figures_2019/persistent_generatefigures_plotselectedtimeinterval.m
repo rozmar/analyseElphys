@@ -1,4 +1,93 @@
 function persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok,expname,additionaldata)
+% persistent_generatefigures_plotselectedtimeinterval.m plots selected time
+% intervals and saves the figures in the dirs.figuresdir folder with a user
+% specified filename. 
+% The script generates a voltage plot, injected current, interspike
+% intervals, instantaneous frequency. Can highlight axonal and somatic
+% spikes, threshold, baseline. For proper functioning, aAPs and sAPs must
+% be sorted. Please run aE_InspectEvents.m (can be started rom aE_InspectTraces.m)
+% and save the properly set values there.
+% 
+% The parameters for plotting are the following:
+% valtozok_sampletrace.debugmode=0; (1/0) - stops the script after the
+%   first plot and lets the user experiment with it
+% valtozok_sampletrace.zerotime=64485; (seconds from midnight - realtime) -
+%   sets the zero value on the X axis
+% valtozok_sampletrace.xlimits=[-80 600]+valtozok_sampletrace.zerotime; 
+%   (seconds from midnight - realtime) time limits on the first plot.
+% valtozok_sampletrace.ylimits=[-80 30]; (Volts) - Y limits on the first
+%   plot. If set to [0 0], the borders are automatic.
+% valtozok_sampletrace.xlimitstoexclude=[0,0]+valtozok_sampletrace.zerotime;
+%   (seconds from midnight - realtime) - traces between this timeinterval
+%   will not be shown.
+% valtozok_sampletrace.xlimitsblowup=[-71.8, -31.8;183.8,218.8]+valtozok_sampletrace.zerotime;
+%   (seconds from midnight - realtime) - Start and end times for blow-ups 
+%   in the time dimension. [start1, end1; start2; end2]
+% valtozok_sampletrace.ylimitsblowup=zeros(size(valtozok_sampletrace.xlimitsblowup));
+%   (Voltage) - same as xlimitsblowup but for Voltage dimension. If all set
+%   to 0 then the limits will not change.
+% 
+% valtozok_sampletrace.ylimitscurr=[-150,250]; (pA) - y limits on the
+%   injected current plot, if set to [0 0], the borders are automatic
+% valtozok_sampletrace.isiYlimits=[0 2]; (seconds) - y limits on the
+%   Inter-spike interval plot. If set to [0 0], the borders are automatic
+% valtozok_sampletrace.freqYlimits=[.1 500]; (Hz) - y limits on the
+%   instantaneous frequency plot. If set to [0 0], the borders are automatic
+% valtozok_sampletrace.freqYscale=[1, 10, 100]; (Hz) - y scale on the
+%   instantaneous frequency plot.
+% valtozok_sampletrace.cutofffreq=10500; (Hz) - cutoff frequency befor
+%   plotting
+% valtozok_sampletrace.highlightaxonalspikes=1; (1/0) if set to 1, axonal
+%   APs are highlighted with red
+% valtozok_sampletrace.highlightaxonalspikes_timeback=.001; (seconds) - how
+% long the highlight should be backwards from the ap maximum
+% valtozok_sampletrace.highlightaxonalspikes_timeforward=.020; (seconds) - how
+% long the highlight should be forward from the ap maximum
+% valtozok_sampletrace.drugwashin.drugwashinline_ystart=30; (Volt) - a
+%   black line represents the drug washin. This is where the first line
+%   will be drawn. Do not specify it if you don't want the black line.
+% valtozok_sampletrace.drugwashin.drugwashinline_ystep=5; (Volt) - a
+%   black line represents the drug washin. This will be the voltage
+%   difference between the lines. Do not specify it if you don't want the 
+%   black line.
+% valtozok_sampletrace.drugwashin.drugwashinline_linewidth=2; - Width of
+%   the black line
+% 
+% valtozok_sampletrace.xcm=17; (cm) - horizontal size of the figure
+% valtozok_sampletrace.xcm_blowup=8; (cm) horizontal size of the blowup
+%   figures
+% valtozok_sampletrace.ycm=2; (cm) - vertical size of the figure
+% valtozok_sampletrace.ycm_current=.5; - vertical size of the injected 
+%   current figure
+% valtozok_sampletrace.voltagelinewidth=.5; (mm) - linewidth of the voltage
+%   traces
+% valtozok_sampletrace.currentlinewidth=.5; (mm) - linewidth of the injected
+%   current traces.
+% valtozok_sampletrace.markersize=1; - Marker size on the ISI and freq
+%   plots.
+% valtozok_sampletrace.fontsize=8; (points) - Font size
+% valtozok_sampletrace.fonttype='Helvetica'; - Font type
+% valtozok_sampletrace.axeswidth=.5; (mm) - axes width
+% valtozok_sampletrace.axis.voltage_y=true; (true/false) - should there be
+%   voltage axis on the voltage traces
+% valtozok_sampletrace.axis.voltage_x=true;  (true/false) - should there be
+%   time axis on the voltage traces
+% valtozok_sampletrace.axis.voltage_blowup_y=true;  (true/false) - should there be
+%   voltage axis on the blowup voltage traces
+% valtozok_sampletrace.axis.voltage_blowup_x=true;  (true/false) - should there be
+%   time axis on the blowup voltage traces
+% valtozok_sampletrace.axis.current_y=true;  (true/false) - should there be
+%   y axis on the first current trace
+% valtozok_sampletrace.axis.current_x=true; (true/false) - should there be
+%   X axis on the first current trace
+% valtozok_sampletrace.axis.current_blowup_y=true; (true/false) - should there be
+%   y axis on the blowup current traces
+% valtozok_sampletrace.axis.current_blowup_x=true;  (true/false) - should there be
+%   X axis on the current blowup traces
+% valtozok_sampletrace.axis.freq_y=true; (true/false) - should there be
+%   Y axis on the instantenous frequency plots
+% valtozok_sampletrace.axis.freq_x=true; (true/false) - should there be
+%   X axis on the instantenous frequency plots
 
 if isfield(valtozok,'xcm')
     xcm=valtozok.xcm;

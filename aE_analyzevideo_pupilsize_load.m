@@ -1,4 +1,6 @@
 function aE_analyzevideo_pupilsize_load(dirs,xlsdata)
+% aE_analyzevideo_pupilsize_load.m loads the data that is returned by
+% Gáspár's pupilsizemeter Labview script.
 savedir=[dirs.videodir,'eye/'];
 for xlsi=1:length(xlsdata)
     setupname=xlsdata(xlsi).setup;

@@ -2,8 +2,6 @@
 % These scripts export figures in .jpg format which can be inserted and
 % further organized in Inkscape.
 % see also persistent_generatefigures_plotselectedtimeinterval,
-% persistent_generatefigures_generate_APwaves, persistent_generatefigures_plot_APwaves,
-% persistent_generatefigures_plot_PSD_for_timeinterval
 %% HUMAN nonrhythmic
 ID='1603021rm_5_3,4,5_4';
 expname=[ID,'HUMAN_nonrhythmic_persistent'];

@@ -1,4 +1,8 @@
 function [sdvalue,sdvaluetime]=aE_calculatebaselineSD(time,y,valtozok,sdval)
+% aE_calculatebaselineSD calculates threshold values for event detection.
+% The script first derives the time series then iteratively removes event
+% like deflections until the distribution of the remaining data becomes
+% normal which reflects to the noise level.
 Y=y;
 TIME=time;
 hossz=time(end);
@@ -28,11 +32,11 @@ for segmenti=1:(segmentnum)
         ytemp=y;
         dy=diff(yfilt)/mode(diff(time));
         dyf=imfilter(dy,fspecial('average', [1,diffmovingstep]));
-        tdyf=dyf;
+        tdyf=dyf; % temporary dyf
         temptime=time(1:end-1);
         sdv=std(tdyf);
         %%
-        while max(abs(tdyf))>sdval*sdv | max(abs(tdyf))>10 % törölgetjük a valószínűsíthető eseményeket, amíg van az adat deriváltjában egy adott érték feletti érték, vagy 5SD-n kívül van bármely derivált érték
+        while max(abs(tdyf))>sdval*sdv | max(abs(tdyf))>10 % törölgetjük a valószínűsíthető eseményeket, amíg van az adat deriváltjában egy adott érték feletti érték, vagy 5 SD-n kívül van bármely derivált érték (normalitás teszt)
             [~,loc]=max(abs(tdyf));
             if tdyf(loc)<0
                 loc1=loc-1;
@@ -69,7 +73,7 @@ for segmenti=1:(segmentnum)
             temptime(loc1:loc2)=[];
             sdv=std(tdyf);
         end
-        sdvalue(segmenti)=sdv*valtozok.eventminsdval;
+        sdvalue(segmenti)=sdv;%*valtozok.eventminsdval;
         
     end
 end

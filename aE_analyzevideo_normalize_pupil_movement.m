@@ -1,4 +1,7 @@
 function aE_analyzevideo_normalize_pupil_movement(dirs,xlsdata)
+% aE_analyzevideo_normalize_pupil_movement.m normalizes pupil sizes accross
+% animals. Downsampling is not a problem because the script checks the
+% resolution of the original video.
 videopercentiles=struct;
 alldata=struct;
 files=dir([dirs.videodir,'eye/']);
