@@ -1,4 +1,5 @@
 function [tracedataGJ]=aE_testforGJ(valtozok,dirs,pretraces,posttraces,preevents,postevents)
+% aE_testforGJ.m cuts out sweeps for gap junction testing.
 tracedataGJ=struct;
 prehypsweeps=struct;
 

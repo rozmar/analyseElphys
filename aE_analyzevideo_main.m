@@ -1,6 +1,9 @@
-%%
 function aE_analyzevideo_main(valtozok,dirs)
-
+% aE_analyzevideo_main.m was designed to read the video and text output 
+% of Gáspár's LabView script which is run during in vivo experiments. 
+% The scripts loads a raw video, downsamples and saves it as a
+% .mat file. Also reads the corresponding text file which has metadata in
+% it. (lick sensor, synchronization signal with the amplifier, water valve..)
 locations=marcicucca_locations;
 sampleinterval=valtozok.sampleinterval;
 setupname=valtozok.setupname;
@@ -44,12 +47,11 @@ if isempty(a)|valtozok.overwrite==1
                 %         texty = textscan(fid,'%s%s%s%s%s');
                 %         fclose(fid);
                 
-                %%
                 fid   = fopen([rawvideodir,files(correspondingtxt).name]);
                 clear texty
                 texty = textscan(fid,'%s');
                 fclose(fid);
-                %%
+
                 if length(texty{1})>1
                     a=cellfun(@any, regexp(texty{1},':..:'));
                     if any(a)
@@ -206,37 +208,4 @@ if isempty(a)|valtozok.overwrite==1
 else
     disp(['video analysis of ', filename,' is already done'])
 end
-
-
-return
-%% játszós
-files=dir([dirs.videodir,'/movement/']);
-files([files.isdir])=[];
-load([dirs.videodir,'/movement/',files(18).name]);
-%%
-downmov=rawvideo(1).vid;
-lineardownmov=reshape(downmov,size(downmov,1)*size(downmov,2),size(downmov,3));
-whattoprincomp=zscore(double(lineardownmov'));
-%%
-
-[coeff,score]=princomp(whattoprincomp);
-%%
-close all
-princompstoshow=600;
-figure(10)
-clf
-for i=1:princompstoshow
-    %                 subplot(princompstoshow,2,(i-1)*2+1)
-    subplot(1,2,1)
-    plot((score(:,i)))
-    %                 subplot(princompstoshow,2,(i-1)*2+2)
-    subplot(1,2,2)
-    scorelayout(:,:,i)=reshape(coeff(:,i),size(downmov,1),size(downmov,2));
-    imagesc(scorelayout(:,:,i))
-    %                 caxis([-.04 .04])
-    pause
-end
-
-%%
-
 

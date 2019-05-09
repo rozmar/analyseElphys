@@ -1,5 +1,96 @@
 function persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata,valtozok,expname,additionaldata)
-
+% persistent_generatefigures_plotselectedtimeinterval.m plots selected time
+% intervals and saves the figures in the dirs.figuresdir folder with a user
+% specified filename. 
+% The script generates a voltage plot, injected current, interspike
+% intervals, instantaneous frequency. Can highlight axonal and somatic
+% spikes, threshold, baseline. For proper functioning, aAPs and sAPs must
+% be sorted. Please run aE_InspectEvents.m (can be started rom aE_InspectTraces.m)
+% and save the properly set values there.
+% 
+% The parameters for plotting are the following:
+% valtozok_sampletrace.debugmode=0; (1/0) - stops the script after the
+%   first plot and lets the user experiment with it
+% valtozok_sampletrace.zerotime=64485; (seconds from midnight - realtime) -
+%   sets the zero value on the X axis
+% valtozok_sampletrace.xlimits=[-80 600]+valtozok_sampletrace.zerotime; 
+%   (seconds from midnight - realtime) time limits on the first plot.
+% valtozok_sampletrace.ylimits=[-80 30]; (Volts) - Y limits on the first
+%   plot. If set to [0 0], the borders are automatic.
+% valtozok_sampletrace.xlimitstoexclude=[0,0]+valtozok_sampletrace.zerotime;
+%   (seconds from midnight - realtime) - traces between this timeinterval
+%   will not be shown.
+% valtozok_sampletrace.xlimitsblowup=[-71.8, -31.8;183.8,218.8]+valtozok_sampletrace.zerotime;
+%   (seconds from midnight - realtime) - Start and end times for blow-ups 
+%   in the time dimension. [start1, end1; start2; end2]
+% valtozok_sampletrace.ylimitsblowup=zeros(size(valtozok_sampletrace.xlimitsblowup));
+%   (Voltage) - same as xlimitsblowup but for Voltage dimension. If all set
+%   to 0 then the limits will not change.
+% 
+% valtozok_sampletrace.ylimitscurr=[-150,250]; (pA) - y limits on the
+%   injected current plot, if set to [0 0], the borders are automatic
+% valtozok_sampletrace.isiYlimits=[0 2]; (seconds) - y limits on the
+%   Inter-spike interval plot. If set to [0 0], the borders are automatic
+% valtozok_sampletrace.freqYlimits=[.1 500]; (Hz) - y limits on the
+%   instantaneous frequency plot. If set to [0 0], the borders are automatic
+% valtozok_sampletrace.freqYscale=[1, 10, 100]; (Hz) - y scale on the
+%   instantaneous frequency plot.
+% valtozok_sampletrace.cutofffreq=10500; (Hz) - cutoff frequency befor
+%   plotting
+% valtozok_sampletrace.highlightaxonalspikes=1; (1/0) if set to 1, axonal
+%   APs are highlighted with red
+% valtozok_sampletrace.highlightaxonalspikes_timeback=.001; (seconds) - how
+% long the highlight should be backwards from the ap maximum
+% valtozok_sampletrace.highlightaxonalspikes_timeforward=.020; (seconds) - how
+% long the highlight should be forward from the ap maximum
+% valtozok_sampletrace.drugwashin.drugwashinline_ystart=30; (Volt) - a
+%   black line represents the drug washin. This is where the first line
+%   will be drawn. Do not specify it if you don't want the black line.
+% valtozok_sampletrace.drugwashin.drugwashinline_ystep=5; (Volt) - a
+%   black line represents the drug washin. This will be the voltage
+%   difference between the lines. Do not specify it if you don't want the 
+%   black line.
+% valtozok_sampletrace.drugwashin.drugwashinline_linewidth=2; - Width of
+%   the black line
+% 
+% valtozok_sampletrace.xcm=17; (cm) - horizontal size of the figure
+% valtozok_sampletrace.xcm_blowup=8; (cm) horizontal size of the blowup
+%   figures
+% valtozok_sampletrace.ycm=2; (cm) - vertical size of the figure
+% valtozok_sampletrace.ycm_current=.5; - vertical size of the injected 
+%   current figure
+% valtozok_sampletrace.voltagelinewidth=.5; (mm) - linewidth of the voltage
+%   traces
+% valtozok_sampletrace.currentlinewidth=.5; (mm) - linewidth of the injected
+%   current traces.
+% valtozok_sampletrace.markersize=1; - Marker size on the ISI and freq
+%   plots.
+% valtozok_sampletrace.fontsize=8; (points) - Font size
+% valtozok_sampletrace.fonttype='Helvetica'; - Font type
+% valtozok_sampletrace.axeswidth=.5; (mm) - axes width
+% valtozok_sampletrace.axis.voltage_y=true; (true/false) - should there be
+%   voltage axis on the voltage traces
+% valtozok_sampletrace.axis.voltage_x=true;  (true/false) - should there be
+%   time axis on the voltage traces
+% valtozok_sampletrace.axis.voltage_blowup_y=true;  (true/false) - should there be
+%   voltage axis on the blowup voltage traces
+% valtozok_sampletrace.axis.voltage_blowup_x=true;  (true/false) - should there be
+%   time axis on the blowup voltage traces
+% valtozok_sampletrace.axis.current_y=true;  (true/false) - should there be
+%   y axis on the first current trace
+% valtozok_sampletrace.axis.current_x=true; (true/false) - should there be
+%   X axis on the first current trace
+% valtozok_sampletrace.axis.current_blowup_y=true; (true/false) - should there be
+%   y axis on the blowup current traces
+% valtozok_sampletrace.axis.current_blowup_x=true;  (true/false) - should there be
+%   X axis on the current blowup traces
+% valtozok_sampletrace.axis.freq_y=true; (true/false) - should there be
+%   Y axis on the instantenous frequency plots
+% valtozok_sampletrace.axis.freq_x=true; (true/false) - should there be
+%   X axis on the instantenous frequency plots
+%See also persistent_generatefigures_generate_APwaves, persistent_generatefigures_plot_APwaves,
+% persistent_generatefigures_plot_PSD_for_timeinterval,
+% persistent_generatefigures_human_rhythmic
 if isfield(valtozok,'xcm')
     xcm=valtozok.xcm;
 else
@@ -122,88 +213,88 @@ end
 load([dirs.bridgeddir,fname],'bridgeddata','stimdata');
 % bridgeddata=temp.bridgeddata;
 % stimdata=temp.stimdata;
-if isfield(valtozok,'threshold')
-    threshold=valtozok.threshold.threshold;
-    stepbacklength=valtozok.threshold.stepbacklength;
-    aplength=valtozok.threshold.aplength;
-    stimstart=valtozok.xlimits(1);
-    stimend=valtozok.xlimits(2);
-    allapidxes=[eventdata.maxtime]>stimstart & [eventdata.maxtime]<stimend & strcmp({eventdata.type},'AP');%[stimapidxes,persistentapidxes];
-    if isfield(valtozok,'xlimitstoexclude')
-        for i=1:size(valtozok.xlimitstoexclude,1)
-            allapidxes=allapidxes&~([eventdata.maxtime]>valtozok.xlimitstoexclude(i,1) & [eventdata.maxtime]<valtozok.xlimitstoexclude(i,2));
-        end
-    end
-    allapidxes=find(allapidxes);
-    for api=1:length(allapidxes)% calculating thresholds
-        eventnum=allapidxes(api);
-        sweepnum=eventdata(eventnum).sweepnum;
-        ysweep=bridgeddata(sweepnum).y;
-        ysweeporig=ysweep;
-        
-        si=eventdata(eventnum).si;
-        starth=round(aplength/si);
-        stepback=round(stepbacklength/si);
-        
-        y=NaN(1,starth*2+1);
-        yorig=y;
-        time=[-starth:starth]*si+eventdata(eventnum).maxtime+si;
-        y(max((starth-eventdata(eventnum).maxh)+2,1):min(length(y),length(y)+length(ysweep)-(eventdata(eventnum).maxh+starth)))=ysweep(max(eventdata(eventnum).maxh-starth,1):min(eventdata(eventnum).maxh+starth,length(ysweep)));
-        yorig(max((starth-eventdata(eventnum).maxh)+2,1):min(length(y),length(y)+length(ysweeporig)-(eventdata(eventnum).maxh+starth)))=ysweeporig(max(eventdata(eventnum).maxh-starth,1):min(eventdata(eventnum).maxh+starth,length(ysweeporig)));
-        if valtozok.threshold.movingstep>1
-            y=moving(y,valtozok.threshold.movingstep)'; % moving average!!
-            yorig=moving(yorig,valtozok.threshold.movingstep)'; % moving average!!
-        end
-        stim(max((starth-eventdata(eventnum).maxh)+2,1):min(length(y),length(y)+length(ysweep)-(eventdata(eventnum).maxh+starth)))=stimdata(sweepnum).y(max(eventdata(eventnum).maxh-starth,1):min(eventdata(eventnum).maxh+starth,length(ysweep)));
-        y(stim<stim(starth))=NaN;
-        yorig(stim<stim(starth))=NaN;
-        dy=diff(y)/si;
-        y=mean([y(1:end-1);y(2:end)]);
-        yorig=mean([yorig(1:end-1);yorig(2:end)]);
-        time=mean([time(1:end-1);time(2:end)]);
-        thresh=starth;
-        while thresh>=1 & (y(thresh)>0 | y(thresh)+0.01>y(starth))
-            thresh=thresh-1;
-        end
-%         while  thresh>=stepback+1 & nanmax(dy(thresh-stepback:thresh-1))>dy(thresh)
-%             thresh=thresh-1;
-%         end
-        while thresh>=stepback+1 & nanmax(dy(thresh-stepback:thresh-1))>threshold
-            thresh=thresh-1;
-        end
-        eventdata(eventnum).threshy=yorig(thresh);
-        eventdata(eventnum).thresht=time(thresh);
-    end
-%      for api=1:length(allapidxes)
-%          idx = abs([eventdata(allapidxes).thresht]-eventdata(allapidxes(api)).thresht)<valtozok.threshold.threshmedianwindow;
-%            eventdata(allapidxes(api)).medianthreshy=median([eventdata(allapidxes(idx)).threshy]);
-%      end
-     threshtimestep=valtozok.threshold.threshmedianwindow/10;
-     medianthreshtimevector=[valtozok.xlimits(1):threshtimestep:round(diff(valtozok.xlimits)/threshtimestep)*threshtimestep+valtozok.xlimits(1)]-valtozok.zerotime;
-     medianthreshvalues=NaN(size(medianthreshtimevector));
-     for i=1:length(medianthreshtimevector)
-         idx = abs([eventdata(allapidxes).thresht]-valtozok.zerotime-medianthreshtimevector(i))<valtozok.threshold.threshmedianwindow;
-         medianthreshvalues(i)=nanmedian([eventdata(allapidxes(idx)).threshy]);
-     end
-     todel=isnan(medianthreshvalues);
-     medianthreshtimevector(todel)=[];
-      medianthreshvalues(todel)=[];
-%     channel=num2str(xlsdata(xlsnum).Channel);
-%     sweeps=find([bridgeddata.realtime]>=stimstart & [bridgeddata.realtime]<=stimend & strcmp({bridgeddata.channellabel},['Vmon-',channel]));
-%     sweepdata=struct;
-    %          figure(1)
-    %         clf
-    %         hold on
-%              for sweepi=1:length(sweeps)
-%                  sweepnum=sweeps(sweepi);
-%                  sweepdata(sweepi).y=bridgeddata(sweepnum).y;
-%                  sweepdata(sweepi).x=[1:length(sweepdata(sweepi).y)]*bridgeddata(sweepnum).si+bridgeddata(sweepnum).realtime;
-%                  plot([sweepdata(sweepi).x],[sweepdata(sweepi).y],'k-')
-%              end
-    %         plot([eventdata(allapidxes).thresht],[eventdata(allapidxes).threshy],'ro','LineWidth',2,'MarkerSize',6)
-    %         pause
-    
-end
+% % % % % % % if isfield(valtozok,'threshold')
+% % % % % % %     threshold=valtozok.threshold.threshold;
+% % % % % % %     stepbacklength=valtozok.threshold.stepbacklength;
+% % % % % % %     aplength=valtozok.threshold.aplength;
+% % % % % % %     stimstart=valtozok.xlimits(1);
+% % % % % % %     stimend=valtozok.xlimits(2);
+% % % % % % %     allapidxes=[eventdata.maxtime]>stimstart & [eventdata.maxtime]<stimend & strcmp({eventdata.type},'AP');%[stimapidxes,persistentapidxes];
+% % % % % % %     if isfield(valtozok,'xlimitstoexclude')
+% % % % % % %         for i=1:size(valtozok.xlimitstoexclude,1)
+% % % % % % %             allapidxes=allapidxes&~([eventdata.maxtime]>valtozok.xlimitstoexclude(i,1) & [eventdata.maxtime]<valtozok.xlimitstoexclude(i,2));
+% % % % % % %         end
+% % % % % % %     end
+% % % % % % %     allapidxes=find(allapidxes);
+% % % % % % %     for api=1:length(allapidxes)% calculating thresholds
+% % % % % % %         eventnum=allapidxes(api);
+% % % % % % %         sweepnum=eventdata(eventnum).sweepnum;
+% % % % % % %         ysweep=bridgeddata(sweepnum).y;
+% % % % % % %         ysweeporig=ysweep;
+% % % % % % %         
+% % % % % % %         si=eventdata(eventnum).si;
+% % % % % % %         starth=round(aplength/si);
+% % % % % % %         stepback=round(stepbacklength/si);
+% % % % % % %         
+% % % % % % %         y=NaN(1,starth*2+1);
+% % % % % % %         yorig=y;
+% % % % % % %         time=[-starth:starth]*si+eventdata(eventnum).maxtime+si;
+% % % % % % %         y(max((starth-eventdata(eventnum).maxh)+2,1):min(length(y),length(y)+length(ysweep)-(eventdata(eventnum).maxh+starth)))=ysweep(max(eventdata(eventnum).maxh-starth,1):min(eventdata(eventnum).maxh+starth,length(ysweep)));
+% % % % % % %         yorig(max((starth-eventdata(eventnum).maxh)+2,1):min(length(y),length(y)+length(ysweeporig)-(eventdata(eventnum).maxh+starth)))=ysweeporig(max(eventdata(eventnum).maxh-starth,1):min(eventdata(eventnum).maxh+starth,length(ysweeporig)));
+% % % % % % %         if valtozok.threshold.movingstep>1
+% % % % % % %             y=moving(y,valtozok.threshold.movingstep)'; % moving average!!
+% % % % % % %             yorig=moving(yorig,valtozok.threshold.movingstep)'; % moving average!!
+% % % % % % %         end
+% % % % % % %         stim(max((starth-eventdata(eventnum).maxh)+2,1):min(length(y),length(y)+length(ysweep)-(eventdata(eventnum).maxh+starth)))=stimdata(sweepnum).y(max(eventdata(eventnum).maxh-starth,1):min(eventdata(eventnum).maxh+starth,length(ysweep)));
+% % % % % % %         y(stim<stim(starth))=NaN;
+% % % % % % %         yorig(stim<stim(starth))=NaN;
+% % % % % % %         dy=diff(y)/si;
+% % % % % % %         y=mean([y(1:end-1);y(2:end)]);
+% % % % % % %         yorig=mean([yorig(1:end-1);yorig(2:end)]);
+% % % % % % %         time=mean([time(1:end-1);time(2:end)]);
+% % % % % % %         thresh=starth;
+% % % % % % %         while thresh>=1 & (y(thresh)>0 | y(thresh)+0.01>y(starth))
+% % % % % % %             thresh=thresh-1;
+% % % % % % %         end
+% % % % % % % %         while  thresh>=stepback+1 & nanmax(dy(thresh-stepback:thresh-1))>dy(thresh)
+% % % % % % % %             thresh=thresh-1;
+% % % % % % % %         end
+% % % % % % %         while thresh>=stepback+1 & nanmax(dy(thresh-stepback:thresh-1))>threshold
+% % % % % % %             thresh=thresh-1;
+% % % % % % %         end
+% % % % % % %         eventdata(eventnum).threshy=yorig(thresh);
+% % % % % % %         eventdata(eventnum).thresht=time(thresh);
+% % % % % % %     end
+% % % % % % % %      for api=1:length(allapidxes)
+% % % % % % % %          idx = abs([eventdata(allapidxes).thresht]-eventdata(allapidxes(api)).thresht)<valtozok.threshold.threshmedianwindow;
+% % % % % % % %            eventdata(allapidxes(api)).medianthreshy=median([eventdata(allapidxes(idx)).threshy]);
+% % % % % % % %      end
+% % % % % % %      threshtimestep=valtozok.threshold.threshmedianwindow/10;
+% % % % % % %      medianthreshtimevector=[valtozok.xlimits(1):threshtimestep:round(diff(valtozok.xlimits)/threshtimestep)*threshtimestep+valtozok.xlimits(1)]-valtozok.zerotime;
+% % % % % % %      medianthreshvalues=NaN(size(medianthreshtimevector));
+% % % % % % %      for i=1:length(medianthreshtimevector)
+% % % % % % %          idx = abs([eventdata(allapidxes).thresht]-valtozok.zerotime-medianthreshtimevector(i))<valtozok.threshold.threshmedianwindow;
+% % % % % % %          medianthreshvalues(i)=nanmedian([eventdata(allapidxes(idx)).threshy]);
+% % % % % % %      end
+% % % % % % %      todel=isnan(medianthreshvalues);
+% % % % % % %      medianthreshtimevector(todel)=[];
+% % % % % % %       medianthreshvalues(todel)=[];
+% % % % % % % %     channel=num2str(xlsdata(xlsnum).Channel);
+% % % % % % % %     sweeps=find([bridgeddata.realtime]>=stimstart & [bridgeddata.realtime]<=stimend & strcmp({bridgeddata.channellabel},['Vmon-',channel]));
+% % % % % % % %     sweepdata=struct;
+% % % % % % %     %          figure(1)
+% % % % % % %     %         clf
+% % % % % % %     %         hold on
+% % % % % % % %              for sweepi=1:length(sweeps)
+% % % % % % % %                  sweepnum=sweeps(sweepi);
+% % % % % % % %                  sweepdata(sweepi).y=bridgeddata(sweepnum).y;
+% % % % % % % %                  sweepdata(sweepi).x=[1:length(sweepdata(sweepi).y)]*bridgeddata(sweepnum).si+bridgeddata(sweepnum).realtime;
+% % % % % % % %                  plot([sweepdata(sweepi).x],[sweepdata(sweepi).y],'k-')
+% % % % % % % %              end
+% % % % % % %     %         plot([eventdata(allapidxes).thresht],[eventdata(allapidxes).threshy],'ro','LineWidth',2,'MarkerSize',6)
+% % % % % % %     %         pause
+% % % % % % %     
+% % % % % % % end
 
 %%
 neededidx=([bridgeddata.realtime]>valtozok.xlimits(1) &[bridgeddata.realtime]<valtozok.xlimits(2));
@@ -218,6 +309,7 @@ if neededidx(1)~=1
 end
 bridgedsweeps=struct;
 APsnow=struct;
+%%
 for sweep=1:length(neededidx)
     if valtozok.cutofffreq(1)>0
         if length(valtozok.cutofffreq)==1
@@ -244,7 +336,14 @@ for sweep=1:length(neededidx)
         bridgedsweeps(sweep).baselineval=nanmin( bridgedsweeps(sweep).y(1:idx));
         bridgedsweeps(sweep).baselinetime=bridgedsweeps(sweep).x(idx);
     end
+    %% assigning thresht for threshvs
+    neededevents=find([eventdata.sweepnum]==neededidx(sweep) & strcmp({eventdata.type},'AP'));
+    for eventi=1:length(neededevents)
+        eventdata(neededevents(eventi)).thresht=bridgedsweeps(sweep).x(eventdata(neededevents(eventi)).threshh);
+        eventdata(neededevents(eventi)).threshv=bridgedsweeps(sweep).y(eventdata(neededevents(eventi)).threshh)/1000;
+    end
 end
+%%
 figure(1)
 clf
 hold on
@@ -267,12 +366,13 @@ for sweep=1:length(bridgedsweeps)
     end
 end
 if isfield(valtozok,'threshold') & valtozok.threshold.displayonvoltagetrace==1
-    plot([eventdata(allapidxes).thresht]-valtozok.zerotime,[eventdata(allapidxes).threshy]*1000,'ro','LineWidth',1,'MarkerSize',5)
+    allapidxes=[eventdata.maxtime]>=valtozok.xlimits(1) & [eventdata.maxtime]<=valtozok.xlimits(2)&strcmp({eventdata.type},'AP');
+    plot([eventdata(allapidxes).thresht],[eventdata(allapidxes).threshv]*1000,'ro','LineWidth',1,'MarkerSize',1)
     %       plot([eventdata(allapidxes).thresht]-valtozok.zerotime,[eventdata(allapidxes).medianthreshy]*1000,'rs-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[1 0 0])
-    plot(medianthreshtimevector,medianthreshvalues*1000,'r-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[1 0 0])
-    if isfield(valtozok,'threshold') & isfield(valtozok.threshold,'addbaselineval') & valtozok.threshold.addbaselineval==1
-        plot([bridgedsweeps.baselinetime],[bridgedsweeps.baselineval],'bo-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[0 0 1])
-    end
+%     plot(medianthreshtimevector,medianthreshvalues*1000,'r-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[1 0 0])
+%     if isfield(valtozok,'threshold') & isfield(valtozok.threshold,'addbaselineval') & valtozok.threshold.addbaselineval==1
+%         plot([bridgedsweeps.baselinetime],[bridgedsweeps.baselineval],'bo-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[0 0 1])
+%     end
 end
 %%
 if isfield(valtozok,'drugwashin') & ~isempty(xlsdata(xlsidx).drugdata)
@@ -347,13 +447,13 @@ if sum(diff(valtozok.xlimitsblowup(1,:)))>0
             h.YAxis.Visible = 'of';
         end
     end
-    if isfield(valtozok,'threshold') & valtozok.threshold.displayonblowup==1
-      plot([eventdata(allapidxes).thresht]-valtozok.zerotime,[eventdata(allapidxes).threshy]*1000,'ro','LineWidth',1,'MarkerSize',5)
-      plot(medianthreshtimevector,medianthreshvalues*1000,'r-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[1 0 0])
-       if isfield(valtozok,'threshold') & isfield(valtozok.threshold,'addbaselineval') & valtozok.threshold.addbaselineval==1
-           plot([bridgedsweeps.baselinetime],[bridgedsweeps.baselineval],'bo-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[0 0 1])
-       end
-    end
+%     if isfield(valtozok,'threshold') & valtozok.threshold.displayonblowup==1
+%       plot([eventdata(allapidxes).thresht]-valtozok.zerotime,[eventdata(allapidxes).threshy]*1000,'ro','LineWidth',1,'MarkerSize',5)
+%       plot(medianthreshtimevector,medianthreshvalues*1000,'r-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[1 0 0])
+%        if isfield(valtozok,'threshold') & isfield(valtozok.threshold,'addbaselineval') & valtozok.threshold.addbaselineval==1
+%            plot([bridgedsweeps.baselinetime],[bridgedsweeps.baselineval],'bo-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[0 0 1])
+%        end
+%     end
     for blowupi=1:size(valtozok.xlimitsblowup,1)
         
         xlim(valtozok.xlimitsblowup(blowupi,:)-valtozok.zerotime);
@@ -414,6 +514,49 @@ set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm
 set(gcf, 'Renderer', renderer);
 saveas(gcf,[dirs.figuresdir,expname,'_current.pdf'])
 print(gcf,[dirs.figuresdir,expname,'_current.jpg'],'-djpeg',['-r',num2str(dpi)])
+
+if sum(diff(valtozok.xlimitsblowup(1,:)))>0
+    if isfield(valtozok,'axis') & isfield(valtozok.axis,'current_blowup_x')
+        h = gca;
+        if valtozok.axis.voltage_blowup_x
+            h.XAxis.Visible = 'on';
+        else
+            h.XAxis.Visible = 'off';
+        end
+        if valtozok.axis.voltage_blowup_y
+            h.YAxis.Visible = 'on';
+        else
+            h.YAxis.Visible = 'of';
+        end
+    end
+%     if isfield(valtozok,'threshold') & valtozok.threshold.displayonblowup==1
+%       plot([eventdata(allapidxes).thresht]-valtozok.zerotime,[eventdata(allapidxes).threshy]*1000,'ro','LineWidth',1,'MarkerSize',5)
+%       plot(medianthreshtimevector,medianthreshvalues*1000,'r-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[1 0 0])
+%        if isfield(valtozok,'threshold') & isfield(valtozok.threshold,'addbaselineval') & valtozok.threshold.addbaselineval==1
+%            plot([bridgedsweeps.baselinetime],[bridgedsweeps.baselineval],'bo-','LineWidth',2,'MarkerSize',5,'MarkerFaceColor',[0 0 1])
+%        end
+%     end
+    for blowupi=1:size(valtozok.xlimitsblowup,1)
+        
+        xlim(valtozok.xlimitsblowup(blowupi,:)-valtozok.zerotime);
+        if diff(valtozok.ylimitsblowup(blowupi,:))>0
+            ylim(valtozok.ylimitsblowup(blowupi,:))
+        else
+            ylim(valtozok.ylimits)
+        end
+        
+        set(gca,'LineWidth',axesvastagsag,'FontSize',betumeret,'Fontname',betutipus,'Units','normalized','Position',[.25 .25 .5 .5])
+        set(findobj(gcf,'type','text'),'fontsize',betumeret,'Fontname',betutipus)
+        set(gcf,'PaperUnits','centimeters','PaperPositionMode','manual','PaperSize',[xcm_blowup/.5 ycm/.5]+2,'PaperPosition',[2 2 xcm_blowup/.5 ycm/.5])
+        set(gcf, 'Renderer', renderer);
+        saveas(gcf,[dirs.figuresdir,expname,'_current_blowup_',num2str(blowupi),'_.pdf'])
+        print(gcf,[dirs.figuresdir,expname,'_current_blowup_',num2str(blowupi),'_.jpg'],'-djpeg',['-r',num2str(dpi)])
+    end
+end
+
+
+
+
 if ~isempty(eventdata)
 eventdataold=eventdata;
 eventdata=eventdata([strcmp({eventdata.type},'AP')]);

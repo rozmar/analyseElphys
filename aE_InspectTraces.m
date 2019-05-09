@@ -1,33 +1,10 @@
 function varargout = aE_InspectTraces(varargin)
-% With this script one can observe bridge balanced traces exported with the  script :analyseElphys_main.m
+% With this script one can observe bridge balanced traces, PSDs, extracellular recordings 
+% exported and prepared with the  scripts in :analyseElphys_main.m
 % USAGE: aE_InspectTraces(dirs,xlsdata) - after starting analyseElphys_main.m
-
-
-%      AE_INSPECTTRACES, by itself, creates a new AE_INSPECTTRACES or raises the existing
-%      singleton*.
-%
-%      H = AE_INSPECTTRACES returns the handle to a new AE_INSPECTTRACES or the handle to
-%      the existing singleton*.
-%
-%      AE_INSPECTTRACES('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in AE_INSPECTTRACES.M with the given input arguments.
-%
-%      AE_INSPECTTRACES('Property','Value',...) creates a new AE_INSPECTTRACES or raises the
-%      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before aE_InspectTraces_OpeningFcn gets called.  An
-%      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to aE_InspectTraces_OpeningFcn via varargin.
-%
-%      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
-%      instance to run (singleton)".
-%
-% See also: GUIDE, GUIDATA, GUIHANDLES
-
-% Edit the above text to modify the response to help aE_InspectTraces
-
-% Last Modified by GUIDE v2.5 21-Feb-2019 11:10:56
-
-% Begin initialization code - DO NOT EDIT
+% This GUI can start subGUIs:   -aE_Inspect_Events.m: this GUI is intended
+% for analysing AP kinetics. Filtering, PCA, thresholding etc.
+%                               -aE_
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
