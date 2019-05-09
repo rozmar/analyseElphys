@@ -1,6 +1,7 @@
 %% Figure 1
 % These scripts export figures in .jpg format which can be inserted and
-% further organized in Inkscape.
+% further organized in Inkscape. The figures are saved in the
+% dirs.figuresdir folder.
 % see also persistent_generatefigures_plotselectedtimeinterval,
 % persistent_generatefigures_generate_APwaves, persistent_generatefigures_plot_APwaves,
 % persistent_generatefigures_plot_PSD_for_timeinterval

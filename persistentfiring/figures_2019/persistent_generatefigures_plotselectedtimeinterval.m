@@ -88,7 +88,9 @@ function persistent_generatefigures_plotselectedtimeinterval(xlsidx,dirs,xlsdata
 %   Y axis on the instantenous frequency plots
 % valtozok_sampletrace.axis.freq_x=true; (true/false) - should there be
 %   X axis on the instantenous frequency plots
-
+%See also persistent_generatefigures_generate_APwaves, persistent_generatefigures_plot_APwaves,
+% persistent_generatefigures_plot_PSD_for_timeinterval,
+% persistent_generatefigures_human_rhythmic
 if isfield(valtozok,'xcm')
     xcm=valtozok.xcm;
 else
