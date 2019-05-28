@@ -316,6 +316,7 @@ for apii=1:length(apidxes)
         stepforward=round(valtozok.timeforward/si);
 %         stepback_forthresh=round(valtozok.timebackforthreshold/si);
     end
+
     if eventdata(api).stimulated==1 & eventdata(api).maxtimetosquarepulse>-.005 & eventdata(api).maxtimetosquarepulse<0
         stepback_forthresh=round(valtozok.timebackforthreshold_duringstim/si);
         voltageoffset=.00;
@@ -533,6 +534,29 @@ for apii=1:length(apidxes)
 %     end
     threshv=yfiltered(threshh);
     maxval=y(maxh);
+    %%
+    neededtimeinterval=0.001;
+    stepforsigmoid=100; %round(neededtimeinterval/si);
+    NormOfSpike=y(max(maxh-stepforsigmoid,1):min(maxh+stepforsigmoid,length(y)));   
+    NormOfSpike=NormOfSpike-min(NormOfSpike);
+    NormOfSpike=NormOfSpike/max(NormOfSpike);
+    
+    
+%     %x=1:round(stepforsigmoid/2);
+%     sigmoidY=sigmoid(x,round(length(x)*0.7),-0.0056*length(x)+0.675);
+%     
+%     convolutedSpike=conv(sigmoidY,NormOfSpike,'same');
+%     
+%     result=max(convolutedSpike);
+    x=1:50;
+sigmoidY=sigmoid(x,35,0.3);
+
+convolutedSpike=conv(sigmoidY,NormOfSpike);
+result=max(convolutedSpike);
+    
+    
+    %%
+    eventdata(api).sigmoidfitValue=result;
     eventdata(api).threshv=threshv;
     eventdata(api).maxval=maxval;
     eventdata(api).APamplitude=eventdata(api).maxval-eventdata(api).threshv;
@@ -670,19 +694,19 @@ for apii=1:length(apidxes)
 %     end
 %%
 
-decay=yfiltered(maxh:min(maxh+100,length(yfiltered)));
-decayt=[1:length(decay)]';
-
-p=polyfit(decayt,decay,10);
+% decay=yfiltered(maxh:min(maxh+100,length(yfiltered)));
+% decayt=[1:length(decay)]';
+% 
+% p=polyfit(decayt,decay,10);
 % figure(33)
 % clf
 % plot(decayt,decay)
 % hold on
 % plot(decayt,polyval(p,decayt),'r-')
-decay=decay-polyval(p,decayt);
+%decay=decay-polyval(p,decayt);
 % figure(34)
 % plot(decay)
-eventdata(api).oscillation=std(decay);
+%eventdata(api).oscillation=std(decay);
 % std(decay)
 end
 handles.data.eventdata=eventdata;
