@@ -469,3 +469,5 @@ for xlsi=length(Selection):-1:1 %xlsnum=1:length(Selection)%going throught poten
     aE_checkGJandChemicalSynapse(valtozok,xlsdata,dirs,prenum);
 end
 
+%% (19) convert to NWB file format
+aE_generateNWB(dirs,xlsdata)

@@ -21,7 +21,7 @@ projectdata.owevent=0;
 projectdata = aE_projectselector(projectnames);
 projectnum=projectdata.projectnum;
 % alapadatok
-if projectnum==1;
+if projectnum==1; % rosehip CB1 experiments
     overwrite=0;
     locations=marcicucca_locations;
     dirs.basedir=[locations.tgtardir,'ANALYSISdata/marci/Human_rosehip/CB1elphys/'];
@@ -35,7 +35,7 @@ if projectnum==1;
     dirs.figuresdir=[dirs.basedir,'Figures/'];
     amplifier='HEKA';
     xlsdata=aE_readxls([dirs.basedir,'cb1elphys.xls']);
-elseif projectnum==2;
+elseif projectnum==2; % in vivo layer 1
     overwrite=0;
     locations=marcicucca_locations;
     dirs.basedir=[locations.tgtardir,'ANALYSISdata/marci/_persistent/_InVivo/'];
@@ -59,9 +59,10 @@ elseif projectnum==2;
     dirs.breathingdir_psd=[dirs.basedir,'Breathing_PSD/'];
     dirs.offsetdir=[dirs.basedir,'Offset/'];
     dirs.cross_spectrum_breathing=[dirs.basedir,'Cross_spectrum_with_breathing/'];
+    dirs.NWBdir=[dirs.basedir,'NWB/'];
     xlsdata=aE_readxls([dirs.basedir,'invivodata.xls']);
     amplifier='HEKA';
-elseif projectnum==3;
+elseif projectnum==3; % ChannelRodopsin stimulaion experiments for axonalAP inducion
     overwrite=0;
     locations=marcicucca_locations;
     dirs.basedir=[locations.tgtardir,'ANALYSISdata/marci/_persistent/_ChRstim/'];
@@ -76,7 +77,7 @@ elseif projectnum==3;
     dirs.figuresdir=[dirs.basedir,'Figures/'];
     amplifier='HEKA';
     xlsdata=aE_readxls([dirs.basedir,'ChRstimdata_windows.xls']);
-elseif projectnum==4
+elseif projectnum==4 % persistent firing human and rodent brain slice experiments
     overwrite=0;
     locations=marcicucca_locations;
     dirs.basedir=[locations.EMdir,'ANALYSISdata/marci/_persistent/'];
@@ -95,7 +96,7 @@ elseif projectnum==4
     xlsdata=aE_readxls([dirs.basedir,'persistentdata_windows.xls']);
     dirs.v0distdir=[dirs.basedir,'v0_dist/'];
     dirs.v0_vs_PSDdir=[dirs.basedir,'v0_vs_PSD/'];
-elseif projectnum==5
+elseif projectnum==5 % cell attached bleb recordings
     overwrite=0;
     locations=marcicucca_locations;
     dirs.basedir=[locations.tgtardir,'ANALYSISdata/marci/_persistent/_BlebRecording/'];

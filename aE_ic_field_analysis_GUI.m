@@ -577,7 +577,7 @@ for fieldsweepnum= 1:length(handles.data.fielddata)
                 if isempty(FieldData(NEXT).relativeaxonalAPtimes_sporadic)
                     FieldData(NEXT).axonalapnum_sporadic=0;
                 else
-                    FieldData(NEXT).axonalapnum=length(FieldData(NEXT).relativeaxonalAPtimes_sporadic);
+                    FieldData(NEXT).axonalapnum_sporadic=length(FieldData(NEXT).relativeaxonalAPtimes_sporadic);
                 end
                 
                 eventdataa=aapdata([aapdata.axonalAP_persistent]==1);
@@ -586,7 +586,7 @@ for fieldsweepnum= 1:length(handles.data.fielddata)
                 if isempty(FieldData(NEXT).relativeaxonalAPtimes_persistent)
                     FieldData(NEXT).axonalapnum_persistent=0;
                 else
-                    FieldData(NEXT).axonalapnum=length(FieldData(NEXT).relativeaxonalAPtimes_sporadic);
+                    FieldData(NEXT).axonalapnum_persistent=length(FieldData(NEXT).relativeaxonalAPtimes_sporadic);
                 end
             end
             
